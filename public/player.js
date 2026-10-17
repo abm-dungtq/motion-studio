@@ -1,6 +1,7 @@
 // player.js — the composition in an iframe (studio/PLAYER.md): /p/<name>/<html> with the
 // HyperFrames runtime injected by the server; control goes through window.__player. The playhead
-// reads __player.getTime() (the GSAP timeline time stays at the seek point while playing).
+// reads __player.getTime() (the GSAP timeline time stays at the seek point while playing). The
+// returned transport (play, pause, toggle, step, seek) is what the keyboard shortcuts drive.
 import { fmt, h } from "/dom.js";
 
 export function mountPlayer(ctx, el, { playBtn, timeEl }) {
@@ -52,13 +53,24 @@ export function mountPlayer(ctx, el, { playBtn, timeEl }) {
   }
 
   function seek(t) { if (!hf) return; hf.seek(t); show(t); }
-
-  playBtn.addEventListener("click", () => {
-    if (!hf) return;
-    if (hf.isPlaying()) hf.pause();
-    else { if (hf.getTime() >= duration() - 0.05) hf.seek(0); hf.play(); }
+  const time = () => hf?.getTime?.() ?? 0;
+  const playing = () => Boolean(hf?.isPlaying?.());
+  function play() {
+    if (!hf || playing()) return;
+    if (time() >= duration() - 0.05) hf.seek(0);
+    hf.play();
     glyph();
-  });
+  }
+  function pause() { if (!hf) return; hf.pause(); glyph(); }
+  function toggle() { if (playing()) pause(); else play(); }
+  // Pause, then move by dt seconds inside the video.
+  function step(dt) {
+    if (!hf) return;
+    pause();
+    seek(Math.min(duration(), Math.max(0, time() + dt)));
+  }
+
+  playBtn.addEventListener("click", toggle);
 
   // A new version may change index.html (timing markers): reload and return to the same time.
   let reloadTimer = 0;
@@ -72,5 +84,5 @@ export function mountPlayer(ctx, el, { playBtn, timeEl }) {
     reloadTimer = setTimeout(() => load(m, keep), 250);
   });
 
-  return { load, clear, seek };
+  return { load, clear, seek, play, pause, toggle, time, step, playing, duration };
 }

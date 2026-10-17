@@ -1,6 +1,7 @@
 // app.js — Motion Studio shell: project choice, manifest state, the SSE feed and the edit calls
 // shared by the player, timeline, inspector and panels. Edits go to /api/patch with the shown
-// version as base; a 409 reloads the manifest and says so.
+// version as base; a 409 reloads the manifest and says so. ctx.state.pick is the block shown in the
+// inspector ({ kind: shot | line | music | event, id }); ctx.state.sel stays the shot it belongs to.
 import { h, toast } from "/dom.js";
 import { mountPlayer } from "/player.js";
 import { mountTimeline } from "/timeline.js";
@@ -9,6 +10,8 @@ import { mountPanels } from "/panels.js";
 import { mountNewProject } from "/new-project.js";
 import { mountAgent } from "/agent.js";
 import { answerFailure } from "/gate-cards.js";
+import { keyAction, nextSfxId, splitOps } from "/timeline-edit.js";
+import { openMenu } from "/context-menu.js";
 
 const $ = (id) => document.getElementById(id);
 const TOKEN = document.querySelector('meta[name="studio-token"]').content;
@@ -16,7 +19,7 @@ const listeners = {};
 let events = null;
 
 const ctx = {
-  state: { projects: [], name: null, entry: null, m: null, sel: null, log: [], t: 0, jobs: [], logs: new Map(), requests: [] },
+  state: { projects: [], name: null, entry: null, m: null, sel: null, pick: null, log: [], t: 0, jobs: [], logs: new Map(), requests: [] },
   on(ev, fn) { (listeners[ev] ??= []).push(fn); },
   emit(ev, ...a) { for (const fn of listeners[ev] ?? []) fn(...a); },
   get editable() { return Boolean(ctx.state.m?.capabilities?.editable); },
@@ -53,6 +56,74 @@ const ctx = {
     else if (r.status === 409) toast("Đã có thay đổi mới, đã tải lại");
     else if (r.status === 422) toast("Không còn gì để hoàn tác");
     else toast(r.error ?? `Lỗi ${r.status}`, true);
+  },
+  // Replays the last undo. The server answers 422 when there is nothing to redo, so the button
+  // stays enabled on editable projects and that case is a toast.
+  async redo() {
+    const { name, m } = ctx.state;
+    if (!m || !ctx.editable) return;
+    const r = await ctx.send("/api/redo", { name, base: m.version });
+    await reload();
+    if (r.status === 200) toast(`Đã làm lại (v${r.version})`);
+    else if (r.status === 409) toast("Đã có thay đổi mới, đã tải lại");
+    else if (r.status === 422) toast("Không còn gì để làm lại");
+    else toast(r.error ?? `Lỗi ${r.status}`, true);
+  },
+  // Split the selected shot at the playhead: one patch; the new shot has no scene yet.
+  async split() {
+    const m = ctx.state.m;
+    if (!m) return;
+    if (!ctx.editable) return toast("Dự án chỉ xem, sửa qua đạo diễn", true);
+    const sel = ctx.state.sel;
+    const { ops, error, straddle, cut } = splitOps(m, sel, ctx.transport.time());
+    if (error) return toast(error, true);
+    if (!(await ctx.patch(ops))) return;
+    const shots = ctx.state.m?.shots ?? [];
+    const fresh = shots[shots.findIndex((s) => s.id === sel) + 1];
+    toast(`Đã cắt shot. Shot mới trống, cần đạo diễn dựng cảnh${straddle.length ? ". Câu vắt qua điểm cắt vẫn thuộc shot trước" : ""}`);
+    if (!fresh) return;
+    const r = $("play-btn").getBoundingClientRect();
+    openMenu(r.left, r.bottom + 6, [{
+      label: "Nhờ đạo diễn dựng shot mới",
+      run: () => ctx.direct({ scope: "shot", target: fresh.id, t: Math.round(cut * 10) / 10, text: "Dựng cảnh cho shot mới vừa cắt ra, nối tiếp cảnh trước." }),
+    }]);
+  },
+  // "Thêm SFX tại đây…": pick a sound (project assets or shared-assets/sfx), then add_event at t
+  // with an explicit id that no event, line or <audio> tag of the composition uses.
+  async addSfx(t) {
+    const { name, m } = ctx.state;
+    if (!m || !ctx.editable) return;
+    let list;
+    try { list = await ctx.api(`/api/sounds?name=${encodeURIComponent(name)}`); } catch (e) { return toast(`Không đọc được danh sách âm thanh: ${e.message}`, true); }
+    const project = list?.project ?? [], shared = list?.shared ?? [];
+    if (!project.length && !shared.length) return toast("Chưa có file âm thanh trong assets/ hay shared-assets/sfx", true);
+    const add = async (sound) => {
+      const cur = ctx.state.m;
+      if (!cur || ctx.state.name !== name) return;
+      const doc = $("player").querySelector("iframe")?.contentDocument;
+      const tags = doc ? [...doc.querySelectorAll("audio[id]")].map((a) => a.id) : [];
+      const id = nextSfxId([...(cur.events ?? []).map((e) => e.id), ...cur.lines.map((l) => l.id), ...tags]);
+      if (await ctx.patch([{ op: "add_event", start: t, sound, id }])) {
+        ctx.pick("event", id);
+        toast(`Đã thêm ${id} lúc ${t.toFixed(2)}s`);
+      }
+    };
+    const importShared = async (file) => {
+      const r = await ctx.send("/api/sounds/import", { name, file });
+      if (r.status !== 200 || !r.path) return toast(r.error ?? `Lỗi ${r.status}`, true);
+      await add(r.path);
+    };
+    const tl = $("timeline").getBoundingClientRect();
+    openMenu(tl.left + 120, tl.top + 20, [
+      ...project.map((f) => ({ label: `Dự án · ${f.path}`, run: () => add(f.path) })),
+      ...shared.map((f) => ({ label: `Dùng chung · ${f.file}`, run: () => importShared(f.file) })),
+    ]);
+  },
+  // An SFX the director placed is removed by the director (the gateway only removes Studio SFX).
+  directRemoveSfx(e) {
+    const m = ctx.state.m;
+    const s = m?.shots.find((x) => x.id === e.shot);
+    return ctx.direct({ scope: "shot", target: e.shot, t: Math.round(((s?.start ?? 0) + (Number(e.offset) || 0)) * 10) / 10, text: `Xoá SFX ${e.id}` });
   },
   // A request to the director (scope project | shot | line). Read-only projects take them too.
   async direct(req) {
@@ -91,15 +162,26 @@ const ctx = {
     toast("Đang xuất video: render bản giao rồi nén");
     await refreshQueue();
   },
-  select(id) { ctx.state.sel = id; ctx.emit("select", id); },
+  // Show a block in the inspector; sel follows to the shot it belongs to (music keeps sel).
+  pick(kind, id) {
+    const m = ctx.state.m;
+    ctx.state.pick = { kind, id };
+    if (kind === "shot") ctx.state.sel = id;
+    else if (kind === "line") ctx.state.sel = m?.lines.find((l) => l.id === id)?.shot ?? ctx.state.sel;
+    else if (kind === "event") ctx.state.sel = m?.events?.find((e) => e.id === id)?.shot ?? ctx.state.sel;
+    ctx.emit("select", id);
+  },
+  select(id) { ctx.pick("shot", id); },
   seek(t) { player.seek(t); },
   toast,
 };
 
 const player = mountPlayer(ctx, $("player"), { playBtn: $("play-btn"), timeEl: $("time") });
-mountTimeline(ctx, $("timeline"), { zoomIn: $("zoom-in"), zoomOut: $("zoom-out") });
+ctx.transport = player;
+const timeline = mountTimeline(ctx, $("timeline"), { zoomIn: $("zoom-in"), zoomOut: $("zoom-out") });
 mountInspector(ctx, $("inspector"));
 const panels = mountPanels(ctx, document.querySelector(".rail"), $("panel"));
+ctx.openTab = (id) => panels.select(id, true);
 mountAgent(ctx, $("agent-chip"));
 mountNewProject(ctx, $("new-btn"), {
   async onCreated(name, mode) {
@@ -113,11 +195,15 @@ mountNewProject(ctx, $("new-btn"), {
 function setManifest(m) {
   ctx.state.m = m;
   if (m && !m.shots.some((s) => s.id === ctx.state.sel)) ctx.state.sel = m.shots[0]?.id ?? null;
+  const p = ctx.state.pick;
+  const lists = { shot: m?.shots, line: m?.lines, music: m?.music, event: m?.events };
+  if (!p || !(lists[p.kind] ?? []).some((x) => x.id === p.id)) ctx.state.pick = ctx.state.sel ? { kind: "shot", id: ctx.state.sel } : null;
   const banner = $("banner");
   if (m && !m.capabilities?.editable) { banner.replaceChildren("Dự án nhập từ bản cũ: chỉ xem, sửa qua đạo diễn"); banner.hidden = false; }
   else if (m) banner.hidden = true;
   $("project-title").textContent = m?.title ?? "";
   $("undo-btn").disabled = !ctx.editable;
+  $("redo-btn").disabled = !ctx.editable;
   ctx.emit("manifest", m);
   renderVersions();
 }
@@ -214,7 +300,7 @@ async function importProject(name) {
 async function open(name) {
   events?.close(); events = null;
   const entry = ctx.state.projects.find((p) => p.name === name) ?? null;
-  Object.assign(ctx.state, { name: entry ? name : null, entry, m: null, sel: null, log: [], jobs: [], logs: new Map(), requests: [] });
+  Object.assign(ctx.state, { name: entry ? name : null, entry, m: null, sel: null, pick: null, log: [], jobs: [], logs: new Map(), requests: [] });
   const url = new URL(location.href);
   if (entry) url.searchParams.set("name", name); else url.searchParams.delete("name");
   history.replaceState(null, "", url);
@@ -239,14 +325,50 @@ async function loadProjects() {
 
 $("project-select").addEventListener("change", (e) => open(e.target.value));
 $("undo-btn").addEventListener("click", () => ctx.undo());
+$("redo-btn").addEventListener("click", () => ctx.redo());
 $("export-btn").addEventListener("click", () => ctx.exportVideo());
 ctx.on("time", (t) => (ctx.state.t = t));
+// One handler for every timeline shortcut (timeline-edit.js keyAction). Nothing fires while the
+// caret is in a field, a dialog is open, or focus is on the tab rail (its arrows move between tabs).
 document.addEventListener("keydown", (e) => {
-  if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== "z") return;
-  if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
+  if (document.querySelector("dialog[open]") || e.target.closest?.('[role="tablist"]')) return;
+  const inField = e.target.closest?.("input, textarea, select, [contenteditable]");
+  const a = keyAction(e, { inField: Boolean(inField) });
+  if (!a) return;
   e.preventDefault();
-  ctx.undo();
+  runKey(a);
 });
+
+function runKey(a) {
+  const m = ctx.state.m;
+  const tr = ctx.transport;
+  const fps = m?.fps || 30;
+  switch (a) {
+    case "toggle": return tr.toggle();
+    case "play": return tr.play();
+    case "pause": return tr.pause();
+    case "back1": return tr.step(-1);
+    case "fwd1": return tr.step(1);
+    case "prevFrame": return tr.step(-1 / fps);
+    case "nextFrame": return tr.step(1 / fps);
+    case "start": return tr.seek(0);
+    case "end": return tr.seek(tr.duration());
+    case "split": return ctx.split();
+    case "delete": {
+      const p = ctx.state.pick;
+      const ev = p?.kind === "event" ? m?.events?.find((x) => x.id === p.id) : null;
+      if (!ev) return toast("Delete chỉ xoá SFX; xoá shot hay câu nhờ đạo diễn");
+      if (!ev.studio) return toast("SFX này do đạo diễn đặt; bấm \"Nhờ đạo diễn xoá SFX này\" ở khung bên phải");
+      return ctx.patch([{ op: "remove_event", id: ev.id }]);
+    }
+    case "undo": return ctx.undo();
+    case "redo": return ctx.redo();
+    case "zoomIn": return timeline.zoomBy(1.25);
+    case "zoomOut": return timeline.zoomBy(1 / 1.25);
+    case "fit": return timeline.fit();
+    case "snap": return timeline.toggleSnap?.();
+  }
+}
 
 await loadProjects().catch((e) => toast(`Không tải được danh sách dự án: ${e.message}`, true));
 open(new URL(location.href).searchParams.get("name") ?? "");
