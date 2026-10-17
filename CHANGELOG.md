@@ -1,9 +1,21 @@
 # Changelog
 
-## Chưa phát hành
+## v1.1.0 (2026-10-17): timeline sửa nhanh kiểu CapCut
 
 - Sửa: bấm "Duyệt" hay chọn hướng trên thẻ đạo diễn đôi khi không có tác dụng. `claude -p` thoát vài giây sau `studio_ask`, panel vẽ lại cả thẻ (nút bị thay giữa lúc bấm) và bỏ khối "Đạo diễn đang làm…" bên dưới nên thẻ tụt xuống, cú bấm rơi vào video. Thẻ đang chờ giờ giữ nguyên node qua mỗi lần vẽ lại và giữ chỗ trên màn hình; khối "đang làm" không hiện cho job đã hỏi xong.
 - Câu trả lời gửi không được thì thẻ ghi rõ lý do bằng tiếng Việt: trang hết phiên sau khi Studio khởi động lại (403), mất kết nối, hay lỗi cổng từ server.
+- Cần plugin opus-video 2.3.0 trở lên (`STUDIO_API >= 3`); plugin cũ hơn thì Studio dừng và báo rõ bản cần.
+- Track SFX: kéo dời (`move_event`), chuột phải "Thêm SFX tại đây…" (`add_event`, file chung được chép vào dự án), Delete xoá SFX thêm từ Studio (`remove_event`). SFX do đạo diễn đặt hiện "Nhờ đạo diễn". Id trùng thẻ `<audio>` đã có bị từ chối (422).
+- Khối nhạc: kéo thân, cắt đầu, cắt cuối; inspector chỉnh âm lượng, fade vào, fade ra (`update_music`). Fade chỉ nghe trong video xuất.
+- Cắt shot tại playhead bằng S: một patch, tổng thời lượng không đổi; shot mới trống kèm nút "Nhờ đạo diễn dựng shot mới".
+- Làm lại: nút "Làm lại" và Cmd/Ctrl+Shift+Z (`POST /api/redo`). Nút luôn bật; không còn gì để làm lại thì hiện thông báo.
+- Kéo thước hoặc playhead để tua; phím tắt Space, J/K/L, ←/→, Shift+←/→, Home/End, S, Delete, N, Shift+Z, Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z; menu chuột phải cho từng loại khối.
+- Hít (phím N, nút "Hít") vào playhead, mép shot, câu, SFX, phách nhạc, đầu từ, có vạch hít khi kéo.
+- Sóng âm trên khối giọng và nhạc, vạch phách, chấm đầu từ, Ctrl/Cmd+cuộn zoom quanh con trỏ, nút "Vừa khung".
+- M/S trên từng track âm thanh: chỉ đổi player, không đổi `project.json`.
+- Chip cổng trên thanh trên ("Cần duyệt lại animatic", "Chưa đủ cổng xuất") từ `GET /api/gates`, và danh sách FAIL trong tab Xuất bản.
+- API mới: `POST /api/redo`, `GET /api/sounds`, `POST /api/sounds/import`, `GET /api/gates`.
+- Sửa: thanh trên cùng không còn tràn dòng; hàng Shot không bị thước thời gian che.
 
 ## v1.0.0 (2026-10-17): tách từ opus-video v2.1.0
 
