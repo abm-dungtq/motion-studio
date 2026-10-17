@@ -20,6 +20,7 @@
       <select id="version-select" aria-label="Phiên bản"></select>
       <button id="undo-btn" class="btn" title="Hoàn tác (Ctrl/Cmd+Z)">Hoàn tác</button>
       <button id="redo-btn" class="btn" title="Làm lại (Ctrl/Cmd+Shift+Z)">Làm lại</button>
+      <button id="gate-chip" class="chip gate-chip" type="button" hidden></button>
       <button id="export-btn" class="btn primary">Xuất video</button>
     </header>
 
@@ -42,10 +43,12 @@
 
     <section class="bottom">
       <div class="timeline-bar">
-        <span class="hint">Kéo khối để dời · kéo mép để cắt · chuột phải để xem thêm · S cắt shot · Space phát/dừng</span>
+        <span class="hint">Kéo khối để dời · kéo mép để cắt · chuột phải để xem thêm · S cắt shot · Space phát/dừng · N bật/tắt hít · Ctrl/Cmd+cuộn để zoom</span>
         <div class="spacer"></div>
+        <button id="snap-btn" class="btn" type="button" aria-pressed="true" title="Hít vào mép shot, câu, SFX, playhead, phách, đầu từ (N)">Hít</button>
         <button id="zoom-out" class="btn icon" aria-label="Thu nhỏ">−</button>
         <button id="zoom-in" class="btn icon" aria-label="Phóng to">+</button>
+        <button id="zoom-fit" class="btn" type="button" title="Cả video vừa khung (Shift+Z)">Vừa khung</button>
       </div>
       <div id="timeline" class="timeline"></div>
     </section>

@@ -1,7 +1,9 @@
 // player.js — the composition in an iframe (studio/PLAYER.md): /p/<name>/<html> with the
 // HyperFrames runtime injected by the server; control goes through window.__player. The playhead
 // reads __player.getTime() (the GSAP timeline time stays at the seek point while playing). The
-// returned transport (play, pause, toggle, step, seek) is what the keyboard shortcuts drive.
+// returned transport (play, pause, toggle, step, seek) is what the keyboard shortcuts drive. Once
+// ready, the composition's window.TIMING goes to ctx.state.timing ("timing" event) for snapping and
+// marks, and the mute/solo rule of the timeline is applied to its <audio> tags (setMute).
 import { fmt, h } from "/dom.js";
 
 export function mountPlayer(ctx, el, { playBtn, timeEl }) {
@@ -19,9 +21,29 @@ export function mountPlayer(ctx, el, { playBtn, timeEl }) {
   const glyph = () => { playBtn.firstElementChild.className = `glyph ${hf?.isPlaying?.() ? "pause" : "play"}`; };
   const tick = () => { if (hf) show(hf.getTime()); glyph(); raf = requestAnimationFrame(tick); };
 
+  function setTiming(timing) {
+    ctx.state.timing = timing && typeof timing === "object" ? timing : null;
+    ctx.emit("timing");
+  }
+
+  // The group of an <audio>: data-audio-group, else vo-* is the voice, a music id is music, the
+  // rest SFX. With any solo on, only soloed groups play; otherwise muted groups are silent. Only the
+  // player's elements change, never project.json.
+  function setMute(rule = ctx.state.audio) {
+    const doc = frame?.contentDocument;
+    if (!doc) return;
+    const mute = rule?.mute ?? new Set(), solo = rule?.solo ?? new Set();
+    const music = new Set((ctx.state.m?.music ?? []).map((x) => x.id));
+    for (const a of doc.querySelectorAll("audio")) {
+      const g = a.dataset.audioGroup || (a.id.startsWith("vo-") ? "voiceover" : music.has(a.id) ? "music" : "sfx");
+      a.muted = solo.size ? !solo.has(g) : mute.has(g);
+    }
+  }
+
   function clear(text = "Chọn một dự án") {
     cancelAnimationFrame(raf);
     hf = null; frame = null; shown = null;
+    if (ctx.state.timing) setTiming(null);
     el.replaceChildren(h("div", { class: "player-empty" }, text));
     show(0);
   }
@@ -41,6 +63,8 @@ export function mountPlayer(ctx, el, { playBtn, timeEl }) {
       const win = me.contentWindow;
       if (win?.__player && win.__playerReady) {
         hf = win.__player;
+        setTiming(win.TIMING ?? null);
+        setMute();
         if (keep) hf.seek(Math.min(keep, duration()));
         show(keep);
         tick();
@@ -84,5 +108,5 @@ export function mountPlayer(ctx, el, { playBtn, timeEl }) {
     reloadTimer = setTimeout(() => load(m, keep), 250);
   });
 
-  return { load, clear, seek, play, pause, toggle, time, step, playing, duration };
+  return { load, clear, seek, play, pause, toggle, time, step, playing, duration, setMute };
 }

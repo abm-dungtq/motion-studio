@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { eventStart, keyAction, musicDragOps, nextSfxId, shotAt, splitOps } from "../public/timeline-edit.js";
+import { beatTimes, eventStart, keyAction, musicDragOps, nextSfxId, shotAt, snap, snapTargets, splitOps } from "../public/timeline-edit.js";
 
 const two = {
   shots: [{ id: "s1", name: "Mở", start: 0, end: 4 }, { id: "s2", name: "", start: 4, end: 8 }],
@@ -123,4 +123,44 @@ test("keyAction ignores other keys, modifiers it does not own, Alt, and every ke
   }
   // The physical key counts, so a non-Latin layout still splits with S.
   assert.equal(keyAction(key("ы", { code: "KeyS" })), "split");
+});
+
+const snapM = {
+  shots: [{ id: "s1", start: 0, end: 1 }, { id: "s2", start: 1, end: 2 }],
+  lines: [{ id: "vo-01", shot: "s1", start: 0.3, duration: 0.4 }],
+  events: [{ id: "sfx-a", shot: "s2", offset: 0.62 }],
+  duration: 2,
+};
+const snapT = { fps: 30, duration: 2, scenes: { s1: { start: 0, end: 1, lines: [{ id: "vo-01", words: [["Một", 0.35, 0.5], ["hai", 0.55, 0.69]] }] } }, beat0: 0, beatLen: 0.5, kick: [], drops: [] };
+
+test("snapTargets lists every kind, sorted and without duplicates", () => {
+  const ts = snapTargets(snapM, snapT, 0.9);
+  assert.deepEqual(ts.map((x) => x.t), [0, 0.3, 0.35, 0.5, 0.55, 0.7, 0.9, 1, 1.5, 1.62, 2]);
+  assert.deepEqual(new Set(ts.map((x) => x.kind)), new Set(["playhead", "shot", "line", "event", "beat", "word"]));
+  // 0, 1 and 2 are both shot edges and beats: the shot wins and the beat is dropped.
+  assert.equal(ts.find((x) => x.t === 1).kind, "shot");
+  assert.equal(ts.find((x) => x.t === 0.5).kind, "beat");
+  assert.equal(ts.find((x) => x.t === 1.62).id, "sfx-a");
+});
+
+test("snapTargets works without TIMING, without a playhead, and skips the dragged block", () => {
+  const ts = snapTargets(snapM, null, null, (x) => x.id === "sfx-a");
+  assert.deepEqual(ts.map((x) => `${x.kind}@${x.t}`), ["shot@0", "line@0.3", "line@0.7", "shot@1", "shot@2"]);
+  // A skipped target does not hide another target at the same time.
+  const beatAtEvent = { ...snapT, kick: [1.62] };
+  assert.equal(snapTargets(snapM, beatAtEvent, null, (x) => x.id === "sfx-a").find((x) => x.t === 1.62).kind, "beat");
+});
+
+test("beatTimes adds kicks to the grid and has no beats when beatLen is 0", () => {
+  assert.deepEqual(beatTimes({ beat0: 0.25, beatLen: 1, kick: [0.6] }, 2.5), [0.25, 0.6, 1.25, 2.25]);
+  assert.deepEqual(beatTimes({ beat0: 0, beatLen: 0, kick: [] }, 10), []);
+  assert.deepEqual(beatTimes(null, 10), []);
+});
+
+test("snap pulls to the nearest target within 8 px and leaves a far time alone", () => {
+  const ts = snapTargets(snapM, snapT, 0.9);
+  assert.deepEqual(snap(1.02, ts, 100), { t: 1, kind: "shot" });
+  assert.deepEqual(snap(1.2, ts, 100), { t: 1.2, kind: null });
+  assert.deepEqual(snap(1.02, ts, 100, 1), { t: 1.02, kind: null });
+  assert.deepEqual(snap(0.53, ts, 100), { t: 0.55, kind: "word" });
 });

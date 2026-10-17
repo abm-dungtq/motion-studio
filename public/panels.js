@@ -257,7 +257,13 @@ export function mountPanels(ctx, railEl, panelEl) {
           h("details", { open: live }, h("summary", {}, "Log"), pre),
           live ? h("div", { class: "row" }, h("button", { class: "btn", onclick: () => ctx.cancelJob(j.id) }, "Dừng")) : null);
       });
+      const g = ctx.state.gates;
+      const gates = g && !g.pass && g.fails.length
+        ? h("section", { class: "group gate-fails" }, h("h3", {}, g.animatic ? "Cần duyệt lại animatic" : "Chưa đủ cổng xuất"),
+          h("ul", {}, ...g.fails.map((f) => h("li", {}, f))))
+        : null;
       return [
+        gates,
         h("section", { class: "group" }, h("div", { class: "row" }, h("button", { class: "btn primary", onclick: () => ctx.exportVideo() }, "Xuất video"))),
         h("section", { class: "group" }, h("h3", {}, "Việc đang chạy"), ...(jobs.length ? jobs : [h("p", { class: "empty" }, "Không có việc nào đang chạy. Bấm Xuất video để render bản giao.")])),
         h("section", { class: "group" }, h("h3", {}, "File đã xuất"), renders),
@@ -463,6 +469,7 @@ export function mountPanels(ctx, railEl, panelEl) {
     else if ((tab === "voice" || tab === "music") && !typing()) render();
     else badges();
   });
+  ctx.on("gates", () => { if (tab === "output" && !typing()) render(); });
   ctx.on("requests", () => { if (tab === "ai" && !typing()) render(); else badges(); });
   // A log line only extends its <pre>; start and exit redraw the panel (export list included).
   ctx.on("jobs", (e) => {

@@ -2,6 +2,8 @@
 // shared by the player, timeline, inspector and panels. Edits go to /api/patch with the shown
 // version as base; a 409 reloads the manifest and says so. ctx.state.pick is the block shown in the
 // inspector ({ kind: shot | line | music | event, id }); ctx.state.sel stays the shot it belongs to.
+// ctx.state.audio is the player's mute/solo rule per audio group; ctx.state.gates the last
+// GET /api/gates answer, which drives the top bar's gate chip and the Xuất bản tab's FAIL lines.
 import { h, toast } from "/dom.js";
 import { mountPlayer } from "/player.js";
 import { mountTimeline } from "/timeline.js";
@@ -19,7 +21,7 @@ const listeners = {};
 let events = null;
 
 const ctx = {
-  state: { projects: [], name: null, entry: null, m: null, sel: null, pick: null, log: [], t: 0, jobs: [], logs: new Map(), requests: [] },
+  state: { projects: [], name: null, entry: null, m: null, sel: null, pick: null, log: [], t: 0, jobs: [], logs: new Map(), requests: [], timing: null, audio: { mute: new Set(), solo: new Set() }, gates: null },
   on(ev, fn) { (listeners[ev] ??= []).push(fn); },
   emit(ev, ...a) { for (const fn of listeners[ev] ?? []) fn(...a); },
   get editable() { return Boolean(ctx.state.m?.capabilities?.editable); },
@@ -178,7 +180,7 @@ const ctx = {
 
 const player = mountPlayer(ctx, $("player"), { playBtn: $("play-btn"), timeEl: $("time") });
 ctx.transport = player;
-const timeline = mountTimeline(ctx, $("timeline"), { zoomIn: $("zoom-in"), zoomOut: $("zoom-out") });
+const timeline = mountTimeline(ctx, $("timeline"), { zoomIn: $("zoom-in"), zoomOut: $("zoom-out"), zoomFit: $("zoom-fit"), snapBtn: $("snap-btn") });
 mountInspector(ctx, $("inspector"));
 const panels = mountPanels(ctx, document.querySelector(".rail"), $("panel"));
 ctx.openTab = (id) => panels.select(id, true);
@@ -300,7 +302,9 @@ async function importProject(name) {
 async function open(name) {
   events?.close(); events = null;
   const entry = ctx.state.projects.find((p) => p.name === name) ?? null;
-  Object.assign(ctx.state, { name: entry ? name : null, entry, m: null, sel: null, pick: null, log: [], jobs: [], logs: new Map(), requests: [] });
+  Object.assign(ctx.state, { name: entry ? name : null, entry, m: null, sel: null, pick: null, log: [], jobs: [], logs: new Map(), requests: [], audio: { mute: new Set(), solo: new Set() }, gates: null });
+  clearTimeout(gateTimer);
+  showGates();
   const url = new URL(location.href);
   if (entry) url.searchParams.set("name", name); else url.searchParams.delete("name");
   history.replaceState(null, "", url);
@@ -314,8 +318,44 @@ async function open(name) {
     player.clear("Nhập dự án để xem");
   }
   ctx.emit("project", entry);
-  if (entry?.has_manifest) { await reload(); subscribe(name); await refreshQueue(); }
+  if (entry?.has_manifest) { await reload(); clearTimeout(gateTimer); subscribe(name); refreshGates(); await refreshQueue(); }
 }
+
+// Export gates (check-preflight --stage final) of the open project. The chip says what blocks the
+// export: a stale or missing animatic approval first, any other FAIL otherwise; hidden on PASS.
+let gateTimer = 0, gateSeq = 0;
+async function refreshGates() {
+  const { name } = ctx.state;
+  if (!name || !ctx.state.m) return;
+  const seq = ++gateSeq;
+  try {
+    const g = await ctx.api(`/api/gates?name=${encodeURIComponent(name)}`);
+    if (seq !== gateSeq || name !== ctx.state.name) return;
+    ctx.state.gates = { pass: g?.pass === true, fails: Array.isArray(g?.fails) ? g.fails.map(String) : [], animatic: g?.animatic === true };
+  } catch (e) {
+    if (seq !== gateSeq || name !== ctx.state.name) return;
+    ctx.state.gates = null;
+    console.warn("gates:", e.message);
+  }
+  showGates();
+}
+function showGates() {
+  const chip = $("gate-chip"), g = ctx.state.gates;
+  if (!g || g.pass) { chip.hidden = true; chip.removeAttribute("data-to"); }
+  else {
+    chip.textContent = g.animatic ? "Cần duyệt lại animatic" : "Chưa đủ cổng xuất";
+    chip.title = g.fails.join("\n");
+    chip.dataset.to = g.animatic ? "ai" : "output";
+    chip.hidden = false;
+  }
+  ctx.emit("gates", g);
+}
+$("gate-chip").addEventListener("click", (e) => { const to = e.currentTarget.dataset.to; if (to) ctx.openTab(to); });
+ctx.on("manifest", (m) => {
+  if (!m) return;
+  clearTimeout(gateTimer);
+  gateTimer = setTimeout(refreshGates, 1500);
+});
 
 async function loadProjects() {
   ctx.state.projects = await ctx.api("/api/projects");
