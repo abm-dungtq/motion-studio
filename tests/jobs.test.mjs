@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { startJob, cancel, events, getJob, jobLog, stopAll } from "../../studio/jobs.mjs";
+import { startJob, cancel, events, getJob, jobLog, stopAll } from "../jobs.mjs";
 
 const node = process.execPath;
 const exited = (id) => new Promise((res) => {

@@ -14,8 +14,10 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { load, finish, list, next, OV, PREFIX, MCP_TOOLS, ALLOWED_TOOLS, DENIED_TOOLS } from "../scripts/studio-api.mjs";
+import { loadPlugin } from "./lib/plugin.mjs";
 import { startJob, running } from "./jobs.mjs";
+
+const { load, finish, list, next, OV, PREFIX, MCP_TOOLS, ALLOWED_TOOLS, DENIED_TOOLS } = await loadPlugin();
 
 // The tool permissions live in the plugin (scripts/studio-api.mjs); re-exported for Studio's tests.
 export { MCP_TOOLS, ALLOWED_TOOLS, DENIED_TOOLS };

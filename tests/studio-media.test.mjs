@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
-import { createServer } from "../../studio/server.mjs";
-import { browse, register, readMedia } from "../../studio/media.mjs";
+import { createServer } from "../server.mjs";
+import { browse, register, readMedia } from "../media.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
 const TOKEN = "m".repeat(64);

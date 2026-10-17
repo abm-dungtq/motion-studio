@@ -4,8 +4,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
-import { createServer } from "../../studio/server.mjs";
-import { createProject, setFrontmatter } from "../../studio/create.mjs";
+import { createServer } from "../server.mjs";
+import { createProject, setFrontmatter } from "../create.mjs";
 
 const TOKEN = "c".repeat(64);
 // Stands in for the workspace's new-project.sh: the folder with an index.html that has the

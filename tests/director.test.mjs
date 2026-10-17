@@ -5,12 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
-import { createServer } from "../../studio/server.mjs";
-import { enqueue, list } from "../requests.mjs";
-import { MCP_TOOLS, ALLOWED_TOOLS, DENIED_TOOLS, buildPrompt } from "../../studio/director.mjs";
+import { createServer } from "../server.mjs";
+import { loadPlugin } from "../lib/plugin.mjs";
+import { MCP_TOOLS, ALLOWED_TOOLS, DENIED_TOOLS, buildPrompt } from "../director.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
-const REQUESTS = fileURLToPath(new URL("../requests.mjs", import.meta.url));
+const { enqueue, list, OV, SCRIPTS } = await loadPlugin();
+const REQUESTS = join(SCRIPTS, "requests.mjs");
 const TOKEN = "d".repeat(64);
 let root, bin, calls, server, port, saved;
 
@@ -152,7 +153,7 @@ test("runner mcp leaves the request queued; Studio can cancel it; POST needs the
 });
 
 test("deny rules: the plugin is not editable and no `..` follows scripts/", () => {
-  const ov = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/, "");
+  const ov = OV;
   assert.deepEqual(DENIED_TOOLS.slice(0, 2), ["WebFetch", "WebSearch"]);
   assert.ok(DENIED_TOOLS.includes(`Edit(/${ov}/**)`) && DENIED_TOOLS.includes(`Write(/${ov}/**)`), "absolute path rules start with //");
   assert.ok(DENIED_TOOLS.includes(`Bash(node ${ov}/scripts/*../*)`));

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { spawn, execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const CLI = fileURLToPath(new URL("../studio.mjs", import.meta.url));
+const CLI = fileURLToPath(new URL("../bin/motion-studio.mjs", import.meta.url));
 
 test("a state file left by a crash never sends SIGTERM to a reused pid", () => {
   const dir = mkdtempSync(join(tmpdir(), "studio-state-"));

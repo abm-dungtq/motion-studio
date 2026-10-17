@@ -5,10 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
-import { enqueue, next, ask, list, load, cancelRequest } from "../studio-api.mjs";
-import { createServer } from "../../studio/server.mjs";
-import { answerCard, writeApproval } from "../../studio/gates.mjs";
+import { loadPlugin } from "../lib/plugin.mjs";
+import { createServer } from "../server.mjs";
+import { answerCard, writeApproval } from "../gates.mjs";
 
+const { enqueue, next, ask, list, load, cancelRequest } = await loadPlugin();
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
 const TOKEN = "g".repeat(64);
 const DEMO = "# DEMO\n\nanimatic: demo/animatic.mp4\napproval: pending\n\n## Frames\n\n- demo/f1.png\n";

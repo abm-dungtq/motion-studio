@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// studio.mjs — run Motion Studio, the local web app over the command gateway (studio/server.mjs).
-//   node studio.mjs start [--background] [--root <dir>]   serve http://127.0.0.1:4317
-//   node studio.mjs status                                 running <url> … | stopped
-//   node studio.mjs stop                                   SIGTERM, then the pidfile is removed
-//   node studio.mjs --help | -h
+// motion-studio.mjs — run Motion Studio, the local web app over the opus-video command gateway
+// (server.mjs; the plugin is found by lib/plugin.mjs: $OPUS_VIDEO_HOME, else ~/.claude/skills/opus-video).
+//   node bin/motion-studio.mjs start [--background] [--root <dir>]   serve http://127.0.0.1:4317
+//   node bin/motion-studio.mjs status                                 running <url> … | stopped
+//   node bin/motion-studio.mjs stop                                   SIGTERM, then the pidfile is removed
+//   node bin/motion-studio.mjs --help | -h
 // Root: --root, else $OPUS_STUDIO_ROOT, else /Volumes/2/Edit-Video. Projects are its direct
 // children holding project.json (or index.html + BRIEF.md, offered as "Nhập dự án").
 // One server on this machine: pid, root, port and the token of the run are kept in
@@ -21,7 +22,6 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { maybeHelp } from "./cli-help.mjs";
 
 export const PORT = 4317;
 export const HOST = "127.0.0.1";
@@ -58,7 +58,7 @@ async function live() {
 const rootOf = (o) => realpathSync(resolve(o.root || process.env.OPUS_STUDIO_ROOT || "/Volumes/2/Edit-Video"));
 
 async function serve(root) {
-  const { createServer } = await import("../studio/server.mjs");
+  const { createServer } = await import("../server.mjs");
   const token = randomBytes(32).toString("hex");
   const server = createServer({ root, token });
   await new Promise((res) => {
@@ -70,7 +70,7 @@ async function serve(root) {
   });
   writeState({ ...settingsOf(readState()), pid: process.pid, port: PORT, root, url: url(), token, started: new Date().toISOString() });
   const bye = async () => {
-    const { stopAll } = await import("../studio/jobs.mjs");
+    const { stopAll } = await import("../jobs.mjs");
     await stopAll();
     if (readState()?.pid === process.pid) clearState();
     server.close();
@@ -86,7 +86,7 @@ async function start(o) {
   const s = await live();
   if (s) {
     if (s.root === root) { console.log(`đang chạy: ${s.url} (pid ${s.pid})`); return 0; }
-    console.error(`studio: đang chạy cho ${s.root} (pid ${s.pid}); dừng nó trước (node studio.mjs stop)`);
+    console.error(`studio: đang chạy cho ${s.root} (pid ${s.pid}); dừng nó trước (node bin/motion-studio.mjs stop)`);
     return 3;
   }
   if (readState()) clearState();
@@ -126,8 +126,15 @@ async function stop() {
   return 0;
 }
 
+// --help prints this file's leading comment block.
+function help() {
+  const lines = readFileSync(fileURLToPath(import.meta.url), "utf8").split(/\r?\n/).slice(1);
+  const end = lines.findIndex((l) => !l.startsWith("//"));
+  process.stdout.write(lines.slice(0, end).map((l) => l.replace(/^\/\/ ?/, "")).join("\n") + "\n");
+}
+
 export async function main(argv = process.argv.slice(2)) {
-  maybeHelp(argv, import.meta.url);
+  if (argv.some((a) => a === "--help" || a === "-h")) { help(); return 0; }
   const [cmd, ...rest] = argv;
   const o = {};
   for (let i = 0; i < rest.length; i++) {
@@ -139,7 +146,7 @@ export async function main(argv = process.argv.slice(2)) {
   if (cmd === "start") return start(o);
   if (cmd === "status") return status();
   if (cmd === "stop") return stop();
-  console.error("usage: node studio.mjs start [--background] [--root <dir>] | status | stop");
+  console.error("usage: node bin/motion-studio.mjs start [--background] [--root <dir>] | status | stop");
   return 2;
 }
 

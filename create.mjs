@@ -7,7 +7,9 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { join } from "node:path";
-import { load, enqueue, OV, SCRIPTS } from "../scripts/studio-api.mjs";
+import { loadPlugin } from "./lib/plugin.mjs";
+
+const { load, enqueue, OV, SCRIPTS } = await loadPlugin();
 
 export const NEW_NAME = /^[a-z0-9][a-z0-9-]{1,48}$/;
 export const ASPECTS = ["16:9", "9:16", "both"];

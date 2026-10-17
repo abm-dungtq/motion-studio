@@ -8,8 +8,10 @@
 // { status, body }; status 200 body { next: <new request id>, request: <the follow-up> }.
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { load, list, answer, SCRIPTS } from "../scripts/studio-api.mjs";
+import { loadPlugin } from "./lib/plugin.mjs";
 import { runFile } from "./create.mjs";
+
+const { load, list, answer, SCRIPTS } = await loadPlugin();
 
 export const BY = "user@studio";
 const PITCH_TIMEOUT_MS = 60000;

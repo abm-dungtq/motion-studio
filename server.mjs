@@ -25,13 +25,15 @@ import { existsSync, readdirSync, readFileSync, realpathSync, statSync, watch, c
 import { execFile, execFileSync } from "node:child_process";
 import { extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { load, patch, undo, readHistory, EXIT, enqueue, cancelRequest, expireWaiting, list as listRequests, SCRIPTS, DIRECTIONS_FILE as DIRECTIONS } from "../scripts/studio-api.mjs";
+import { loadPlugin } from "./lib/plugin.mjs";
 import { events as jobEvents, startJob, cancel as cancelJob, listJobs, running, stopAll } from "./jobs.mjs";
 import { KIND as DIRECTOR, pump, runnerSetting } from "./director.mjs";
 import { createProject, runFile } from "./create.mjs";
 import { browse, register, readMedia, BROWSE_ROOTS } from "./media.mjs";
 import { agentStatus } from "./agent.mjs";
 import { answerCard } from "./gates.mjs";
+
+const { load, patch, undo, readHistory, EXIT, enqueue, cancelRequest, expireWaiting, list: listRequests, SCRIPTS, DIRECTIONS_FILE: DIRECTIONS } = await loadPlugin();
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const PUBLIC = join(HERE, "public");
