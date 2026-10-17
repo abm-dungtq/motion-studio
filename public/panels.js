@@ -5,6 +5,7 @@
 // Keys: Alt+1…Alt+6 pick a panel; arrow keys, Home and End move along the rail (ARIA tabs).
 import { h, thumb, fmtS, isMedia } from "/dom.js";
 import { icon } from "/icons.js";
+import { cardCache, cardKey, liveDirectorJob } from "/gate-cards.js";
 
 const TABS = [
   { id: "ai", label: "Giao việc cho AI", lead: "Viết việc cần làm. Đạo diễn AI làm trên máy bạn và hỏi lại khi cần bạn chọn hoặc duyệt." },
@@ -72,6 +73,7 @@ export function mountPanels(ctx, railEl, panelEl) {
   const memo = { brief: "", libMode: "cases", libQuery: "", browse: null, drafts: {}, reopen: new Set(), rejecting: new Set() };
   const logEls = new Map(); // job id → <pre> of the open Xuất bản panel
   let liveLog = null; // { id, pre } of the running director job in the open Giao việc panel
+  const cards = cardCache(); // live director cards, kept across redraws (see gate-cards.js)
 
   // Rail buttons with icon, label and a count badge; roving tabindex as in the ARIA tabs pattern.
   const buttons = new Map(TABS.map((t, i) => {
@@ -272,13 +274,13 @@ export function mountPanels(ctx, railEl, panelEl) {
     const cancel = () => h("div", { class: "row" }, h("button", { class: "btn", onclick: () => ctx.cancelRequest(r.id) }, "Huỷ yêu cầu"));
     if (r.status === "queued") out.push(bot("pending", h("span", { class: "muted" }, "Đang chờ tới lượt."), cancel()));
     else if (r.status === "running") out.push(bot("pending", h("span", { class: "muted" }, "Đang làm…"), cancel()));
-    else if (r.status === "waiting_user" && r.ask) out.push(gateCard(name, r, false));
+    else if (r.status === "waiting_user" && r.ask) out.push(liveCard(name, r, false));
     else if (r.status === "done" && r.ask && r.decision) {
       out.push(bot("", h("small", { class: "muted" }, "Đạo diễn hỏi"), h("span", {}, r.ask.question)));
       out.push(h("div", { class: "bubble me" }, h("span", {}, r.decision.value)));
     } else if (r.status === "done") out.push(bot("", h("span", { class: "receipt" }, r.receipt ?? "Xong.")));
     else if (r.status === "failed" && r.ask && /^Hết hạn chờ/.test(r.error ?? "")) {
-      out.push(memo.reopen.has(r.id) ? gateCard(name, r, true) : h("div", { class: "card gate expired" },
+      out.push(memo.reopen.has(r.id) ? liveCard(name, r, true) : h("div", { class: "card gate expired" },
         h("strong", {}, r.ask.question),
         h("span", { class: "muted" }, "Hết hạn chờ trả lời. Trả lời lại để đạo diễn làm tiếp."),
         h("div", { class: "row" }, h("button", { class: "btn", onclick: () => { memo.reopen.add(r.id); render(); } }, "Trả lời lại"))));
@@ -286,18 +288,28 @@ export function mountPanels(ctx, railEl, panelEl) {
     return out;
   }
 
+  // The same card node while the question waits, so a redraw neither swaps the button out under a
+  // press nor restarts the animatic the user is watching.
+  const liveCard = (name, r, again) => cards.get(cardKey(name, r, again, memo.rejecting.has(r.id)), () => gateCard(name, r, again));
+
   // A director question waiting for the user (studio_ask). again: the question had expired, so the
   // answer goes out as a new request with the old question and the answer in its text.
   function gateCard(name, r, again) {
     const a = r.ask;
+    const err = h("p", { class: "gate-err", role: "alert", hidden: true });
     const card = h("div", { class: `card gate${again ? " again" : ""}`, role: "group", "aria-label": "Câu hỏi của đạo diễn" }, h("small", { class: "muted" }, again ? "Trả lời lại câu hỏi đã hết hạn" : "Đạo diễn cần bạn trả lời"), h("strong", {}, a.question));
     const lock = (on) => { for (const el of card.querySelectorAll("button, textarea")) el.disabled = on; };
     const submit = async (value, text) => {
       lock(true);
-      const ok = again
-        ? await ctx.direct({ scope: r.scope, ...(r.target ? { target: r.target } : {}), text: `Trả lời lại câu hỏi "${a.question}": ${text}` })
+      err.hidden = true;
+      const res = again
+        ? await ctx.reask({ scope: r.scope, ...(r.target ? { target: r.target } : {}), text: `Trả lời lại câu hỏi "${a.question}": ${text}` })
         : await ctx.answer(r.id, value);
-      if (!ok) return lock(false);
+      if (!res.ok) {
+        err.textContent = res.message;
+        err.hidden = false;
+        return lock(false);
+      }
       memo.reopen.delete(r.id);
       memo.rejecting.delete(r.id);
       delete memo.drafts[r.id];
@@ -338,13 +350,14 @@ export function mountPanels(ctx, railEl, panelEl) {
         submit(v, v);
       } }, "Gửi")));
     }
+    card.append(err);
     return card;
   }
 
   // "Đạo diễn đang làm…" with the last 3 log lines of the running director job.
   function working() {
     liveLog = null;
-    const job = ctx.state.jobs.find((j) => j.kind === "director" && (j.status === "running" || j.status === "cancelling"));
+    const job = liveDirectorJob(ctx.state.jobs, ctx.state.requests);
     const busy = job || ctx.state.requests.some((r) => r.status === "running");
     if (!busy) return null;
     if (job) liveLog = { id: job.id, pre: h("pre", { class: "text tail" }, tail3(job.id)) };
@@ -397,9 +410,14 @@ export function mountPanels(ctx, railEl, panelEl) {
     }
     panelEl.setAttribute("aria-labelledby", `tab-${tab}`);
     const head = h("header", { class: "panel-head" }, h("h2", {}, t.label), h("p", {}, t.lead));
+    // A live card drawn again stays where the user sees it; otherwise the chat follows its end.
+    const anchor = tab === "ai" ? panelEl.querySelector(".card.gate:not(.expired)") : null;
+    const top = anchor?.getBoundingClientRect().top;
     panelEl.replaceChildren(head, ...views[tab]().filter(Boolean));
+    if (tab === "ai") cards.sweep();
     badges();
-    if (tab === "ai") requestAnimationFrame(() => { if (tab === "ai") panelEl.scrollTop = panelEl.scrollHeight; });
+    if (anchor?.isConnected) panelEl.scrollTop += anchor.getBoundingClientRect().top - top;
+    else if (tab === "ai") requestAnimationFrame(() => { if (tab === "ai") panelEl.scrollTop = panelEl.scrollHeight; });
   }
 
   function select(id, focus = false) {

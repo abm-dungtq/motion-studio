@@ -200,6 +200,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1
 .bubble .receipt { white-space: pre-wrap; max-height: 220px; overflow: auto; }
 .gate { border: 2px solid var(--accent); }
 .gate.expired { border: 1px solid var(--line-strong); background: var(--sunk); }
+.gate-err { margin: 0; padding: 6px 8px; border-radius: var(--radius-sm); background: var(--danger); color: var(--on-accent); font-weight: 600; }
 .gate .preview { width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--player-bg); }
 .options { display: flex; flex-direction: column; gap: 6px; }
 .options.pics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }

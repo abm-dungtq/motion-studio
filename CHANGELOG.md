@@ -1,5 +1,10 @@
 # Changelog
 
+## Chưa phát hành
+
+- Sửa: bấm "Duyệt" hay chọn hướng trên thẻ đạo diễn đôi khi không có tác dụng. `claude -p` thoát vài giây sau `studio_ask`, panel vẽ lại cả thẻ (nút bị thay giữa lúc bấm) và bỏ khối "Đạo diễn đang làm…" bên dưới nên thẻ tụt xuống, cú bấm rơi vào video. Thẻ đang chờ giờ giữ nguyên node qua mỗi lần vẽ lại và giữ chỗ trên màn hình; khối "đang làm" không hiện cho job đã hỏi xong.
+- Câu trả lời gửi không được thì thẻ ghi rõ lý do bằng tiếng Việt: trang hết phiên sau khi Studio khởi động lại (403), mất kết nối, hay lỗi cổng từ server.
+
 ## v1.0.0 (2026-10-17): tách từ opus-video v2.1.0
 
 - Motion Studio rời plugin opus-video thành repo riêng, giữ lịch sử commit của `studio/`, `scripts/studio.mjs` và các test của nó.
