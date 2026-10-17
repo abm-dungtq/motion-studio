@@ -19,21 +19,24 @@
 // GET /api/media/browse lists home and /Volumes folders, POST /api/media/register adds a file to
 // .opus/media.json (studio/media.mjs); GET /api/agent reports claude/runner/ffmpeg
 // (studio/agent.mjs); POST /api/director/answer answers a director card and writes the human gate
-// (studio/gates.mjs). createServer's run and mediaRoots options exist for tests.
+// (studio/gates.mjs). POST /api/redo replays the last undo. GET /api/sounds lists project and
+// <root>/shared-assets/sfx audio; POST /api/sounds/import copies a shared sound into assets/sfx/
+// without overwriting. GET /api/gates runs check-preflight --stage final (one run per project at a
+// time). createServer's run and mediaRoots options exist for tests.
 import { createServer as httpServer } from "node:http";
-import { existsSync, readdirSync, readFileSync, realpathSync, statSync, watch, createReadStream } from "node:fs";
+import { constants as FS, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, watch, createReadStream } from "node:fs";
 import { execFile, execFileSync } from "node:child_process";
-import { extname, join, resolve, sep } from "node:path";
+import { basename, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadPlugin } from "./lib/plugin.mjs";
 import { events as jobEvents, startJob, cancel as cancelJob, listJobs, running, stopAll } from "./jobs.mjs";
 import { KIND as DIRECTOR, pump, runnerSetting } from "./director.mjs";
 import { createProject, runFile } from "./create.mjs";
-import { browse, register, readMedia, BROWSE_ROOTS } from "./media.mjs";
+import { browse, register, readMedia, BROWSE_ROOTS, AUDIO_EXT } from "./media.mjs";
 import { agentStatus } from "./agent.mjs";
 import { answerCard } from "./gates.mjs";
 
-const { load, patch, undo, readHistory, EXIT, enqueue, cancelRequest, expireWaiting, list: listRequests, SCRIPTS, DIRECTIONS_FILE: DIRECTIONS } = await loadPlugin();
+const { load, patch, undo, redo, readHistory, EXIT, enqueue, cancelRequest, expireWaiting, list: listRequests, SCRIPTS, DIRECTIONS_FILE: DIRECTIONS } = await loadPlugin();
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const PUBLIC = join(HERE, "public");
@@ -49,7 +52,7 @@ const TYPES = {
   ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm",
   ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".otf": "font/otf",
 };
-const STATUS = { [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.invalid]: 422, [EXIT.nothingToUndo]: 422, [EXIT.busy]: 503, [EXIT.usage]: 400 };
+const STATUS = { [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.invalid]: 422, [EXIT.nothingToUndo]: 422, [EXIT.nothingToRedo]: 422, [EXIT.busy]: 503, [EXIT.usage]: 400 };
 
 // The HyperFrames runtime (studio/PLAYER.md): $OPUS_HF_RUNTIME, the project's own install, then
 // the global npm root and the usual global prefixes.
@@ -66,7 +69,7 @@ export function findRuntime(projectDir) {
 }
 
 const run = (script, args) => new Promise((res) => {
-  execFile(process.execPath, [join(SCRIPTS, script), ...args], { encoding: "utf8", timeout: 60000, maxBuffer: 32 << 20 }, (err, stdout, stderr) => res({ code: err ? (err.code ?? 1) : 0, stdout, stderr }));
+  execFile(process.execPath, [join(SCRIPTS, script), ...args], { encoding: "utf8", timeout: 60000, maxBuffer: 32 << 20 }, (err, stdout, stderr) => res({ code: err ? (err.code ?? 1) : 0, stdout, stderr, killed: Boolean(err?.killed) }));
 });
 
 function projectsOf(root) {
@@ -187,6 +190,58 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
     res.on("close", () => { w.clients.delete(res); if (!w.clients.size) { w.close(); watchers.delete(name); } });
   }
 
+  // Files under <dir>/<sub> (recursive, no dotfiles, at most 500), paths relative to the project.
+  const filesUnder = (dir, sub, keep = () => true) => {
+    const files = [];
+    const walk = (d, rel) => {
+      if (files.length >= 500 || !existsSync(d)) return;
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        if (files.length >= 500) return;
+        if (e.name.startsWith(".")) continue;
+        const r = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) walk(join(d, e.name), r);
+        else if (keep(e.name)) files.push({ path: `${sub}/${r}`, size: statSync(join(d, e.name)).size });
+      }
+    };
+    walk(join(dir, sub), "");
+    return files;
+  };
+  const isAudio = (f) => !f.startsWith(".") && AUDIO_EXT.includes(extname(f).toLowerCase());
+  const sharedSfx = () => join(root, "shared-assets", "sfx");
+
+  // Copy <root>/shared-assets/sfx/<file> into <dir>/assets/sfx/, never overwriting: a taken name
+  // becomes name-2.ext, name-3.ext, … Returns the project-relative path.
+  function importSound(dir, file) {
+    const ok = typeof file === "string" && file === basename(file) && !file.includes("..") && !file.includes("\\") && isAudio(file);
+    const src = ok ? join(sharedSfx(), file) : null;
+    if (!src || !existsSync(src) || !statSync(src).isFile()) throw Object.assign(new Error("file không hợp lệ"), { status: 400 });
+    const dest = join(dir, "assets", "sfx");
+    mkdirSync(dest, { recursive: true });
+    const ext = extname(file), stem = file.slice(0, -ext.length);
+    for (let n = 1; n < 10000; n++) {
+      const name = n === 1 ? file : `${stem}-${n}${ext}`;
+      try { copyFileSync(src, join(dest, name), FS.COPYFILE_EXCL); return { path: `assets/sfx/${name}` }; } catch (e) { if (e.code !== "EEXIST") throw e; }
+    }
+    throw Object.assign(new Error("quá nhiều file trùng tên"), { status: 409 });
+  }
+
+  // check-preflight --stage final for one project; concurrent callers share the running check.
+  const gateRuns = new Map(); // name → Promise
+  function gateStatus(name, dir) {
+    let pr = gateRuns.get(name);
+    if (!pr) {
+      pr = run("check-preflight.mjs", ["--project", dir, "--stage", "final", "--json"]).then((r) => {
+        if (r.killed) return { pass: false, fails: ["check-preflight quá 60 giây"], animatic: false };
+        let j;
+        try { j = JSON.parse(r.stdout); } catch { return { pass: false, fails: ["không đọc được check-preflight"], animatic: false }; }
+        const fails = Array.isArray(j?.errors) ? j.errors : [];
+        return { pass: j?.pass === true, fails, animatic: fails.some((e) => /demo\.md|animatic|approval/i.test(String(e))) };
+      }).finally(() => gateRuns.delete(name));
+      gateRuns.set(name, pr);
+    }
+    return pr;
+  }
+
   async function route(req, res) {
     const url = new URL(req.url, `http://127.0.0.1:${port}`);
     const p = url.pathname;
@@ -240,19 +295,21 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         if (pd.error) return send(res, pd.status, { error: pd.error });
         const sub = q("dir");
         if (!["assets", "renders"].includes(sub)) return send(res, 400, { error: "dir phải là assets hoặc renders" });
-        const base = join(pd.dir, sub);
-        const files = [];
-        const walk = (d, rel) => {
-          if (files.length >= 500 || !existsSync(d)) return;
-          for (const e of readdirSync(d, { withFileTypes: true })) {
-            if (e.name.startsWith(".")) continue;
-            const r = rel ? `${rel}/${e.name}` : e.name;
-            if (e.isDirectory()) walk(join(d, e.name), r);
-            else files.push({ path: `${sub}/${r}`, size: statSync(join(d, e.name)).size });
-          }
-        };
-        walk(base, "");
-        return send(res, 200, files);
+        return send(res, 200, filesUnder(pd.dir, sub));
+      }
+      if (p === "/api/sounds") {
+        const pd = projectDir(q("name"));
+        if (pd.error) return send(res, pd.status, { error: pd.error });
+        const sfx = sharedSfx();
+        const shared = existsSync(sfx) && statSync(sfx).isDirectory()
+          ? readdirSync(sfx, { withFileTypes: true }).filter((e) => e.isFile() && isAudio(e.name)).map((e) => ({ file: e.name, size: statSync(join(sfx, e.name)).size })).sort((a, b) => a.file.localeCompare(b.file))
+          : [];
+        return send(res, 200, { project: filesUnder(pd.dir, "assets", isAudio), shared });
+      }
+      if (p === "/api/gates") {
+        const pd = projectDir(q("name"));
+        if (pd.error) return send(res, pd.status, { error: pd.error });
+        return send(res, 200, await gateStatus(q("name"), pd.dir));
       }
       if (p === "/api/directions") {
         const d = JSON.parse(readFileSync(DIRECTIONS, "utf8"));
@@ -300,6 +357,12 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         if (!Number.isInteger(b.base)) return send(res, 400, { error: "cần base (số)" });
         return gatewayReply(res, undo(pd.dir, { base: b.base, lockWaitMs: LOCK_WAIT_MS }));
       }
+      if (p === "/api/redo") {
+        const pd = withManifest(b.name);
+        if (pd.error) return send(res, pd.status, { error: pd.error });
+        if (!Number.isInteger(b.base)) return send(res, 400, { error: "cần base (số)" });
+        return gatewayReply(res, redo(pd.dir, { base: b.base, lockWaitMs: LOCK_WAIT_MS }));
+      }
       if (p === "/api/director") {
         const pd = withManifest(b.name);
         if (pd.error) return send(res, pd.status, { error: pd.error });
@@ -321,6 +384,11 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         const pd = projectDir(b.name);
         if (pd.error) return send(res, pd.status, { error: pd.error });
         try { return send(res, 200, await register(root, pd.dir, b.src, { roots: mediaRoots })); } catch (e) { return send(res, e.status ?? 500, { error: e.message }); }
+      }
+      if (p === "/api/sounds/import") {
+        const pd = projectDir(b.name);
+        if (pd.error) return send(res, pd.status, { error: pd.error });
+        try { return send(res, 200, importSound(pd.dir, b.file)); } catch (e) { return send(res, e.status ?? 500, { error: e.message }); }
       }
       if (p === "/api/director/answer") {
         const pd = withManifest(b.name);

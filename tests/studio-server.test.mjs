@@ -22,6 +22,10 @@ before(async () => {
   writeFileSync(join(root, "fresh", "index.html"), "<html></html>");
   writeFileSync(join(root, "fresh", "BRIEF.md"), "# x\n");
   writeFileSync(join(root, "demo", ".env"), "SECRET=1\n");
+  mkdirSync(join(root, "shared-assets", "sfx"), { recursive: true });
+  writeFileSync(join(root, "shared-assets", "sfx", "boom.mp3"), Buffer.alloc(16, 1));
+  mkdirSync(join(root, "demo", "assets", "sfx"), { recursive: true });
+  writeFileSync(join(root, "demo", "assets", "sfx", "a.mp3"), Buffer.alloc(8, 2));
   server = createServer({ root, token: TOKEN, runtime: null });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
@@ -136,6 +140,51 @@ test("undo, busy lock, import mapping, files and a missing runtime", async () =>
   assert.ok(files.some((f) => f.path === "assets/voice/01.mp3.words.json"));
   assert.equal((await http("GET", "/api/files?name=demo&dir=..")).status, 400);
   assert.equal((await http("GET", "/hf/runtime.js?name=demo")).status, 404);
+});
+
+test("redo after undo restores the patched shot length; a second redo is 422", async () => {
+  const v = (await http("GET", "/api/project?name=demo")).json.version;
+  const before = (await http("GET", "/api/project?name=demo")).json.shots[0];
+  const len = (s) => s.end - s.start;
+  const target = Math.round((len(before) + 0.5) * 100) / 100;
+  const ok = await post("/api/patch", { name: "demo", base: v, ops: [{ op: "resize_shot", id: "s1", duration: target }] });
+  assert.equal(ok.status, 200, ok.text);
+  const u = await post("/api/undo", { name: "demo", base: v + 1 });
+  assert.equal(u.status, 200, u.text);
+  assert.ok(Math.abs(len((await http("GET", "/api/project?name=demo")).json.shots[0]) - len(before)) < 1e-6);
+  const r = await post("/api/redo", { name: "demo", base: u.json.version });
+  assert.equal(r.status, 200, r.text);
+  assert.ok(Math.abs(len((await http("GET", "/api/project?name=demo")).json.shots[0]) - target) < 1e-6);
+  const again = await post("/api/redo", { name: "demo", base: r.json.version });
+  assert.equal(again.status, 422, again.text);
+});
+
+test("sounds: project and shared lists; import copies without overwriting; bad file 400; no token 403", async () => {
+  const g = await http("GET", "/api/sounds?name=demo");
+  assert.equal(g.status, 200, g.text);
+  assert.ok(g.json.project.some((f) => f.path === "assets/sfx/a.mp3" && f.size === 8));
+  assert.deepEqual(g.json.shared, [{ file: "boom.mp3", size: 16 }]);
+  const one = await post("/api/sounds/import", { name: "demo", file: "boom.mp3" });
+  assert.equal(one.status, 200, one.text);
+  assert.deepEqual(one.json, { path: "assets/sfx/boom.mp3" });
+  const two = await post("/api/sounds/import", { name: "demo", file: "boom.mp3" });
+  assert.deepEqual(two.json, { path: "assets/sfx/boom-2.mp3" });
+  assert.equal(readFileSync(join(root, "demo", "assets", "sfx", "boom-2.mp3")).length, 16);
+  const bad = await post("/api/sounds/import", { name: "demo", file: "../x.mp3" });
+  assert.equal(bad.status, 400);
+  assert.equal(bad.json.error, "file không hợp lệ");
+  assert.equal((await post("/api/sounds/import", { name: "demo", file: "missing.mp3" })).status, 400);
+  assert.equal((await http("POST", "/api/sounds/import", { body: { name: "demo", file: "boom.mp3" } })).status, 403);
+  assert.equal((await http("GET", "/api/sounds?name=fresh")).json.project.length, 0);
+});
+
+test("gates: a project without DEMO.md is not passing and lists its failures", async () => {
+  const r = await http("GET", "/api/gates?name=demo");
+  assert.equal(r.status, 200, r.text);
+  assert.equal(r.json.pass, false);
+  assert.ok(Array.isArray(r.json.fails));
+  assert.equal(typeof r.json.animatic, "boolean");
+  assert.equal((await http("GET", "/api/gates?name=..")).status, 400);
 });
 
 test("export: a project without demo approval stops at the gate (exit 5) and is not compressed", async () => {
