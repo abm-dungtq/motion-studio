@@ -14,6 +14,8 @@
   --radius: 6px; --radius-sm: 4px;
   --control: 36px;
   --rail: 76px; --side: 300px;
+  /* Bottom panel: tool bar (49) + ruler (24) + 4 tracks (44) + room for a horizontal scrollbar. */
+  --track-h: 44px; --timeline-h: 272px;
   --shadow-pop: 0 6px 24px rgba(17, 22, 31, .14);
   --backdrop: rgba(17, 22, 31, .35);
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -25,12 +27,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
 #app {
   height: 100vh; display: grid;
   grid-template-columns: calc(var(--rail) + var(--side)) minmax(0, 1fr) 300px;
-  grid-template-rows: 56px auto minmax(0, 1fr) 250px;
+  grid-template-rows: 56px auto minmax(0, 1fr) var(--timeline-h);
   grid-template-areas: "top top top" "banner banner banner" "left stage right" "bottom bottom bottom";
 }
 .topbar { grid-area: top; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
 .brand { font-weight: 800; font-size: 15px; white-space: nowrap; }
-.title { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30vw; }
+.title { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30vw; flex: 0 1 auto; min-width: 0; }
+/* Top bar: buttons and chips keep one line; the project subtitle (and the project select) give way first. */
+.topbar > .btn, .topbar > .chip, .topbar > .brand { flex-shrink: 0; white-space: nowrap; }
+.topbar > select { flex: none; }
+.topbar > #project-select { flex: 0 1 auto; min-width: 120px; }
+.topbar > .spacer { min-width: 0; }
 .spacer { flex: 1; }
 select, input[type=text], input[type=number], input[type=search], textarea {
   background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 7px 10px; min-height: var(--control); color: var(--text);
@@ -119,10 +126,10 @@ details summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 .tl-inner { position: relative; min-height: 100%; }
 .tl-ruler { position: sticky; top: 0; height: 24px; border-bottom: 1px solid var(--line-strong); background: var(--panel); cursor: pointer; z-index: 3; margin-left: 90px; }
 .tl-tick { position: absolute; top: 0; height: 100%; border-left: 1px solid var(--line-strong); font-size: 11px; color: var(--muted); padding-left: 3px; pointer-events: none; font-variant-numeric: tabular-nums; }
-.tl-track { display: flex; height: 50px; border-bottom: 1px solid var(--line); }
+.tl-track { display: flex; height: var(--track-h); border-bottom: 1px solid var(--line); }
 .tl-label { width: 90px; flex: none; padding: 0 12px; display: flex; align-items: center; color: var(--text); font-weight: 600; font-size: 12px; border-right: 1px solid var(--line); position: sticky; left: 0; background: var(--sunk); z-index: 2; }
 .tl-lane { position: relative; flex: 1; }
-.blk { position: absolute; top: 7px; bottom: 7px; border-radius: var(--radius-sm); padding: 0 8px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; user-select: none; }
+.blk { position: absolute; top: 6px; bottom: 6px; border-radius: var(--radius-sm); padding: 0 8px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; user-select: none; }
 .blk.shot { background: var(--shot-bg); border: 1px solid var(--shot-line); }
 .blk.shot.sel { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .blk.voice { background: var(--voice-bg); border: 1px solid var(--voice-line); cursor: grab; }
@@ -159,6 +166,10 @@ details summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 .chip.gate-chip { border-color: var(--warn-line); background: var(--warn-bg); color: var(--warn); }
 .chip.gate-chip:hover { border-color: var(--warn); background: var(--warn-bg); }
 .chip.gate-chip[hidden] { display: none; }
+/* Narrow top bar: the gate chip shortens to an ellipsis; its title tooltip still lists every failing gate. */
+@media (max-width: 1360px) {
+  .chip.gate-chip:not([hidden]) { display: block; max-width: 132px; overflow: hidden; text-overflow: ellipsis; line-height: calc(var(--control) - 2px); }
+}
 .gate-fails { border-left: 3px solid var(--warn-line); background: var(--warn-bg); padding: 8px 12px; border-radius: var(--radius-sm); }
 .gate-fails h3 { color: var(--warn); }
 .gate-fails ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
@@ -247,7 +258,7 @@ pre.text.tail { background: var(--panel); max-height: 72px; }
 .composer textarea { min-height: 72px; }
 
 @media (max-width: 1100px) {
-  #app { grid-template-columns: calc(var(--rail) + var(--side)) minmax(0, 1fr); grid-template-rows: 56px auto minmax(320px, 1fr) auto 250px;
+  #app { grid-template-columns: calc(var(--rail) + var(--side)) minmax(0, 1fr); grid-template-rows: 56px auto minmax(320px, 1fr) auto var(--timeline-h);
     grid-template-areas: "top top" "banner banner" "left stage" "left right" "bottom bottom"; height: auto; min-height: 100vh; }
   .right { border-left: 0; border-top: 1px solid var(--line); }
 }
