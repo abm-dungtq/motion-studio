@@ -2,7 +2,8 @@
 // Runner "cli" (default): `claude -p <prompt> --output-format stream-json --verbose
 // --permission-mode acceptEdits --allowedTools … --disallowedTools … [--resume <sid>]` in the
 // project directory, one job at a time per project (studio/jobs.mjs). No --add-dir: Read and
-// Skill reach the plugin files without it.
+// Skill reach the plugin files without it. No Edit/Write allow rule either: acceptEdits writes only
+// inside the cwd, so the director cannot edit files outside the project.
 // The session id of the system/init event is kept in <project>/.opus/director.json and resumed
 // next time; a failed resume is retried once without it. The director closes the request with
 // studio_request_done (its MCP server runs with OPUS_STUDIO_RUNNER=cli). When the job ends and the

@@ -98,6 +98,8 @@ test("request reaches done, the session is stored, the next run resumes it", asy
   assert.ok(!first.includes("Bash(node:*)"));
   assert.deepEqual(first.slice(first.indexOf("--disallowedTools") + 1, first.indexOf("--disallowedTools") + 1 + DENIED_TOOLS.length), DENIED_TOOLS);
   assert.ok(!first.includes("--add-dir"), "the director gets no write access to the plugin");
+  const allowed = first.slice(first.indexOf("--allowedTools") + 1, first.indexOf("--disallowedTools"));
+  assert.ok(!allowed.some((t) => /^(Edit|Write)\b/.test(t)), "acceptEdits alone writes in the cwd; an Edit/Write allow rule reaches the whole disk");
   assert.equal(first[first.indexOf("--permission-mode") + 1], "acceptEdits");
   assert.match(first[first.indexOf("-p") + 1], /"id": "r-\d{14}-[0-9a-f]{4}"[\s\S]*studio_request_done/);
 
