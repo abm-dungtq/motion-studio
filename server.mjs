@@ -394,6 +394,8 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         const pd = withManifest(b.name);
         if (pd.error) return send(res, pd.status, { error: pd.error });
         const r = await answerCard(pd.dir, { id: b.id, value: b.value }, { run: runCmd });
+        // One line per card answer in studio.log, so a click that never arrived is told apart from one that failed.
+        console.log(`${new Date().toISOString()} answer ${b.name} ${b.id} ${r.status}${r.status === 200 ? ` next ${r.body.next}` : `: ${r.body.error}`}`);
         if (r.status === 200) pump(b.name, pd.dir);
         return send(res, r.status, r.body);
       }

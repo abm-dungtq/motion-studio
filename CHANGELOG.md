@@ -1,5 +1,10 @@
 # Changelog
 
+## Chưa phát hành
+
+- Sửa: bấm chọn hướng hay "Duyệt" trên thẻ đạo diễn vẫn có lúc không gửi gì và không báo gì. Giữ nguyên node thẻ chưa đủ: mỗi lần vẽ lại, panel gỡ thẻ ra rồi gắn vào khung mới, và Chromium bỏ cú click khi nút rời trang giữa lúc nhấn và nhả chuột, kể cả khi nút được gắn lại. Panel giờ hoãn vẽ lại tới khi nhả chuột (hoặc phím Space), rồi mới vẽ sau cú click.
+- Câu trả lời thẻ chờ tối đa 90 giây; quá hạn hay lỗi trong trang thì thẻ ghi rõ lý do thay vì khoá nút mãi. Mỗi câu trả lời tới server được ghi một dòng trong `studio.log`.
+
 ## v1.1.0 (2026-10-17): timeline sửa nhanh kiểu CapCut
 
 - Sửa: bấm "Duyệt" hay chọn hướng trên thẻ đạo diễn đôi khi không có tác dụng. `claude -p` thoát vài giây sau `studio_ask`, panel vẽ lại cả thẻ (nút bị thay giữa lúc bấm) và bỏ khối "Đạo diễn đang làm…" bên dưới nên thẻ tụt xuống, cú bấm rơi vào video. Thẻ đang chờ giờ giữ nguyên node qua mỗi lần vẽ lại và giữ chỗ trên màn hình; khối "đang làm" không hiện cho job đã hỏi xong.

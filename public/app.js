@@ -11,7 +11,7 @@ import { mountInspector } from "/inspector.js";
 import { mountPanels } from "/panels.js";
 import { mountNewProject } from "/new-project.js";
 import { mountAgent } from "/agent.js";
-import { answerFailure } from "/gate-cards.js";
+import { ANSWER_TIMEOUT_MS, answerFailure } from "/gate-cards.js";
 import { keyAction, nextSfxId, splitOps } from "/timeline-edit.js";
 import { openMenu } from "/context-menu.js";
 
@@ -31,9 +31,11 @@ const ctx = {
     if (!r.ok) throw Object.assign(new Error(j?.error ?? r.statusText), { status: r.status });
     return j;
   },
-  async send(path, body) {
+  // timeout (ms): no answer by then is { status: 0, timeout: true }.
+  async send(path, body, { timeout = 0 } = {}) {
     let r;
-    try { r = await fetch(path, { method: "POST", headers: { "content-type": "application/json", "x-studio-token": TOKEN }, body: JSON.stringify(body) }); } catch (e) {
+    try { r = await fetch(path, { method: "POST", headers: { "content-type": "application/json", "x-studio-token": TOKEN }, body: JSON.stringify(body), signal: timeout ? AbortSignal.timeout(timeout) : undefined }); } catch (e) {
+      if (e.name === "TimeoutError") return { status: 0, timeout: true, error: "Studio không trả lời kịp" };
       return { status: 0, network: true, error: `không kết nối được Studio (${e.message})` };
     }
     const j = await r.json().catch(() => ({}));
@@ -141,7 +143,7 @@ const ctx = {
   // The user's answer to a director card (choice id, "approve", { reject } or text). Returns
   // { ok, message }: the card shows message itself, so a failed answer is seen where it was given.
   async answer(id, value) {
-    return answered(await ctx.send("/api/director/answer", { name: ctx.state.name, id, value }));
+    return answered(await ctx.send("/api/director/answer", { name: ctx.state.name, id, value }, { timeout: ANSWER_TIMEOUT_MS }));
   },
   // The answer to a question that expired: a new request carrying the old question and the answer.
   async reask(req) {

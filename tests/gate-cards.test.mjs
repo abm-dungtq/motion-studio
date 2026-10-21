@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { answerFailure, cardCache, cardKey, liveDirectorJob } from "../public/gate-cards.js";
+import { ANSWER_TIMEOUT_MS, answerFailure, cardCache, cardKey, liveDirectorJob, pressGate } from "../public/gate-cards.js";
 
 const ask = { kind: "approve", gate: "animatic", question: "Duyệt animatic?", at: "2026-10-17T09:00:00.000Z" };
 const waiting = { id: "r1", status: "waiting_user", ask };
@@ -39,4 +39,30 @@ test("a failed answer says why in Vietnamese and what to do", () => {
   const gate = answerFailure({ status: 422, error: "Chưa có DEMO.md", stderr: "x\nmake-demo: thiếu animatic\n" });
   assert.match(gate, /^Chưa gửi được câu trả lời: Chưa có DEMO\.md \(make-demo: thiếu animatic\)\. Bấm lại/);
   assert.match(answerFailure({ status: 503 }), /lỗi 503/);
+});
+
+test("a redraw during a press waits for the release, so the pressed button stays in the page", () => {
+  const press = pressGate();
+  const drawn = [];
+  assert.equal(press.run(() => drawn.push("idle")), true);
+  press.press();
+  // Request and job events arriving mid-press: nothing is drawn, only the latest draw is kept.
+  assert.equal(press.run(() => drawn.push("first")), false);
+  assert.equal(press.run(() => drawn.push("latest")), false);
+  assert.deepEqual(drawn, ["idle"]);
+  assert.equal(press.pressed, true);
+  const held = press.release();
+  assert.equal(press.pressed, false);
+  held();
+  assert.deepEqual(drawn, ["idle", "latest"]);
+  // A press with no redraw in between has nothing to run on release.
+  press.press();
+  assert.equal(press.release(), null);
+  assert.equal(press.run(() => drawn.push("after")), true);
+});
+
+test("an answer that times out or throws in the page still shows a line on the card", () => {
+  assert.ok(ANSWER_TIMEOUT_MS > 60000, "longer than make-pitch choose");
+  assert.match(answerFailure({ status: 0, timeout: true }), /chưa trả lời sau 90 giây/);
+  assert.match(answerFailure({ error: "boom" }), /Chưa gửi được câu trả lời: boom/);
 });

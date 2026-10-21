@@ -5,7 +5,7 @@
 // Keys: Alt+1…Alt+6 pick a panel; arrow keys, Home and End move along the rail (ARIA tabs).
 import { h, thumb, fmtS, isMedia } from "/dom.js";
 import { icon } from "/icons.js";
-import { cardCache, cardKey, liveDirectorJob } from "/gate-cards.js";
+import { answerFailure, cardCache, cardKey, liveDirectorJob, pressGate } from "/gate-cards.js";
 
 const TABS = [
   { id: "ai", label: "Giao việc cho AI", lead: "Viết việc cần làm. Đạo diễn AI làm trên máy bạn và hỏi lại khi cần bạn chọn hoặc duyệt." },
@@ -74,6 +74,7 @@ export function mountPanels(ctx, railEl, panelEl) {
   const logEls = new Map(); // job id → <pre> of the open Xuất bản panel
   let liveLog = null; // { id, pre } of the running director job in the open Giao việc panel
   const cards = cardCache(); // live director cards, kept across redraws (see gate-cards.js)
+  const press = pressGate(); // redraws wait while a mouse or Space press is on the panel
 
   // Rail buttons with icon, label and a count badge; roving tabindex as in the ARIA tabs pattern.
   const buttons = new Map(TABS.map((t, i) => {
@@ -308,9 +309,14 @@ export function mountPanels(ctx, railEl, panelEl) {
     const submit = async (value, text) => {
       lock(true);
       err.hidden = true;
-      const res = again
-        ? await ctx.reask({ scope: r.scope, ...(r.target ? { target: r.target } : {}), text: `Trả lời lại câu hỏi "${a.question}": ${text}` })
-        : await ctx.answer(r.id, value);
+      let res;
+      try {
+        res = again
+          ? await ctx.reask({ scope: r.scope, ...(r.target ? { target: r.target } : {}), text: `Trả lời lại câu hỏi "${a.question}": ${text}` })
+          : await ctx.answer(r.id, value);
+      } catch (e) {
+        res = { ok: false, message: answerFailure({ error: e.message }) };
+      }
       if (!res.ok) {
         err.textContent = res.message;
         err.hidden = false;
@@ -406,7 +412,8 @@ export function mountPanels(ctx, railEl, panelEl) {
   }
 
   let drawnFor = null; // project name whose manifest the open panel was drawn with
-  function render() {
+  const render = () => press.run(draw);
+  function draw() {
     const t = TABS.find((x) => x.id === tab);
     drawnFor = ctx.state.m ? ctx.state.name : null;
     for (const [id, { b }] of buttons) {
@@ -439,6 +446,14 @@ export function mountPanels(ctx, railEl, panelEl) {
     }
     if (focus) buttons.get(id).b.focus();
   }
+
+  // The click that ends a press is dispatched after pointerup, so the held redraw runs after it.
+  const release = () => { if (!press.pressed) return; const fn = press.release(); if (fn) setTimeout(fn); };
+  panelEl.addEventListener("pointerdown", (e) => { if (e.button === 0) press.press(); });
+  for (const ev of ["pointerup", "pointercancel"]) window.addEventListener(ev, release, true);
+  window.addEventListener("blur", (e) => { if (e.target === window) release(); }); // the window, not a field losing focus
+  panelEl.addEventListener("keydown", (e) => { if (e.key === " " && e.target.matches?.("button")) press.press(); });
+  window.addEventListener("keyup", (e) => { if (e.key === " ") release(); }, true);
 
   railEl.addEventListener("click", (e) => { const b = e.target.closest(".rail-item"); if (b) select(b.dataset.tab); });
   railEl.addEventListener("keydown", (e) => {
