@@ -6,10 +6,12 @@ import { join } from "node:path";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { createServer, projectFile } from "../server.mjs";
+import { loadProvider } from "../lib/provider.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
 const TOKEN = "t".repeat(64);
 let root, server, port;
+const provider = await loadProvider();
 
 before(async () => {
   root = mkdtempSync(join(tmpdir(), "studio-"));
@@ -220,14 +222,14 @@ test("library: every section answers without a query, a bad kind is 400, thumbna
     assert.equal(r.status, 200, r.text);
     assert.ok(Array.isArray(r.json.items) && typeof r.json.total === "number", kind);
   }
-  assert.ok((await http("GET", "/api/library?kind=scenes&limit=100")).json.items.some((s) => s.source === "opus-video"));
+  assert.ok((await http("GET", "/api/library?kind=scenes&limit=100")).json.items.some((s) => s.source === provider.id && s.source_label === provider.label));
   assert.equal((await http("GET", "/api/library?kind=cases")).status, 400);
   assert.ok([403, 404].includes((await http("GET", "/library/thumb/..%2Fpackage.json")).status));
   assert.equal((await http("GET", "/library/thumb/0")).status, 404);
 });
 
-test("GET /api/agent reports claude, runner, last job and ffmpeg; no claude on PATH is found: false", async () => {
-  const keys = ["claude", "runner", "last_job", "ffprobe", "ffmpeg"];
+test("GET /api/agent reports claude, runner, last job, ffmpeg and the provider; no claude on PATH is found: false", async () => {
+  const keys = ["claude", "runner", "last_job", "ffprobe", "ffmpeg", "provider", "provider_error"];
   const prevPath = process.env.PATH;
   const empty = mkdtempSync(join(tmpdir(), "studio-empty-path-"));
   process.env.PATH = empty;
@@ -249,4 +251,10 @@ test("GET /api/agent reports claude, runner, last job and ffmpeg; no claude on P
   assert.equal(r.status, 200);
   assert.deepEqual(Object.keys(r.json).sort(), [...keys].sort());
   assert.deepEqual(Object.keys(r.json.claude).sort(), ["found", "logged_in", "version"]);
+  assert.deepEqual(r.json.provider, { id: provider.id, label: provider.label, version: provider.version });
+  assert.equal(r.json.provider_error, null);
+  const st = await http("GET", "/api/status");
+  assert.equal(st.status, 200);
+  assert.equal(st.json.ok, true);
+  assert.equal(st.json.provider.id, provider.id);
 });

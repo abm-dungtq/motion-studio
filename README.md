@@ -1,23 +1,31 @@
 # Motion Studio
 
-Giao diện web chạy trên máy cho plugin Claude Code [opus-video](https://github.com/abm-dungtq/opus-video). Từ trình duyệt bạn tạo dự án video mới, nạp footage, giao việc cho đạo diễn AI (chính Claude Code trên máy bạn), bấm chọn hướng và duyệt animatic, sửa timeline rồi xuất MP4. Không cần terminal sau lần khởi động đầu.
+Giao diện web chạy trên máy cho dự án video do đạo diễn AI dựng. Từ trình duyệt bạn tạo dự án video mới, nạp footage, giao việc cho đạo diễn AI (chính Claude Code trên máy bạn), bấm chọn hướng và duyệt animatic, sửa timeline rồi xuất MP4. Không cần terminal sau lần khởi động đầu.
 
-Studio chỉ nghe `127.0.0.1:4317`. Mọi thay đổi timeline đi qua cổng lệnh `gateway.mjs` của plugin, nên mỗi lần sửa là một phiên bản có Hoàn tác.
+Studio không tự giữ schema dự án: một provider sở hữu `project.json`, cổng lệnh sửa timeline và hàng đợi yêu cầu cho đạo diễn. Provider mặc định là plugin Claude Code [opus-video](https://github.com/abm-dungtq/opus-video) (xem mục Provider).
+
+Studio chỉ nghe `127.0.0.1:4317`. Mọi thay đổi timeline đi qua cổng lệnh của provider, nên mỗi lần sửa là một phiên bản có Hoàn tác.
 
 ## Cần có
 
 - Node.js 20 trở lên. Không có dependency npm, không có bước build.
-- Plugin opus-video 2.3.0 trở lên (dưới 3.0) đã cài, thường ở `~/.claude/skills/opus-video`. Studio đọc plugin qua một file duy nhất, `scripts/studio-api.mjs`.
+- Một provider. Provider mặc định là plugin opus-video 2.3.0 trở lên (dưới 3.0), thường ở `~/.claude/skills/opus-video`. Chưa có provider thì Studio vẫn mở được trang và báo rõ thiếu gì.
 - Claude Code (`claude`) đã đăng nhập, nếu muốn giao việc cho đạo diễn AI.
 - ffmpeg và ffprobe để đọc metadata footage và xuất video.
 
 ## Cài và chạy
 
 ```bash
-git clone https://github.com/abm-dungtq/motion-studio ~/Projects/motion-studio
-cd ~/Projects/motion-studio
+git clone https://github.com/abm-dungtq/motion-studio ~/Projects/motion-studio && cd ~/Projects/motion-studio && npm run setup
 node bin/motion-studio.mjs start --background
 ```
+
+`npm run setup` tìm provider mặc định (plugin opus-video) và so với bản mới nhất trên GitHub (commit của `main` qua `git ls-remote`, số bản trong `.claude-plugin/plugin.json`). Kết quả là một trong ba: chưa cài, cũ (bản đang có → bản mới nhất), hoặc đã mới nhất. Chưa cài hay cũ thì Studio hỏi "Cài/cập nhật opus-video bản mới nhất? [Y/n]" (Enter là có):
+
+- plugin là git checkout: `git -C <thư mục> pull --ff-only`. Checkout có thay đổi chưa commit, hay đang ở nhánh khác, thì Studio từ chối và không đụng tới;
+- còn lại: chạy installer chính thức `install.sh` của plugin (`--ref`, cùng cờ host). Installer cất bản cũ vào `~/.opus-video-backups/` và cài kèm viet-pro cùng skill HyperFrames.
+
+Sau khi cài, Studio nạp lại provider và kiểm `STUDIO_API`. Tham số: `npm run setup -- --yes` (không hỏi), `--ref <nhánh hoặc tag>` (mặc định `main`), `--host claude|codex|all` (mặc định `all`, như installer). Không có terminal mà thiếu `--yes` thì Studio không cài gì, chỉ in lệnh cần chạy (thoát mã 3). `start` khi chưa có provider in một dòng nhắc chạy `npm run setup`; trang Studio hiện cùng lệnh đó.
 
 Mở `http://127.0.0.1:4317`. Các lệnh khác:
 
@@ -27,9 +35,9 @@ node bin/motion-studio.mjs stop                      # dừng server và mọi j
 node bin/motion-studio.mjs start --background --root <thư mục chứa các dự án>
 ```
 
-Thư mục gốc mặc định là `/Volumes/2/Edit-Video` (đổi bằng `--root` hoặc `OPUS_STUDIO_ROOT`). Mỗi dự án là một thư mục con có `project.json`.
+Thư mục gốc lấy theo thứ tự: `--root`, `MOTION_STUDIO_ROOT`, thư mục gốc của lần chạy trước (lưu trong file trạng thái), cuối cùng `/Volumes/2/Edit-Video` (đường dự phòng này bỏ ở 2.0). Mỗi dự án là một thư mục con có `project.json`.
 
-Lệnh cũ của plugin vẫn chạy: `node ~/.claude/skills/opus-video/scripts/studio.mjs start --background` tìm Studio ở `MOTION_STUDIO_HOME`, rồi `~/Projects/motion-studio`, và chạy `bin/motion-studio.mjs` với cùng tham số.
+Lệnh cũ của provider mặc định vẫn chạy: `node ~/.claude/skills/opus-video/scripts/studio.mjs start --background` tìm Studio ở `MOTION_STUDIO_HOME`, rồi `~/Projects/motion-studio`, và chạy `bin/motion-studio.mjs` với cùng tham số.
 
 ## Timeline
 
@@ -66,8 +74,8 @@ Không chạy khi con trỏ đang ở ô nhập liệu.
 Tab Thư viện mẫu có bốn mục, tìm được bằng tiếng Việt có dấu hay không dấu, hoặc bằng tiếng Anh:
 
 - **Video mẫu:** khoảng 1.250 video làm bằng Claude Opus 5.5, gộp từ sáu danh sách công khai trên GitHub. 200 video tuyển chọn có giải thích tiếng Việt: video làm gì, điều đáng học, cách dùng cho dự án. Video còn lại có tên tiếng Việt và prompt gốc. Lọc được theo thể loại hoặc chỉ xem mẫu tuyển chọn.
-- **Cảnh mẫu:** các kỹ thuật dựng cảnh hay gặp (chữ động, HUD, biến hình, khớp beat…), kèm gợi ý để dán vào prompt và video ví dụ, cùng các hướng cảnh của plugin opus-video.
-- **Phong cách:** 12 công thức phong cách có bản dịch, cùng các phong cách của plugin opus-video.
+- **Cảnh mẫu:** các kỹ thuật dựng cảnh hay gặp (chữ động, HUD, biến hình, khớp beat…), kèm gợi ý để dán vào prompt và video ví dụ, cùng các hướng cảnh của provider.
+- **Phong cách:** 12 công thức phong cách có bản dịch, cùng các phong cách của provider.
 - **Prompt mẫu:** khung prompt video chuyên nghiệp để điền, các prompt được lưu nhiều nhất kèm phân tích cấu trúc, và bộ công cụ đạo diễn (quy trình, cách góp ý, kiểm tra trước khi render).
 
 Không cần mở dự án vẫn xem và chép prompt được. Khi đã mở dự án, "Dùng cho dự án" gửi mẫu cho đạo diễn kèm phần giải thích và đoạn trích prompt.
@@ -99,21 +107,40 @@ HyperFrames không render riêng một đoạn, nên lệnh render cả video m�
 
 ## Biến môi trường
 
-| Biến | Dùng để |
-|---|---|
-| `OPUS_VIDEO_HOME` | Thư mục plugin opus-video, khi không nằm ở `~/.claude/skills/opus-video` |
-| `OPUS_STUDIO_ROOT` | Thư mục chứa các dự án |
-| `OPUS_STUDIO_STATE` | File trạng thái (mặc định `~/.config/opus-video/studio.json`, chmod 600) |
-| `MOTION_STUDIO_THUMBS` | Thư mục ảnh bìa của thư viện mẫu (mặc định `~/.cache/motion-studio/library/thumbs`) |
+Studio đọc tên mới trước. Tên cũ vẫn chạy, mỗi tên in một dòng cảnh báo lên stderr một lần, và sẽ bỏ ở 2.0.
+
+| Biến | Tên cũ (bỏ ở 2.0) | Dùng để |
+|---|---|---|
+| `MOTION_STUDIO_ROOT` | `OPUS_STUDIO_ROOT` | Thư mục chứa các dự án |
+| `MOTION_STUDIO_STATE` | `OPUS_STUDIO_STATE` | File trạng thái (mặc định `~/.config/motion-studio/studio.json`, chmod 600) |
+| `MOTION_STUDIO_COMPRESS` | `OPUS_COMPRESS_FINAL` | Lệnh nén bản giao sau khi render (mặc định `<root>/scripts/compress-final.sh`) |
+| `MOTION_STUDIO_HF_RUNTIME` | `OPUS_HF_RUNTIME` | File HyperFrames runtime cho player |
+| `MOTION_STUDIO_PROVIDER` | | Chọn provider trong `lib/providers/` (mặc định provider có `DEFAULT`) |
+| `MOTION_STUDIO_THUMBS` | | Thư mục ảnh bìa của thư viện mẫu (mặc định `~/.cache/motion-studio/library/thumbs`) |
+| `MOTION_STUDIO_HOME` | | Nơi shim của provider mặc định tìm Studio |
+| `OPUS_VIDEO_HOME` | | Thư mục plugin opus-video (chỉ provider mặc định đọc). Đã đặt thì Studio chỉ dùng thư mục đó |
+
+Lần đầu chạy mà chưa có `~/.config/motion-studio/studio.json`, Studio chép file trạng thái cũ của provider (`~/.config/opus-video/studio.json`) sang, và không xoá file cũ. Studio không đọc, không in, không chép file `.env` khoá API của provider.
+
+`OPUS_STUDIO_RUNNER` và `OPUS_STUDIO_REQUEST` không đổi tên: provider mặc định đặt chúng cho `claude -p` để MCP server của plugin biết yêu cầu nào đang chạy.
+
+## Provider
+
+Mọi thứ Studio cần từ bên ngoài đi qua `lib/provider.mjs`: đọc và kiểm `project.json`, cổng lệnh (patch, hoàn tác, làm lại, lịch sử), hàng đợi yêu cầu cho đạo diễn, danh sách tool và đoạn prompt cho `claude -p`, đường các lệnh (render, mix, pitch, import, demo, recipe, preflight, cases, styles), và file thư viện (hướng cảnh, phong cách). Contract ghi ở đầu file đó.
+
+Adapter nằm trong `lib/providers/`, mỗi provider một file đi kèm Studio. Studio không nạp mã từ thư mục ngoài repo. Hôm nay chỉ có `lib/providers/opus-video.mjs`; đó là file duy nhất nhắc tên plugin, đường dẫn và script của nó (test chặn tên này ở mọi chỗ khác).
+
+Provider nạp lười, ở lần đầu một route cần đến. Thiếu provider hay provider không tương thích thì server vẫn chạy: `GET /api/status` trả `{ ok: false, provider: null, error, hint }`, chip agent đỏ, trang hiện hướng dẫn, các route cần provider trả 503 kèm lý do. Cài provider xong không cần khởi động lại Studio.
 
 ## Tương thích
 
-Khi khởi động, `lib/plugin.mjs` kiểm `STUDIO_API`, schema manifest và bản plugin. Không khớp thì Studio dừng và in bản cần cùng bản đang có.
+Lần đầu nạp, adapter opus-video kiểm `STUDIO_API`, schema manifest và bản plugin. Không khớp thì Studio báo bản cần cùng bản đang có (trong `/api/status` và trên trang).
 
 | Motion Studio | opus-video | `STUDIO_API` |
 |---|---|---|
 | 1.0.x | 2.1.0 trở lên, dưới 3.0 | 2 |
 | 1.1.x | 2.3.0 trở lên, dưới 3.0 | 3 |
+| chưa phát hành | 2.3.0 trở lên, dưới 3.0 | 3 hoặc 4 |
 
 ## Test
 
@@ -121,7 +148,7 @@ Khi khởi động, `lib/plugin.mjs` kiểm `STUDIO_API`, schema manifest và b�
 npm test
 ```
 
-Test cần plugin đã cài, vì các module của Studio nạp plugin ngay khi import. Plugin ở chỗ khác thì đặt `OPUS_VIDEO_HOME`.
+Phần lớn test cần provider mặc định đã cài (plugin ở chỗ khác thì đặt `OPUS_VIDEO_HOME`). `tests/no-provider.test.mjs` và `tests/config.test.mjs` chạy được khi chưa có provider.
 
 ## Giấy phép
 

@@ -33,12 +33,12 @@ printf -- '---\\naspect: %s\\nduration_s: %s\\nmode: old\\n---\\n\\n# Brief: %s\
 let root, bare, server, port, prevState;
 
 before(async () => {
-  prevState = process.env.OPUS_STUDIO_STATE;
+  prevState = process.env.MOTION_STUDIO_STATE;
   root = mkdtempSync(join(tmpdir(), "studio-create-"));
   bare = mkdtempSync(join(tmpdir(), "studio-bare-"));
   // runner mcp: a queued first request waits for a session instead of starting claude.
   writeFileSync(join(root, "studio.json"), JSON.stringify({ director: { runner: "mcp" } }));
-  process.env.OPUS_STUDIO_STATE = join(root, "studio.json");
+  process.env.MOTION_STUDIO_STATE = join(root, "studio.json");
   mkdirSync(join(root, "scripts"));
   writeFileSync(join(root, "scripts", "new-project.sh"), FAKE, { mode: 0o755 });
   mkdirSync(join(root, "taken"));
@@ -50,7 +50,7 @@ before(async () => {
 after(() => {
   server.closeAllConnections?.(); server.close();
   rmSync(root, { recursive: true, force: true }); rmSync(bare, { recursive: true, force: true });
-  if (prevState === undefined) delete process.env.OPUS_STUDIO_STATE; else process.env.OPUS_STUDIO_STATE = prevState;
+  if (prevState === undefined) delete process.env.MOTION_STUDIO_STATE; else process.env.MOTION_STUDIO_STATE = prevState;
 });
 
 function http(method, path, body) {

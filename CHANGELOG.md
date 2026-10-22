@@ -2,6 +2,18 @@
 
 ## Chưa phát hành
 
+- `npm run setup` (`node bin/motion-studio.mjs setup [--yes] [--ref <ref>] [--host claude|codex|all]`): kiểm provider mặc định so với bản mới nhất trên GitHub (`git ls-remote` + `plugin.json`), báo chưa cài / cũ / đã mới nhất, hỏi [Y/n] rồi cài hoặc cập nhật. Git checkout được `pull --ff-only` (từ chối khi bẩn hay khác nhánh); bản sao thì chạy `install.sh` chính thức. Sau khi cài, Studio kiểm lại `STUDIO_API`. `start` và banner "chưa có provider" nhắc lệnh này; `/api/status` có trường `setup`.
+- Với `STUDIO_API` 4, Studio dùng `COMMANDS` (đường lệnh; `COMMANDS.choose = { file, args }` với `{project}`, `{pick}` cho thẻ chọn hướng) và `SKILLS` (dòng skill trong prompt đạo diễn) do plugin khai. Không có thì dùng tên file và cú pháp `make-pitch choose` như trước.
+
+- Ranh giới provider: Studio lấy mọi thứ của plugin qua `lib/provider.mjs`. Plugin opus-video là provider mặc định, bọc trong `lib/providers/opus-video.mjs`, file duy nhất còn tên plugin; `lib/plugin.mjs` bị bỏ. Schema `opus-video/project@1` giữ nguyên. Adapter nhận `STUDIO_API` 3 và 4.
+- Studio khởi động được khi chưa có provider: provider nạp lười ở lần đầu cần. `GET /api/status` mới trả `{ ok, provider, error, hint }`; `/api/agent` thêm `provider` và `provider_error`; chip agent đỏ và trang hiện hướng dẫn; route cần provider trả 503 kèm lý do.
+- `OPUS_VIDEO_HOME` đã đặt thì Studio chỉ dùng thư mục đó. Trước đây đường sai bị bỏ qua và Studio lặng lẽ dùng `~/.claude/skills/opus-video`.
+- Biến môi trường mới: `MOTION_STUDIO_ROOT`, `MOTION_STUDIO_STATE`, `MOTION_STUDIO_COMPRESS`, `MOTION_STUDIO_HF_RUNTIME`, `MOTION_STUDIO_PROVIDER`. Tên cũ `OPUS_STUDIO_ROOT`, `OPUS_STUDIO_STATE`, `OPUS_COMPRESS_FINAL`, `OPUS_HF_RUNTIME` vẫn chạy, mỗi tên cảnh báo một lần, và **bỏ ở 2.0**. `OPUS_STUDIO_RUNNER`/`OPUS_STUDIO_REQUEST` (giao thức với MCP server của plugin) giữ nguyên.
+- File trạng thái chuyển sang `~/.config/motion-studio/studio.json`. Lần đầu Studio chép `~/.config/opus-video/studio.json` sang (chmod 600), không xoá file cũ.
+- Thư mục gốc mặc định: `--root`, `MOTION_STUDIO_ROOT`, thư mục gốc của lần chạy trước (giữ trong file trạng thái qua stop/start), rồi `/Volumes/2/Edit-Video`. Đường cứng này **bỏ ở 2.0**. Thư mục gốc không tồn tại thì `start` báo rõ và thoát mã 2.
+- Lệnh nén sau Xuất video mặc định là `<root>/scripts/compress-final.sh` của workspace đang mở, không còn ghim `/Volumes/2/Edit-Video`.
+- Giao diện và prompt không còn ghi cứng tên plugin: tiêu đề trang "Motion Studio", nhãn nguồn trong Thư viện mẫu lấy từ provider (`source`, `source_label`), đoạn prompt riêng của plugin do adapter cung cấp.
+
 - Thư viện mẫu làm lại: bốn mục Video mẫu, Cảnh mẫu, Phong cách, Prompt mẫu, có ảnh bìa và giải thích tiếng Việt. Dữ liệu gộp từ sáu repo GitHub về video Claude Opus 5.5 (khoảng 1.250 video, 200 video tuyển chọn có giải thích đầy đủ, 37 kỹ thuật cảnh, 12 công thức phong cách, khung prompt và bộ công cụ đạo diễn). Tìm không dấu, lọc thể loại, xem thêm theo trang, chép prompt khi chưa mở dự án. API mới `GET /api/library`; ảnh bìa tải bằng `scripts/library-thumbs.mjs`.
 - Xuất bộ lớp dựng (`bundle.mjs`, nút "Xuất bộ lớp dựng" trong tab Xuất bản, `POST /api/bundle`): MP4 từng shot cắt đúng khung, tiếng tổng cùng giọng, nhạc, SFX tách riêng, phụ đề SRT và `manifest.json`, để dựng tiếp trong Concat, CapCut, DaVinci hay Premiere.
 - Sửa: bấm chọn hướng hay "Duyệt" trên thẻ đạo diễn vẫn có lúc không gửi gì và không báo gì. Giữ nguyên node thẻ chưa đủ: mỗi lần vẽ lại, panel gỡ thẻ ra rồi gắn vào khung mới, và Chromium bỏ cú click khi nút rời trang giữa lúc nhấn và nhả chuột, kể cả khi nút được gắn lại. Panel giờ hoãn vẽ lại tới khi nhả chuột (hoặc phím Space), rồi mới vẽ sau cú click.

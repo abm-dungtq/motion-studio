@@ -83,7 +83,7 @@ function fixture() {
   mkdirSync(styles);
   writeFileSync(join(styles, "neon.json"), JSON.stringify({ id: "neon-cyberpunk", ten_vi: "Đêm neon", mo_ta_vi: "Neon hồng", best_for: ["game"], aliases: ["cyberpunk"] }));
   writeFileSync(join(dir, "directions.json"), JSON.stringify({ directions: [{ id: "A1", ten_vi: "Một khối biến hình", mo_ta_vi: "Khối đổi dáng", seams: ["zoom"] }] }));
-  return { dir, opts: { file: join(dir, "library.json"), thumbsDir: thumbs, stylesDir: styles, directionsFile: join(dir, "directions.json") } };
+  return { dir, opts: { file: join(dir, "library.json"), thumbsDir: thumbs, stylesDir: styles, directionsFile: join(dir, "directions.json"), source: { id: "demo-provider", label: "Provider thử" } } };
 }
 
 test("query pages videos with filters, accent-free search and thumbnails on disk", () => {
@@ -104,11 +104,13 @@ test("query pages videos with filters, accent-free search and thumbnails on disk
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test("query merges the plugin's scene directions and style profiles into scenes and styles", () => {
+test("query merges the provider's scene directions and style profiles into scenes and styles", () => {
   const { dir, opts } = fixture();
   try {
     const scenes = query({ kind: "scenes" }, opts);
-    assert.deepEqual(scenes.items.map((s) => [s.id, s.source]), [["chu-dong", "library"], ["A1", "opus-video"]]);
+    assert.deepEqual(scenes.items.map((s) => [s.id, s.source]), [["chu-dong", "library"], ["A1", "demo-provider"]]);
+    assert.equal(scenes.items[1].source_label, "Provider thử");
+    assert.deepEqual(query({ kind: "scenes" }, { ...opts, source: null }).items.map((s) => s.id), ["chu-dong"], "no provider: only the library's own items");
     assert.deepEqual(scenes.items[0].examples, [{ id: "2", title: "Bài giảng đạo hàm", has_thumb: false }]);
     assert.deepEqual(query({ kind: "scenes", q: "bien hinh" }, opts).items.map((s) => s.id), ["A1"]);
     const styles = query({ kind: "styles" }, opts);

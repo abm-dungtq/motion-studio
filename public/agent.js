@@ -1,6 +1,6 @@
 // agent.js — the "Agent trên máy" chip in the topbar and its popover, from GET /api/agent.
 // Dot: green when claude is found and not known to be logged out, amber when login is unknown,
-// red when claude is missing or logged out. Reloads when a project opens, when the popover
+// red when claude is missing or logged out, or when Studio has no provider (data.provider null). Reloads when a project opens, when the popover
 // opens, and every 60 s.
 import { h } from "/dom.js";
 
@@ -11,6 +11,7 @@ const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()
 
 function level(a) {
   if (!a) return "unknown";
+  if (a.provider === null) return "bad";
   if (!a.claude.found || a.claude.logged_in === false) return "bad";
   return a.claude.logged_in === null ? "unknown" : "ok";
 }
@@ -30,8 +31,9 @@ export function mountAgent(ctx, chip) {
     const lv = error ? "bad" : level(data);
     dot.className = `dot ${lv}`;
     const v = semver(data?.claude.version);
-    label.textContent = data && !data.claude.found ? "Claude Code: không thấy" : `Claude Code${v ? ` ${v}` : ""}`;
-    chip.title = error ? `Không đọc được trạng thái agent: ${error}` : { ok: "Claude Code sẵn sàng", unknown: "Chưa rõ đã đăng nhập Claude Code chưa", bad: "Claude Code chưa sẵn sàng" }[lv];
+    const noProvider = data?.provider === null;
+    label.textContent = noProvider ? "Chưa có provider" : data && !data.claude.found ? "Claude Code: không thấy" : `Claude Code${v ? ` ${v}` : ""}`;
+    chip.title = error ? `Không đọc được trạng thái agent: ${error}` : noProvider ? (data.provider_error?.error ?? "Chưa có provider") : { ok: "Claude Code sẵn sàng", unknown: "Chưa rõ đã đăng nhập Claude Code chưa", bad: "Claude Code chưa sẵn sàng" }[lv];
     if (!pop.hidden) fill();
   }
 
@@ -39,9 +41,12 @@ export function mountAgent(ctx, chip) {
     const row = (k, v) => h("div", { class: "kv" }, h("span", { class: "muted" }, k), h("span", {}, v));
     if (error) return pop.replaceChildren(h("h3", {}, "Agent trên máy"), h("p", { class: "form-error" }, `Không đọc được trạng thái: ${error}`));
     if (!data) return pop.replaceChildren(h("h3", {}, "Agent trên máy"), h("p", { class: "muted" }, "Đang kiểm tra…"));
-    const c = data.claude, j = data.last_job;
+    const c = data.claude, j = data.last_job, pv = data.provider, pe = data.provider_error;
     pop.replaceChildren(...[
       h("h3", {}, "Agent trên máy"),
+      row("Provider", pv ? `${pv.label}${pv.version ? ` ${pv.version}` : ""}` : "chưa có"),
+      !pv && pe ? h("p", { class: "form-error" }, pe.error) : null,
+      !pv && pe?.hint ? h("p", { class: "note" }, pe.hint) : null,
       row("Claude Code", c.found ? (c.version ?? "có, chưa rõ phiên bản") : "không tìm thấy"),
       row("Đăng nhập", c.logged_in === true ? "có" : c.logged_in === false ? "chưa" : "chưa rõ"),
       row("Runner", data.runner === "mcp" ? "mcp: chờ phiên Claude Code đang mở" : "cli: chạy claude -p trên máy"),
