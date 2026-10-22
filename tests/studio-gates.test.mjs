@@ -5,11 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
-import { loadPlugin } from "../lib/plugin.mjs";
+import { loadProvider } from "../lib/provider.mjs";
 import { createServer } from "../server.mjs";
-import { answerCard, writeApproval } from "../gates.mjs";
+import { answerCard, chooseArgv, writeApproval } from "../gates.mjs";
 
-const { enqueue, next, ask, list, load, cancelRequest } = await loadPlugin();
+const P = await loadProvider();
+const { enqueue, next, ask, list, cancelRequest } = P.requests;
+const { load } = P.manifest;
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
 const TOKEN = "g".repeat(64);
 const DEMO = "# DEMO\n\nanimatic: demo/animatic.mp4\napproval: pending\n\n## Frames\n\n- demo/f1.png\n";
@@ -38,21 +40,21 @@ const directionCard = () => waiting({ kind: "choice", gate: "direction", questio
 const animaticCard = () => waiting({ kind: "approve", gate: "animatic", question: "Duyệt animatic?", artifacts: ["demo/animatic.mp4", "demo/contact-sheet.jpg"] });
 
 before(async () => {
-  prevState = process.env.OPUS_STUDIO_STATE;
+  prevState = process.env.MOTION_STUDIO_STATE;
   root = realpathSync(mkdtempSync(join(tmpdir(), "studio-gates-")));
   dir = join(root, "demo");
   cpSync(FIXTURE, dir, { recursive: true });
   writeFileSync(join(dir, "BRIEF.md"), "---\naspect: 16:9\n---\n\n# Brief\n");
   // runner mcp: the follow-up request stays queued instead of starting claude.
   writeFileSync(join(root, "studio.json"), JSON.stringify({ director: { runner: "mcp" } }));
-  process.env.OPUS_STUDIO_STATE = join(root, "studio.json");
+  process.env.MOTION_STUDIO_STATE = join(root, "studio.json");
   server = createServer({ root, token: TOKEN, runtime: null, run: fakeRun });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
 });
 after(() => {
   server.closeAllConnections?.(); server.close(); rmSync(root, { recursive: true, force: true });
-  if (prevState === undefined) delete process.env.OPUS_STUDIO_STATE; else process.env.OPUS_STUDIO_STATE = prevState;
+  if (prevState === undefined) delete process.env.MOTION_STUDIO_STATE; else process.env.MOTION_STUDIO_STATE = prevState;
 });
 
 function http(method, path, body) {
@@ -147,4 +149,11 @@ test("writeApproval replaces only the first approval line and returns null witho
   writeApproval(d, "duyệt", new Date("2026-10-17T00:00:00Z"));
   assert.equal(readFileSync(join(d, "DEMO.md"), "utf8"), "approval: user@studio 2026-10-17T00:00:00.000Z duyệt\napproval: pending\n");
   rmSync(d, { recursive: true, force: true });
+});
+
+test("chooseArgv runs a declared choose command, else the pitch command's choose syntax", () => {
+  assert.deepEqual(chooseArgv({ pitch: "/p/make-pitch.mjs" }, "/w/demo", 2), ["/p/make-pitch.mjs", "choose", "--project", "/w/demo", "--pick", "2", "--accept-warnings"]);
+  const declared = { pitch: "/p/make-pitch.mjs", choose: { file: "/p/pick.mjs", args: ["direction", "--dir={project}", "--n", "{pick}"] } };
+  assert.deepEqual(chooseArgv(declared, "/w/demo", "3"), ["/p/pick.mjs", "direction", "--dir=/w/demo", "--n", "3"]);
+  assert.deepEqual(chooseArgv({ pitch: "/p/x.mjs", choose: { file: 1 } }, "/d", 1)[0], "/p/x.mjs", "a malformed choose falls back");
 });

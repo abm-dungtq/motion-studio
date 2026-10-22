@@ -45,7 +45,7 @@ const LIBRARY = {
     label: "Cảnh mẫu", placeholder: "Từ khoá: chữ động, HUD, biến hình…",
     title: (t) => t.name ?? t.id,
     copy: (t) => t.prompt_hint,
-    use: (t) => t.source === "opus-video"
+    use: (t) => t.source !== "library"
       ? `Dùng mẫu cảnh ${t.id} (${t.name}) cho dự án này: dựng lại các shot theo hướng cảnh đó, giữ nội dung và lời của dự án.`
       : `Áp kỹ thuật cảnh "${t.name}" vào những shot hợp của dự án này: ${t.what} Gợi ý cho prompt: ${t.prompt_hint ?? ""}. Giữ nội dung, lời và nhịp.`,
   },
@@ -53,7 +53,7 @@ const LIBRARY = {
     label: "Phong cách", placeholder: "Ví dụ: tối giản, neon, pixel, 3D…",
     title: (s) => s.name ?? s.id,
     copy: (s) => s.recipe ?? s.what,
-    use: (s) => s.source === "opus-video"
+    use: (s) => s.source !== "library"
       ? `Áp phong cách ${s.id} (${s.name}) cho dự án này: đổi màu, chữ và chuyển động theo phong cách đó, giữ nội dung, lời và nhịp.`
       : `Áp phong cách "${s.name}" cho dự án này: đổi màu, chữ và chuyển động theo công thức sau, giữ nội dung, lời và nhịp.\n${s.recipe}`,
   },
@@ -64,7 +64,6 @@ const LIBRARY = {
     use: (p) => `Viết lại yêu cầu cho dự án này theo cấu trúc của prompt mẫu "${p.title}": ${p.structure} Giữ nội dung, lời và nhịp của dự án.${promptExcerpt(p.prompt)}`,
   },
 };
-const LIB_SOURCE = { library: null, "opus-video": "Plugin opus-video" };
 const nfmt = (n) => (Number(n) >= 1000 ? `${(Number(n) / 1000).toFixed(Number(n) >= 10000 ? 0 : 1)}k` : String(n));
 
 function readTab() {
@@ -249,7 +248,7 @@ export function mountPanels(ctx, railEl, panelEl) {
           actions(v, v.url)),
         scenes: (t) => h("div", { class: "card lib-card" },
           h("strong", {}, src.title(t)),
-          LIB_SOURCE[t.source] ? h("span", { class: "muted" }, LIB_SOURCE[t.source]) : null,
+          t.source_label ? h("span", { class: "muted" }, t.source_label) : null,
           para("", t.what), para("Dùng khi:", t.when),
           t.prompt_hint ? h("p", { class: "lib-p" }, h("b", {}, "Gợi ý cho prompt: "), h("code", {}, t.prompt_hint)) : null,
           t.seams?.length ? para("Chuyển cảnh:", t.seams.join(", ")) : null,
@@ -257,7 +256,7 @@ export function mountPanels(ctx, railEl, panelEl) {
         styles: (s) => h("div", { class: "card lib-card" },
           s.examples?.[0]?.has_thumb ? thumbImg(s.examples[0].id) : null,
           h("strong", {}, src.title(s)),
-          h("span", { class: "muted" }, [s.name_en, LIB_SOURCE[s.source]].filter(Boolean).join(" · ")),
+          h("span", { class: "muted" }, [s.name_en, s.source_label].filter(Boolean).join(" · ")),
           para("", s.what), para("Hợp với:", s.when),
           more("Công thức (tiếng Việt)", s.recipe_vi), more("Công thức gốc để dán vào prompt", s.recipe),
           exampleRow(s.examples), actions(s)),

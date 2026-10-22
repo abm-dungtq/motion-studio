@@ -1,6 +1,9 @@
-// studio/server.mjs — Motion Studio HTTP server (node:http, Node built-ins only). Started by
-// scripts/studio.mjs; createServer({ root, token }) is exported for tests (listen on port 0).
-// Every edit goes through scripts/gateway.mjs as actor "human". Security:
+// server.mjs — Motion Studio HTTP server (node:http, Node built-ins only). Started by
+// bin/motion-studio.mjs; createServer({ root, token }) is exported for tests (listen on port 0).
+// Every edit goes through the provider's command gateway (lib/provider.mjs) as actor "human".
+// The provider loads lazily: without one the server still starts and serves the page, GET
+// /api/status says why ({ ok: false, provider: null, error, hint }), and every route that needs
+// it answers 503 with the same reason. Security:
 // - bind 127.0.0.1 only (the caller listens); any Host other than 127.0.0.1:<port> or
 //   localhost:<port> is 403 (DNS rebinding);
 // - a POST with an Origin that is not this origin is 403; a POST without the X-Studio-Token of
@@ -9,27 +12,30 @@
 //   same-user processes are inside the trust boundary);
 // - project names match ^[A-Za-z0-9._-]+$ (else 400); /p/<name>/<path> serves only files whose
 //   realpath is inside the project, never .env, .git, .opus/lock or other dotfiles outside .opus/;
-// - the server never reads ~/.config/opus-video/.env.
-// Jobs (studio/jobs.mjs): POST /api/director queues a request and, with runner cli, starts the
-// director (studio/director.mjs); POST /api/export runs render-final.mjs, then compress-final.sh.
+// - the server never reads the provider's .env or any API key file.
+// Jobs (jobs.mjs): POST /api/director queues a request and, with runner cli, starts the
+// director (director.mjs); POST /api/export runs the provider's render command, then the
+// compress script (lib/config.mjs compressScript: $MOTION_STUDIO_COMPRESS, else
+// <root>/scripts/compress-final.sh).
 // Their start/log/exit events reach the page as SSE "job"; every job stops with the server.
 // Writes wait at most LOCK_WAIT_MS for the project lock and answer 503 "đang bận" when busy, so
 // one contended write never stalls SSE or the player.
-// Front door: POST /api/projects/new runs <root>/scripts/new-project.sh (studio/create.mjs);
+// Front door: POST /api/projects/new runs <root>/scripts/new-project.sh (create.mjs);
 // GET /api/media/browse lists home and /Volumes folders, POST /api/media/register adds a file to
-// .opus/media.json (studio/media.mjs); GET /api/agent reports claude/runner/ffmpeg
-// (studio/agent.mjs); POST /api/director/answer answers a director card and writes the human gate
-// (studio/gates.mjs). POST /api/redo replays the last undo. GET /api/sounds lists project and
+// .opus/media.json (media.mjs); GET /api/agent reports claude/runner/ffmpeg/provider
+// (agent.mjs); POST /api/director/answer answers a director card and writes the human gate
+// (gates.mjs). POST /api/redo replays the last undo. GET /api/sounds lists project and
 // <root>/shared-assets/sfx audio; POST /api/sounds/import copies a shared sound into assets/sfx/
 // without overwriting. GET /api/gates runs check-preflight --stage final (one run per project at a
-// time). POST /api/bundle runs bundle.mjs (shots, stems, SRT, manifest for an NLE) as an export
+// time; the provider's preflight command). POST /api/bundle runs bundle.mjs (shots, stems, SRT, manifest for an NLE) as an export
 // job. GET /api/library pages the Thư viện mẫu (lib/library.mjs); /library/thumb/<id> its cover images. createServer's run and mediaRoots options exist for tests.
 import { createServer as httpServer } from "node:http";
 import { constants as FS, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, watch, createReadStream } from "node:fs";
 import { execFile, execFileSync } from "node:child_process";
 import { basename, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadPlugin } from "./lib/plugin.mjs";
+import { loadProvider, providerStatus, SETUP_COMMAND } from "./lib/provider.mjs";
+import { compressScript, hfRuntime } from "./lib/config.mjs";
 import { events as jobEvents, startJob, cancel as cancelJob, listJobs, running, stopAll } from "./jobs.mjs";
 import { KIND as DIRECTOR, pump, runnerSetting } from "./director.mjs";
 import { createProject, runFile } from "./create.mjs";
@@ -38,12 +44,9 @@ import { agentStatus } from "./agent.mjs";
 import { answerCard } from "./gates.mjs";
 import { query as libraryQuery, thumbFile } from "./lib/library.mjs";
 
-const { load, patch, undo, redo, readHistory, EXIT, enqueue, cancelRequest, expireWaiting, list: listRequests, SCRIPTS, DIRECTIONS_FILE: DIRECTIONS } = await loadPlugin();
-
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const PUBLIC = join(HERE, "public");
 const BUNDLE = join(HERE, "bundle.mjs");
-const COMPRESS = process.env.OPUS_COMPRESS_FINAL || "/Volumes/2/Edit-Video/scripts/compress-final.sh";
 const RATIO = /^\d+x\d+$/;
 export const NAME = /^[A-Za-z0-9._-]+$/;
 const LOCK_WAIT_MS = 300;
@@ -55,9 +58,19 @@ const TYPES = {
   ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm",
   ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".otf": "font/otf",
 };
-const STATUS = { [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.invalid]: 422, [EXIT.nothingToUndo]: 422, [EXIT.nothingToRedo]: 422, [EXIT.busy]: 503, [EXIT.usage]: 400 };
+const statusOf = (EXIT) => ({ [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.invalid]: 422, [EXIT.nothingToUndo]: 422, [EXIT.nothingToRedo]: 422, [EXIT.busy]: 503, [EXIT.usage]: 400 });
+// Routes that work without a provider; every other /api route answers 503 when there is none.
+const FREE = new Set(["/api/projects", "/api/status", "/api/agent", "/api/media/browse", "/api/media", "/api/jobs", "/api/settings", "/api/files", "/api/sounds", "/api/library",
+  "/api/directions", "/api/cases", "/api/styles", "/api/media/register", "/api/sounds/import", "/api/jobs/cancel"]);
 
-// The HyperFrames runtime (studio/PLAYER.md): $OPUS_HF_RUNTIME, the project's own install, then
+// The provider, or null with the reason the API reports (503 body, /api/status).
+async function current() {
+  try { return { p: await loadProvider() }; } catch (e) {
+    return { p: null, why: { error: `Chưa có provider: ${e.message}`, code: e.code ?? "NO_PROVIDER", hint: e.hint ?? null, setup: SETUP_COMMAND, provider: null } };
+  }
+}
+
+// The HyperFrames runtime (PLAYER.md): $MOTION_STUDIO_HF_RUNTIME, the project's own install, then
 // the global npm root and the usual global prefixes.
 let npmRoot;
 export function findRuntime(projectDir) {
@@ -66,23 +79,25 @@ export function findRuntime(projectDir) {
   if (npmRoot === undefined) {
     try { npmRoot = execFileSync("npm", ["root", "-g"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 5000 }).trim(); } catch { npmRoot = null; }
   }
-  const cands = [process.env.OPUS_HF_RUNTIME, projectDir && join(projectDir, nm, rel), npmRoot && join(npmRoot, rel),
+  const cands = [hfRuntime(), projectDir && join(projectDir, nm, rel), npmRoot && join(npmRoot, rel),
     ...["/opt/homebrew/lib", "/usr/local/lib", "/usr/lib"].map((d) => join(d, nm, rel))];
   return cands.find((c) => c && existsSync(c)) ?? null;
 }
 
-const run = (script, args) => new Promise((res) => {
-  execFile(process.execPath, [join(SCRIPTS, script), ...args], { encoding: "utf8", timeout: 60000, maxBuffer: 32 << 20 }, (err, stdout, stderr) => res({ code: err ? (err.code ?? 1) : 0, stdout, stderr, killed: Boolean(err?.killed) }));
+// Runs a provider command (an absolute .mjs path) with node.
+const run = (file, args) => new Promise((res) => {
+  execFile(process.execPath, [file, ...args], { encoding: "utf8", timeout: 60000, maxBuffer: 32 << 20 }, (err, stdout, stderr) => res({ code: err ? (err.code ?? 1) : 0, stdout, stderr, killed: Boolean(err?.killed) }));
 });
 
-function projectsOf(root) {
+// p null (no provider): projects with project.json are listed, none editable.
+function projectsOf(root, p) {
   const out = [];
   for (const e of readdirSync(root, { withFileTypes: true })) {
     if (!e.isDirectory() || e.name.startsWith(".") || !NAME.test(e.name)) continue;
     const dir = join(root, e.name);
     if (existsSync(join(dir, "project.json"))) {
       let m = null;
-      try { m = load(dir); } catch { /* broken manifest: listed, not editable */ }
+      try { m = p?.manifest.load(dir) ?? null; } catch { /* broken manifest: listed, not editable */ }
       out.push({ name: e.name, title: m?.title ?? e.name, has_manifest: true, editable: Boolean(m?.capabilities?.editable), version: m?.version ?? null });
     } else if (existsSync(join(dir, "index.html")) && existsSync(join(dir, "BRIEF.md"))) {
       out.push({ name: e.name, title: e.name, has_manifest: false, editable: false, version: null });
@@ -138,7 +153,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
     req.on("end", () => { try { res(chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {}); } catch { rej(Object.assign(new Error("JSON không hợp lệ"), { status: 400 })); } });
     req.on("error", rej);
   });
-  const gatewayReply = (res, r) => (r.code ? send(res, STATUS[r.code] ?? 500, { error: r.error }) : send(res, 200, { version: r.version, receipt: r.receipt, lines: r.lines ?? [], warnings: r.warnings ?? [] }));
+  const gatewayReply = (res, P, r) => (r.code ? send(res, statusOf(P.gateway.EXIT)[r.code] ?? 500, { error: r.error }) : send(res, 200, { version: r.version, receipt: r.receipt, lines: r.lines ?? [], warnings: r.warnings ?? [] }));
 
   function serveFile(req, res, file, { inject = null } = {}) {
     const type = TYPES[extname(file).toLowerCase()] ?? "application/octet-stream";
@@ -163,7 +178,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
   }
 
   // SSE: one directory watcher pair per project, filtered by file name, debounced 100 ms.
-  function subscribe(name, dir, res) {
+  function subscribe(P, name, dir, res) {
     let w = watchers.get(name);
     if (!w) {
       const clients = new Set();
@@ -171,10 +186,10 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
       const emit = (event, data) => { for (const c of clients) c.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
       const later = (event, fn) => { clearTimeout(timers[event]); timers[event] = setTimeout(() => { try { emit(event, fn()); } catch { /* mid-write; next event follows */ } }, 100); };
       const fsw = [];
-      try { fsw.push(watch(dir, (_, f) => { if (f === "project.json") later("manifest", () => load(dir)); })); } catch { /* unwatchable */ }
+      try { fsw.push(watch(dir, (_, f) => { if (f === "project.json") later("manifest", () => P.manifest.load(dir)); })); } catch { /* unwatchable */ }
       const opus = join(dir, ".opus");
       const watchOpus = () => {
-        try { fsw.push(watch(opus, { recursive: true }, (_, f) => { const p = String(f ?? "").split(sep).join("/"); if (p.startsWith("requests/") && p.endsWith(".json")) later("request", () => listRequests(dir)); })); return true; } catch { return false; }
+        try { fsw.push(watch(opus, { recursive: true }, (_, f) => { const p = String(f ?? "").split(sep).join("/"); if (p.startsWith("requests/") && p.endsWith(".json")) later("request", () => P.requests.list(dir)); })); return true; } catch { return false; }
       };
       if (!(existsSync(opus) && watchOpus())) {
         // .opus appears with the first gateway write or request: start watching it then.
@@ -230,10 +245,10 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
 
   // check-preflight --stage final for one project; concurrent callers share the running check.
   const gateRuns = new Map(); // name → Promise
-  function gateStatus(name, dir) {
+  function gateStatus(P, name, dir) {
     let pr = gateRuns.get(name);
     if (!pr) {
-      pr = run("check-preflight.mjs", ["--project", dir, "--stage", "final", "--json"]).then((r) => {
+      pr = run(P.commands.preflight, ["--project", dir, "--stage", "final", "--json"]).then((r) => {
         if (r.killed) return { pass: false, fails: ["check-preflight quá 60 giây"], animatic: false };
         let j;
         try { j = JSON.parse(r.stdout); } catch { return { pass: false, fails: ["không đọc được check-preflight"], animatic: false }; }
@@ -249,6 +264,9 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
     const url = new URL(req.url, `http://127.0.0.1:${port}`);
     const p = url.pathname;
     const q = (k) => url.searchParams.get(k);
+    if (req.method === "POST" && req.headers["x-studio-token"] !== token) return send(res, 403, { error: "thiếu X-Studio-Token" });
+    const { p: P, why } = await current();
+    if (!P && p.startsWith("/api/") && !FREE.has(p)) return send(res, 503, why);
     if (req.method === "GET") {
       if (p === "/" || p === "/index.html") {
         const html = readFileSync(join(PUBLIC, "index.html"), "utf8").replace("__STUDIO_TOKEN__", token);
@@ -272,20 +290,21 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         const isRootIndex = f.parts.length === 1 && f.parts[0] === "index.html";
         return serveFile(req, res, f.file, isRootIndex ? { inject: `<script src="/hf/runtime.js?name=${encodeURIComponent(name)}"></script>` } : {});
       }
-      if (p === "/api/projects") return send(res, 200, projectsOf(root));
-      if (p === "/api/project") { const pd = withManifest(q("name")); return pd.error ? send(res, pd.status, { error: pd.error }) : send(res, 200, load(pd.dir)); }
-      if (p === "/api/log") { const pd = withManifest(q("name")); return pd.error ? send(res, pd.status, { error: pd.error }) : send(res, 200, readHistory(pd.dir)); }
+      if (p === "/api/projects") return send(res, 200, projectsOf(root, P));
+      if (p === "/api/status") return send(res, 200, P ? (await providerStatus()) : { ok: false, ...why });
+      if (p === "/api/project") { const pd = withManifest(q("name")); return pd.error ? send(res, pd.status, { error: pd.error }) : send(res, 200, P.manifest.load(pd.dir)); }
+      if (p === "/api/log") { const pd = withManifest(q("name")); return pd.error ? send(res, pd.status, { error: pd.error }) : send(res, 200, P.gateway.readHistory(pd.dir)); }
       if (p === "/api/requests") {
         const pd = withManifest(q("name"));
         if (pd.error) return send(res, pd.status, { error: pd.error });
-        expireWaiting(pd.dir);
-        return send(res, 200, listRequests(pd.dir));
+        P.requests.expireWaiting(pd.dir);
+        return send(res, 200, P.requests.list(pd.dir));
       }
       if (p === "/api/agent") {
         const name = q("name");
         const pd = name ? projectDir(name) : {};
         if (pd.error) return send(res, pd.status, { error: pd.error });
-        return send(res, 200, await agentStatus({ name }));
+        return send(res, 200, { ...(await agentStatus({ name })), provider: P ? { id: P.id, label: P.label, version: P.version } : null, provider_error: P ? null : why });
       }
       if (p === "/api/media/browse") {
         try { return send(res, 200, browse(q("path") || undefined, { roots: mediaRoots })); } catch (e) { return send(res, e.status ?? 500, { error: e.message }); }
@@ -312,15 +331,16 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
       if (p === "/api/gates") {
         const pd = projectDir(q("name"));
         if (pd.error) return send(res, pd.status, { error: pd.error });
-        return send(res, 200, await gateStatus(q("name"), pd.dir));
+        return send(res, 200, await gateStatus(P, q("name"), pd.dir));
       }
       if (p === "/api/directions") {
-        const d = JSON.parse(readFileSync(DIRECTIONS, "utf8"));
+        if (!P) return send(res, 200, { seams: [], directions: [] });
+        const d = JSON.parse(readFileSync(P.library.directionsFile, "utf8"));
         return send(res, 200, { seams: Object.keys(d.seams ?? {}), directions: d.directions.map((x) => ({ id: x.id, ten_vi: x.ten_vi, mo_ta_vi: x.mo_ta_vi, seams: x.seams })) });
       }
       if (p === "/api/library") {
         try {
-          return send(res, 200, libraryQuery({ kind: q("kind") ?? "videos", q: String(q("q") ?? "").slice(0, 200), cat: q("cat") ?? "", featured: q("featured") === "1", offset: q("offset"), limit: q("limit") }, { stylesDir: join(SCRIPTS, "..", "data", "styles"), directionsFile: DIRECTIONS }));
+          return send(res, 200, libraryQuery({ kind: q("kind") ?? "videos", q: String(q("q") ?? "").slice(0, 200), cat: q("cat") ?? "", featured: q("featured") === "1", offset: q("offset"), limit: q("limit") }, P ? { stylesDir: P.library.stylesDir, directionsFile: P.library.directionsFile, source: { id: P.id, label: P.label } } : {}));
         } catch (e) { return send(res, e.status ?? 500, { error: e.message }); }
       }
       if (p.startsWith("/library/thumb/")) {
@@ -328,31 +348,32 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         return f ? serveFile(req, res, f) : send(res, 404, "không có ảnh");
       }
       if (p === "/api/cases") {
+        if (!P) return send(res, 200, []);
         const args = ["--json", "--limit", "12", "--max-chars", "600"];
         for (const k of String(q("q") ?? "").split(/\s+/).filter(Boolean).slice(0, 6)) args.push("--keyword", k);
         const cat = q("category");
         if (cat) { if (!/^[a-z-]+$/.test(cat)) return send(res, 400, { error: "category không hợp lệ" }); args.push("--category", cat); }
-        const r = await run("find-cases.mjs", args);
+        const r = await run(P.commands.cases, args);
         return r.code ? send(res, 200, []) : send(res, 200, JSON.parse(r.stdout || "[]"));
       }
       if (p === "/api/styles") {
-        const r = await run("styles.mjs", ["find", String(q("q") ?? "").slice(0, 200) || "minimal", "--json"]);
+        if (!P) return send(res, 200, []);
+        const r = await run(P.commands.styles, ["find", String(q("q") ?? "").slice(0, 200) || "minimal", "--json"]);
         try { return send(res, 200, JSON.parse(r.stdout || "[]")); } catch { return send(res, 200, []); }
       }
       if (p === "/api/events") {
         const pd = withManifest(q("name"));
         if (pd.error) return send(res, pd.status, { error: pd.error });
-        return subscribe(q("name"), pd.dir, res);
+        return subscribe(P, q("name"), pd.dir, res);
       }
       return send(res, 404, { error: "không có" });
     }
     if (req.method === "POST") {
-      if (req.headers["x-studio-token"] !== token) return send(res, 403, { error: "thiếu X-Studio-Token" });
       const b = await body(req);
       if (p === "/api/import") {
         const pd = projectDir(b.name);
         if (pd.error) return send(res, pd.status, { error: pd.error });
-        const r = await run("manifest-import.mjs", ["--project", pd.dir, "--write"]);
+        const r = await run(P.commands.import, ["--project", pd.dir, "--write"]);
         if (r.code === 6) return send(res, 409, { error: "dự án đã có project.json" });
         if (r.code === 8) return send(res, 503, { error: "đang bận, thử lại sau" });
         return r.code ? send(res, 422, { error: (r.stderr || r.stdout).trim() }) : send(res, 200, { ok: true, output: r.stdout.trim() });
@@ -361,35 +382,35 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         const pd = withManifest(b.name);
         if (pd.error) return send(res, pd.status, { error: pd.error });
         if (!Number.isInteger(b.base) || !Array.isArray(b.ops) || !b.ops.length) return send(res, 400, { error: "cần base (số) và ops (mảng)" });
-        return gatewayReply(res, patch(pd.dir, { actor: "human", base: b.base, ops: b.ops, lockWaitMs: LOCK_WAIT_MS }));
+        return gatewayReply(res, P, P.gateway.patch(pd.dir, { actor: "human", base: b.base, ops: b.ops, lockWaitMs: LOCK_WAIT_MS }));
       }
       if (p === "/api/undo") {
         const pd = withManifest(b.name);
         if (pd.error) return send(res, pd.status, { error: pd.error });
         if (!Number.isInteger(b.base)) return send(res, 400, { error: "cần base (số)" });
-        return gatewayReply(res, undo(pd.dir, { base: b.base, lockWaitMs: LOCK_WAIT_MS }));
+        return gatewayReply(res, P, P.gateway.undo(pd.dir, { base: b.base, lockWaitMs: LOCK_WAIT_MS }));
       }
       if (p === "/api/redo") {
         const pd = withManifest(b.name);
         if (pd.error) return send(res, pd.status, { error: pd.error });
         if (!Number.isInteger(b.base)) return send(res, 400, { error: "cần base (số)" });
-        return gatewayReply(res, redo(pd.dir, { base: b.base, lockWaitMs: LOCK_WAIT_MS }));
+        return gatewayReply(res, P, P.gateway.redo(pd.dir, { base: b.base, lockWaitMs: LOCK_WAIT_MS }));
       }
       if (p === "/api/director") {
         const pd = withManifest(b.name);
         if (pd.error) return send(res, pd.status, { error: pd.error });
         let r;
-        try { r = enqueue(pd.dir, { scope: b.scope, target: b.target ?? null, t: Number.isFinite(b.t) ? b.t : null, base: load(pd.dir).version, text: b.text }); } catch (e) { return send(res, 400, { error: e.message }); }
+        try { r = P.requests.enqueue(pd.dir, { scope: b.scope, target: b.target ?? null, t: Number.isFinite(b.t) ? b.t : null, base: P.manifest.load(pd.dir).version, text: b.text }); } catch (e) { return send(res, 400, { error: e.message }); }
         const runner = runnerSetting();
         if (runner === "mcp") return send(res, 200, { request: r, runner, message: "Đang chờ phiên Claude Code mở nhận việc (studio_request_next)" });
         const busy = running(b.name, DIRECTOR);
-        const job = busy ? null : pump(b.name, pd.dir);
-        const now = listRequests(pd.dir).find((x) => x.id === r.id) ?? r;
+        const job = busy ? null : pump(P, b.name, pd.dir);
+        const now = P.requests.list(pd.dir).find((x) => x.id === r.id) ?? r;
         return send(res, 200, { request: now, runner, job, message: busy ? "Đạo diễn đang làm yêu cầu trước; yêu cầu này chờ tới lượt" : null });
       }
       if (p === "/api/projects/new") {
         const r = await createProject(root, b, { run: runCmd });
-        if (r.status === 200 && r.body.request) pump(r.body.name, r.dir);
+        if (r.status === 200 && r.body.request) pump(P, r.body.name, r.dir);
         return send(res, r.status, r.body);
       }
       if (p === "/api/media/register") {
@@ -408,7 +429,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         const r = await answerCard(pd.dir, { id: b.id, value: b.value }, { run: runCmd });
         // One line per card answer in studio.log, so a click that never arrived is told apart from one that failed.
         console.log(`${new Date().toISOString()} answer ${b.name} ${b.id} ${r.status}${r.status === 200 ? ` next ${r.body.next}` : `: ${r.body.error}`}`);
-        if (r.status === 200) pump(b.name, pd.dir);
+        if (r.status === 200) pump(P, b.name, pd.dir);
         return send(res, r.status, r.body);
       }
       if (p === "/api/director/cancel") {
@@ -416,7 +437,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         if (pd.error) return send(res, pd.status, { error: pd.error });
         const job = listJobs(b.name).find((j) => j.kind === DIRECTOR && j.meta?.request === b.id && j.status === "running");
         if (job) return send(res, 200, { job: cancelJob(job.id) });
-        try { return send(res, 200, { request: cancelRequest(pd.dir, b.id) }); } catch (e) { return send(res, 400, { error: e.message }); }
+        try { return send(res, 200, { request: P.requests.cancelRequest(pd.dir, b.id) }); } catch (e) { return send(res, 400, { error: e.message }); }
       }
       if (p === "/api/jobs/cancel") {
         const job = listJobs(b.name).find((j) => j.id === b.id);
@@ -434,15 +455,16 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         }
         const d = new Date(), z = (n) => String(n).padStart(2, "0");
         const base = `renders/${b.name}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}${b.ratio && b.ratio !== "16x9" ? `-${b.ratio}` : ""}`;
+        const compress = compressScript(root);
         try {
           const job = startJob({
-            name: b.name, kind: "export", cmd: process.execPath, args: [join(SCRIPTS, "render-final.mjs"), "--project", pd.dir, "--", ...forward, "--output", `${base}.mp4`], cwd: pd.dir, meta: { step: "render", output: `${base}-final.mp4` },
+            name: b.name, kind: "export", cmd: process.execPath, args: [P.commands.render, "--project", pd.dir, "--", ...forward, "--output", `${base}.mp4`], cwd: pd.dir, meta: { step: "render", output: `${base}-final.mp4` },
             onExit: (j) => {
               if (j.code === 5) { j.meta.message = `Thiếu cổng: ${(j.tail ?? []).filter((l) => /^FAIL\b/.test(l)).map((l) => l.replace(/^FAIL\s+/, "")).join("; ") || "xem log"}`; return; }
               if (j.code !== 0 || j.status === "cancelled") return;
               // The render is done; compress runs as the next export job (the render job has ended).
               setImmediate(() => {
-                try { startJob({ name: b.name, kind: "export", cmd: COMPRESS, args: [`${base}.mp4`, `${base}-final.mp4`], cwd: pd.dir, meta: { step: "compress", output: `${base}-final.mp4` } }); } catch { /* another export started */ }
+                try { startJob({ name: b.name, kind: "export", cmd: compress, args: [`${base}.mp4`, `${base}-final.mp4`], cwd: pd.dir, meta: { step: "compress", output: `${base}-final.mp4` } }); } catch { /* another export started */ }
               });
             },
           });
@@ -483,11 +505,14 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
     }
   });
   // Requests queued while Studio was down (or before a restart) start once it listens.
-  server.on("listening", () => {
-    for (const p of projectsOf(root)) {
+  // Without a provider nothing is pumped; the queue waits for the next request.
+  server.on("listening", async () => {
+    const { p: P } = await current();
+    if (!P) return;
+    for (const p of projectsOf(root, P)) {
       if (!p.has_manifest) continue;
       const dir = join(root, p.name);
-      try { if (listRequests(dir).some((r) => r.status === "queued")) pump(p.name, dir); } catch { /* unreadable requests: left for the next request */ }
+      try { if (P.requests.list(dir).some((r) => r.status === "queued")) pump(P, p.name, dir); } catch { /* unreadable requests: left for the next request */ }
     }
   });
   server.on("close", () => { for (const w of watchers.values()) w.close(); watchers.clear(); stopAll(); });

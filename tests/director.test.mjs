@@ -6,12 +6,14 @@ import { join } from "node:path";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { createServer } from "../server.mjs";
-import { loadPlugin } from "../lib/plugin.mjs";
-import { MCP_TOOLS, ALLOWED_TOOLS, DENIED_TOOLS, buildPrompt } from "../director.mjs";
+import { loadProvider } from "../lib/provider.mjs";
+import { buildPrompt } from "../director.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
-const { enqueue, list, OV, SCRIPTS } = await loadPlugin();
-const REQUESTS = join(SCRIPTS, "requests.mjs");
+const P = await loadProvider();
+const { enqueue, list } = P.requests;
+const { mcpTools: MCP_TOOLS, allowedTools: ALLOWED_TOOLS, deniedTools: DENIED_TOOLS, toolPrefix: PREFIX } = P.director;
+const REQUESTS = P.requests.module;
 const TOKEN = "d".repeat(64);
 let root, bin, calls, server, port, saved;
 
@@ -28,7 +30,7 @@ out({ type: "system", subtype: "init", session_id: resume ?? "sess-1", tools: ${
 const id = process.env.OPUS_STUDIO_REQUEST;
 setTimeout(async () => {
   if (prompt.includes("[crash]")) { console.error("boom"); process.exit(2); }
-  out({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__plugin_opus-video_opus-video__project_get" }] } });
+  out({ type: "assistant", message: { content: [{ type: "tool_use", name: ${JSON.stringify(PREFIX + "project_get")} }] } });
   if (prompt.includes("[ask]")) {
     const { ask } = await import(${JSON.stringify(REQUESTS)});
     ask(process.cwd(), id, { kind: "approve", question: "Duyệt animatic?", artifacts: ["demo/animatic.mp4"], gate: "animatic", runner: process.env.OPUS_STUDIO_RUNNER });
@@ -48,9 +50,9 @@ before(async () => {
   writeFileSync(join(bin, "claude"), FAKE);
   chmodSync(join(bin, "claude"), 0o755);
   calls = join(root, "calls.jsonl");
-  saved = { PATH: process.env.PATH, OPUS_STUDIO_STATE: process.env.OPUS_STUDIO_STATE, FAKE_CALLS: process.env.FAKE_CALLS };
+  saved = { PATH: process.env.PATH, MOTION_STUDIO_STATE: process.env.MOTION_STUDIO_STATE, FAKE_CALLS: process.env.FAKE_CALLS };
   process.env.PATH = `${bin}:${process.env.PATH}`;
-  process.env.OPUS_STUDIO_STATE = join(root, "studio.json");
+  process.env.MOTION_STUDIO_STATE = join(root, "studio.json");
   process.env.FAKE_CALLS = calls;
   server = createServer({ root, token: TOKEN, runtime: null });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -141,7 +143,7 @@ test("a second request waits for the first, then runs", async () => {
 });
 
 test("runner mcp leaves the request queued; Studio can cancel it; POST needs the token", async () => {
-  writeFileSync(process.env.OPUS_STUDIO_STATE, JSON.stringify({ director: { runner: "mcp" } }));
+  writeFileSync(process.env.MOTION_STUDIO_STATE, JSON.stringify({ director: { runner: "mcp" } }));
   try {
     const r = await post("/api/director", { name: "demo", scope: "line", target: "vo-01", text: "Duyệt lại câu 1" });
     assert.equal(r.json.request.status, "queued");
@@ -150,12 +152,12 @@ test("runner mcp leaves the request queued; Studio can cancel it; POST needs the
     assert.equal(c.json.request.status, "failed");
     assert.equal((await post("/api/director", { name: "demo", scope: "project", text: "x" }, null)).status, 403);
     assert.equal((await post("/api/director", { name: "demo", scope: "nope", text: "x" })).status, 400);
-  } finally { rmSync(process.env.OPUS_STUDIO_STATE, { force: true }); }
+  } finally { rmSync(process.env.MOTION_STUDIO_STATE, { force: true }); }
   assert.ok(ALLOWED_TOOLS.some((t) => t.startsWith("Bash(node /") && t.endsWith("/scripts/*)")));
 });
 
 test("deny rules: the plugin is not editable and no `..` follows scripts/", () => {
-  const ov = OV;
+  const ov = P.home;
   assert.deepEqual(DENIED_TOOLS.slice(0, 2), ["WebFetch", "WebSearch"]);
   assert.ok(DENIED_TOOLS.includes(`Edit(/${ov}/**)`) && DENIED_TOOLS.includes(`Write(/${ov}/**)`), "absolute path rules start with //");
   assert.ok(DENIED_TOOLS.includes(`Bash(node ${ov}/scripts/*../*)`));
@@ -163,17 +165,20 @@ test("deny rules: the plugin is not editable and no `..` follows scripts/", () =
 
 test("the gates are the user's: DEMO.md, BRIEF.md and make-pitch choose are denied; studio_ask is allowed", () => {
   assert.equal(MCP_TOOLS.length, 7);
-  assert.ok(MCP_TOOLS.includes("mcp__plugin_opus-video_opus-video__studio_ask"));
+  assert.ok(MCP_TOOLS.includes(`${PREFIX}studio_ask`));
   assert.ok(DENIED_TOOLS.includes("Edit(BRIEF.md)") && DENIED_TOOLS.includes("Edit(DEMO.md)"));
   assert.ok(DENIED_TOOLS.some((t) => t.includes("make-pitch.mjs choose")));
   for (const t of ["Bash(*replace-in-file.mjs*)", "Bash(cp *)", "Bash(mv *)"]) assert.ok(DENIED_TOOLS.includes(t), t);
   const req = { id: "r-20261017140000-abcd", scope: "project", target: null, t: null, base: 1, text: "chọn hướng" };
-  const p = buildPrompt(dir(), req);
+  const p = buildPrompt(P, dir(), req);
   assert.match(p, /studio_ask/);
   assert.match(p, /gate "direction"/);
   assert.match(p, /BRIEF\.md và DEMO\.md do Studio ghi/);
   assert.doesNotMatch(p, /lượt tiếp theo/);
-  assert.match(buildPrompt(dir(), { ...req, follows: "r-20261017130000-0000" }), /^Đây là lượt tiếp theo sau câu trả lời của người dùng cho yêu cầu r-20261017130000-0000\./);
+  const f = P.director.promptFragments();
+  assert.ok(p.includes(`Bạn là ${f.role},`) && p.includes(`1. ${f.skills}`) && p.includes(`6. ${f.secrets}`), "the provider's lines keep their place");
+  assert.match(p, /^11\. BRIEF\.md và DEMO\.md/m);
+  assert.match(buildPrompt(P, dir(), { ...req, follows: "r-20261017130000-0000" }), /^Đây là lượt tiếp theo sau câu trả lời của người dùng cho yêu cầu r-20261017130000-0000\./);
 });
 
 test("a job that ends after studio_ask leaves the request waiting_user", async () => {

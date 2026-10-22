@@ -1,25 +1,33 @@
-// studio/gates.mjs — the user's answer to a director card (studio_ask). The human gates are
+// gates.mjs — the user's answer to a director card (studio_ask). The human gates are
 // written here, by Studio, never by the director:
-// - gate "direction" (choice): make-pitch.mjs choose --pick <option id> --accept-warnings writes
+// - gate "direction" (choice): the provider's choose command writes
 //   direction:, style_profile, brand and RECIPES.md into the project after its compat check;
 // - gate "animatic" (approve): the first `approval:` line of DEMO.md becomes
 //   `approval: user@studio <ISO> <what>`; a reject writes nothing.
 // Then the request is answered (done + a queued follow-up with follows: id). answerCard returns
 // { status, body }; status 200 body { next: <new request id>, request: <the follow-up> }.
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { loadPlugin } from "./lib/plugin.mjs";
+import { basename, join } from "node:path";
+import { loadProvider } from "./lib/provider.mjs";
 import { runFile } from "./create.mjs";
-
-const { load, list, answer, SCRIPTS } = await loadPlugin();
 
 export const BY = "user@studio";
 const PITCH_TIMEOUT_MS = 60000;
 const APPROVAL = /^\s*[-*]?\s*approval:.*$/im;
 
-// Runs make-pitch choose for pick. Returns { code, stdout, stderr }.
-export function writeDirection(dir, pick, { run = runFile } = {}) {
-  return run(process.execPath, [join(SCRIPTS, "make-pitch.mjs"), "choose", "--project", dir, "--pick", String(pick), "--accept-warnings"], { cwd: dir, timeout: PITCH_TIMEOUT_MS });
+// The argv after `node` that writes the picked direction. A provider that declares
+// commands.choose = { file, args } (placeholders {project}, {pick}) is run as declared; otherwise
+// its pitch command gets `choose --project <dir> --pick <n> --accept-warnings`.
+export function chooseArgv(commands, dir, pick) {
+  const c = commands.choose;
+  if (c && typeof c.file === "string" && Array.isArray(c.args)) return [c.file, ...c.args.map((a) => String(a).replaceAll("{project}", dir).replaceAll("{pick}", String(pick)))];
+  return [commands.pitch, "choose", "--project", dir, "--pick", String(pick), "--accept-warnings"];
+}
+
+// Runs the provider's choose command for pick. Returns { code, stdout, stderr }.
+export async function writeDirection(dir, pick, { run = runFile } = {}) {
+  const p = await loadProvider();
+  return run(process.execPath, chooseArgv(p.commands, dir, pick), { cwd: dir, timeout: PITCH_TIMEOUT_MS });
 }
 
 // Replaces the first approval: line of DEMO.md (or appends one). Returns the line, or null when
@@ -55,7 +63,8 @@ export function checkValue(ask, value) {
 }
 
 export async function answerCard(dir, { id, value }, { run = runFile } = {}) {
-  const req = list(dir).find((r) => r.id === id);
+  const p = await loadProvider();
+  const req = p.requests.list(dir).find((r) => r.id === id);
   if (!req) return { status: 404, body: { error: `không có yêu cầu ${id}` } };
   if (req.status !== "waiting_user" || !req.ask) return { status: 409, body: { error: `yêu cầu ${id} đang ${req.status}, không chờ trả lời` } };
   const ask = req.ask;
@@ -63,16 +72,16 @@ export async function answerCard(dir, { id, value }, { run = runFile } = {}) {
   if (v.error) return { status: 400, body: { error: v.error } };
 
   if (ask.gate === "direction" && ask.kind === "choice") {
-    if (!/^[1-9]\d*$/.test(v.pick)) return { status: 422, body: { error: `option ${v.pick} không phải số pick của make-pitch` } };
+    if (!/^[1-9]\d*$/.test(v.pick)) return { status: 422, body: { error: `option ${v.pick} không phải số pick hợp lệ` } };
     const r = await writeDirection(dir, v.pick, { run });
-    if (r.code !== 0) return { status: 422, body: { error: `make-pitch choose lỗi (exit ${r.code})`, stderr: String(r.stderr || r.stdout).trimEnd().split("\n").slice(-20).join("\n") } };
+    if (r.code !== 0) return { status: 422, body: { error: `${basename(chooseArgv(p.commands, dir, v.pick)[0])} choose lỗi (exit ${r.code})`, stderr: String(r.stderr || r.stdout).trimEnd().split("\n").slice(-20).join("\n") } };
   }
   if (ask.gate === "animatic" && ask.kind === "approve" && v.approve) {
     if (!writeApproval(dir, `duyệt animatic ${ask.artifacts?.[0] ?? ""}`)) return { status: 409, body: { error: "Chưa có DEMO.md, cần chạy make-demo trước" } };
   }
 
   let out;
-  try { out = answer(dir, id, { value: v.text, base: load(dir).version, by: BY }); } catch (e) {
+  try { out = p.requests.answer(dir, id, { value: v.text, base: p.manifest.load(dir).version, by: BY }); } catch (e) {
     return { status: /waiting_user/.test(e.message) ? 409 : 400, body: { error: e.message } };
   }
   return { status: 200, body: { next: out.next.id, request: out.next } };

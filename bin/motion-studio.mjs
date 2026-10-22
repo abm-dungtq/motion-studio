@@ -1,38 +1,42 @@
 #!/usr/bin/env node
-// motion-studio.mjs — run Motion Studio, the local web app over the opus-video command gateway
-// (server.mjs; the plugin is found by lib/plugin.mjs: $OPUS_VIDEO_HOME, else ~/.claude/skills/opus-video).
+// motion-studio.mjs — run Motion Studio, the local web app over a provider's command gateway
+// (server.mjs; the provider is found by lib/provider.mjs and loaded on first use: the server
+// starts without one and the page says what is missing).
 //   node bin/motion-studio.mjs start [--background] [--root <dir>]   serve http://127.0.0.1:4317
 //   node bin/motion-studio.mjs status                                 running <url> … | stopped
 //   node bin/motion-studio.mjs stop                                   SIGTERM, then the pidfile is removed
 //   node bin/motion-studio.mjs --help | -h
-// Root: --root, else $OPUS_STUDIO_ROOT, else /Volumes/2/Edit-Video. Projects are its direct
+// Root: --root, else $MOTION_STUDIO_ROOT, else the root of the last run (kept in the state file),
+// else /Volumes/2/Edit-Video (fallback until 2.0). Projects are its direct
 // children holding project.json (or index.html + BRIEF.md, offered as "Nhập dự án").
 // One server on this machine: pid, root, port and the token of the run are kept in
-// ~/.config/opus-video/studio.json (chmod 600; $OPUS_STUDIO_STATE overrides the path). start
+// ~/.config/motion-studio/studio.json (chmod 600; $MOTION_STUDIO_STATE overrides the path; the
+// state file of the default provider's old Studio is copied there once, never removed). start
 // with a live server for the same root prints its URL; for another root it refuses (exit 3) and
 // names the running root. Port 4317 held by another process: "cổng 4317 đang bị <pid> giữ",
 // exit 3; the port never changes. Binds 127.0.0.1 only. Background log: studio.log beside the
 // state file.
 // Settings in the same file survive stop and start: {"director": {"runner": "cli" | "mcp"}}
-// (default cli: Studio runs `claude -p` itself; mcp: an open Claude Code session takes the queue).
+// (default cli: Studio runs `claude -p` itself; mcp: an open Claude Code session takes the queue)
+// and "root". Old variable names (OPUS_STUDIO_ROOT, OPUS_STUDIO_STATE) still work, with a warning.
 // stop waits up to 10 s: running jobs (director, export) get SIGTERM, then SIGKILL after 5 s.
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, realpathSync, rmSync, writeFileSync, chmodSync, renameSync } from "node:fs";
 import { spawn, execFileSync } from "node:child_process";
-import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { logFile, migrateState, readState as readStateFile, rootDefault, settingsOf, stateFile } from "../lib/config.mjs";
+import { legacyStateFiles, providerStatus } from "../lib/provider.mjs";
 
 export const PORT = 4317;
 export const HOST = "127.0.0.1";
-const STATE = process.env.OPUS_STUDIO_STATE || join(homedir(), ".config", "opus-video", "studio.json");
-const LOG = join(dirname(STATE), "studio.log");
+// Resolved in main(), after the legacy state file is copied.
+let STATE, LOG;
 const url = () => `http://${HOST}:${PORT}/`;
 
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
-export function readState() { try { return JSON.parse(readFileSync(STATE, "utf8")); } catch { return null; } }
-// Settings kept across runs (director.runner); the rest of the file describes the running server.
-const settingsOf = (s) => (s?.director ? { director: s.director } : null);
+export const readState = () => readStateFile(STATE);
+// Settings kept across runs (director.runner, root); the rest of the file describes the running server.
 function clearState() {
   const keep = settingsOf(readState());
   if (keep) writeState(keep); else rmSync(STATE, { force: true });
@@ -55,7 +59,7 @@ async function live() {
   const owner = portOwner();
   return (owner === undefined ? await answers(s) : owner === String(s.pid)) ? s : null;
 }
-const rootOf = (o) => realpathSync(resolve(o.root || process.env.OPUS_STUDIO_ROOT || "/Volumes/2/Edit-Video"));
+const rootOf = (o) => resolve(o.root || rootDefault());
 
 async function serve(root) {
   const { createServer } = await import("../server.mjs");
@@ -82,7 +86,9 @@ async function serve(root) {
 }
 
 async function start(o) {
-  const root = rootOf(o);
+  let root = rootOf(o);
+  if (!existsSync(root)) { console.error(`studio: không có thư mục gốc ${root}; chọn --root <dir> hoặc đặt MOTION_STUDIO_ROOT`); return 2; }
+  root = realpathSync(root);
   const s = await live();
   if (s) {
     if (s.root === root) { console.log(`đang chạy: ${s.url} (pid ${s.pid})`); return 0; }
@@ -92,10 +98,14 @@ async function start(o) {
   if (readState()) clearState();
   const owner = portOwner();
   if (owner) { console.error(`studio: cổng ${PORT} đang bị ${owner} giữ`); return 3; }
+  if (!o.child) {
+    const ps = await providerStatus();
+    if (!ps.ok) console.error(`studio: chưa có provider (${ps.error}); chạy: ${ps.setup}`);
+  }
   if (!o.background) { await serve(root); return null; }
   mkdirSync(dirname(STATE), { recursive: true });
   const fd = openSync(LOG, "a");
-  const p = spawn(process.execPath, [fileURLToPath(import.meta.url), "start", "--root", root], { detached: true, stdio: ["ignore", fd, fd], env: process.env });
+  const p = spawn(process.execPath, [fileURLToPath(import.meta.url), "start", "--root", root, "--child"], { detached: true, stdio: ["ignore", fd, fd], env: process.env });
   p.unref();
   closeSync(fd);
   for (let i = 0; i < 100; i++) {
@@ -135,11 +145,15 @@ function help() {
 
 export async function main(argv = process.argv.slice(2)) {
   if (argv.some((a) => a === "--help" || a === "-h")) { help(); return 0; }
+  migrateState(await legacyStateFiles());
+  STATE = stateFile();
+  LOG = logFile();
   const [cmd, ...rest] = argv;
   const o = {};
   for (let i = 0; i < rest.length; i++) {
     if (rest[i] === "--background") o.background = true;
     else if (rest[i] === "--root") o.root = rest[++i];
+    else if (rest[i] === "--child") o.child = true; // the background server itself: the parent already warned
     else { console.error(`studio: unknown argument ${rest[i]}`); return 2; }
   }
   if (o.root !== undefined && (!o.root || !existsSync(o.root))) { console.error(`studio: không có thư mục ${o.root}`); return 2; }

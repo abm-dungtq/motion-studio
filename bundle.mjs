@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// studio/bundle.mjs — "bộ lớp dựng": the project as layers for an NLE (Concat, CapCut, DaVinci,
+// bundle.mjs — "bộ lớp dựng": the project as layers for an NLE (Concat, CapCut, DaVinci,
 // Premiere), so the user can fine-tune the cut there.
 //   node bundle.mjs --project <dir> [--ratio 9x16] [--source <mp4>] [--out <dir>]
 // Writes <out> (default renders/<name>-<yyyymmdd-hhmmss>[-<ratio>]-bundle/ in the project):
 //   shots/NN-<shot id>.mp4  picture only, H.264 CRF 12, cut at the shot bounds of project.json
 //                           rounded to frames (frame = round(t × fps), from the start of the
 //                           video, so rounding never adds up); the last shot runs to the end
-//   audio/mix.wav           the whole sound, as audio-mix.mjs of the plugin rebuilds it
+//   audio/mix.wav           the whole sound, as the provider's mix command rebuilds it
 //   audio/voice.wav, audio/music.wav (music after ducking), audio/sfx.wav: the same mix split by
 //                           role (audio-mix's voice and bed rules; everything else is sfx); each
 //                           only when such tracks exist; 48 kHz stereo, full length, start at 0
@@ -23,7 +23,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSyn
 import { spawnSync } from "node:child_process";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadPlugin } from "./lib/plugin.mjs";
+import { loadProvider } from "./lib/provider.mjs";
 
 export const SCHEMA = "motion-studio/bundle@1";
 export const CUE_MAX = 84; // two subtitle rows of about 42 characters
@@ -83,8 +83,8 @@ const stamp = (t) => {
 export const srt = (list) => list.map((c, i) => `${i + 1}\n${stamp(c.start)} --> ${stamp(c.end)}\n${c.text}\n`).join("\n");
 
 // The <audio>/<video> tags of html that audio-mix plays, split by role with audio-mix's own rules.
-export async function audioRoles(html, baseDir, scripts) {
-  const mix = await import(pathToFileURL(join(scripts, "audio-mix.mjs")).href);
+export async function audioRoles(html, baseDir, mixScript) {
+  const mix = await import(pathToFileURL(mixScript).href);
   const flat = html.replace(/<!--[\s\S]*?-->/g, " ").replace(/\r?\n/g, " ");
   const pairs = [];
   for (const [tag] of flat.matchAll(/<(audio|video)\b[^>]*>/gi)) {
@@ -134,8 +134,10 @@ export async function main(argv = process.argv.slice(2), { log = console.log, er
   if (!existsSync(join(dir, "project.json"))) { err(`không có project.json trong ${dir}`); return 2; }
   const ratio = o.ratio ?? "16x9";
   if (!RATIO.test(ratio)) { err("--ratio dạng 9x16"); return 2; }
-  const { load, SCRIPTS } = await loadPlugin();
-  const m = load(dir);
+  let p;
+  try { p = await loadProvider(); } catch (e) { err(`chưa có provider: ${e.message}${e.hint ? `\n${e.hint}` : ""}`); return 1; }
+  const MIX = p.commands.mix;
+  const m = p.manifest.load(dir);
   const fps = Number(m.fps) || 30;
   const comp = ratio === "16x9" ? (m.html || "index.html") : `compositions/main-${ratio}.html`;
   const compPath = join(dir, comp);
@@ -178,19 +180,19 @@ export async function main(argv = process.argv.slice(2), { log = console.log, er
     // 3. Sound.
     const seconds = String(src.frames / fps);
     const html = readFileSync(compPath, "utf8");
-    const roles = await audioRoles(html, dirname(compPath), SCRIPTS);
+    const roles = await audioRoles(html, dirname(compPath), MIX);
     const audio = [];
     if (roles.voice.length + roles.music.length + roles.sfx.length) {
       mkdirSync(join(out, "audio"), { recursive: true });
       log("Tiếng: mix, voice, music (audio-mix)");
-      run(process.execPath, [join(SCRIPTS, "audio-mix.mjs"), "--html", compPath, "--duration", seconds, "--out", join(out, "audio", "mix.wav"), "--base", dir, "--stems", join(out, "audio")]);
+      run(process.execPath, [MIX, "--html", compPath, "--duration", seconds, "--out", join(out, "audio", "mix.wav"), "--base", dir, "--stems", join(out, "audio")]);
       audio.push({ kind: "mix", file: "audio/mix.wav" });
       for (const kind of ["voice", "music"]) if (roles[kind].length && existsSync(join(out, "audio", `${kind}.wav`))) audio.push({ kind, file: `audio/${kind}.wav` });
       if (roles.sfx.length) {
         log(`Tiếng: sfx (${roles.sfx.length} track)`);
         const sfxHtml = join(work, "sfx.html");
         writeFileSync(sfxHtml, `<!doctype html>\n${roles.sfx.join("\n")}\n`);
-        run(process.execPath, [join(SCRIPTS, "audio-mix.mjs"), "--html", sfxHtml, "--duration", seconds, "--out", join(out, "audio", "sfx.wav"), "--base", dirname(compPath)]);
+        run(process.execPath, [MIX, "--html", sfxHtml, "--duration", seconds, "--out", join(out, "audio", "sfx.wav"), "--base", dirname(compPath)]);
         audio.push({ kind: "sfx", file: "audio/sfx.wav" });
       }
     } else log("Tiếng: composition không có <audio>, bỏ qua");

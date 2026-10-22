@@ -324,6 +324,14 @@ async function open(name) {
   const banner = $("banner");
   banner.hidden = true;
   setManifest(null);
+  const ps = ctx.state.providerStatus;
+  if (ps && !ps.ok) {
+    banner.replaceChildren(h("strong", {}, ps.error ?? "Chưa có provider."), " Chạy ", h("code", {}, ps.setup ?? "npm run setup"), " trong thư mục Motion Studio, rồi tải lại trang.");
+    banner.hidden = false;
+    player.clear("Chưa có provider: xem hướng dẫn phía trên");
+    ctx.emit("project", entry);
+    return;
+  }
   if (entry && !entry.has_manifest) {
     banner.replaceChildren("Dự án chưa có project.json. ", h("button", { class: "btn", onclick: () => importProject(name) }, "Nhập dự án"));
     banner.hidden = false;
@@ -422,5 +430,6 @@ function runKey(a) {
   }
 }
 
+ctx.state.providerStatus = await ctx.api("/api/status").catch(() => null);
 await loadProjects().catch((e) => toast(`Không tải được danh sách dự án: ${e.message}`, true));
 open(new URL(location.href).searchParams.get("name") ?? "");

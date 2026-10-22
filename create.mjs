@@ -1,15 +1,13 @@
-// studio/create.mjs — "Dự án mới" in Motion Studio. createProject(root, input, { run }) validates
-// the form, runs the workspace's <root>/scripts/new-project.sh (no shell, cwd root, env OV = the
-// plugin), writes mode/topic/audience into the BRIEF.md frontmatter (never direction: — that one is
-// the user's pick in the direction card), builds project.json with manifest-import.mjs and queues
+// create.mjs — "Dự án mới" in Motion Studio. createProject(root, input, { run }) validates
+// the form, runs the workspace's <root>/scripts/new-project.sh (no shell, cwd root, plus the
+// provider's projectEnv, which tells the script where the provider lives), writes mode/topic/audience into the BRIEF.md frontmatter (never direction: — that one is
+// the user's pick in the direction card), builds project.json with the provider's import command and queues
 // the optional first request. Returns { status, body, dir? }; status 200 body { name, editable,
 // request }. The caller starts the director (pump) when body.request is set.
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { execFile } from "node:child_process";
-import { join } from "node:path";
-import { loadPlugin } from "./lib/plugin.mjs";
-
-const { load, enqueue, OV, SCRIPTS } = await loadPlugin();
+import { basename, join } from "node:path";
+import { loadProvider } from "./lib/provider.mjs";
 
 export const NEW_NAME = /^[a-z0-9][a-z0-9-]{1,48}$/;
 export const ASPECTS = ["16:9", "9:16", "both"];
@@ -56,6 +54,8 @@ export function validateInput(input) {
 export async function createProject(root, input, { run = runFile } = {}) {
   const bad = validateInput(input);
   if (bad) return { status: 400, body: { error: bad } };
+  const p = await loadProvider();
+  const { load } = p.manifest;
   const { name, aspect, mode, duration } = input;
   for (const n of [name, `${name}-9x16`]) {
     if (existsSync(join(root, n))) return { status: 409, body: { error: `Đã có thư mục ${n} trong workspace` } };
@@ -63,7 +63,7 @@ export async function createProject(root, input, { run = runFile } = {}) {
   const script = join(root, "scripts", "new-project.sh");
   if (!existsSync(script)) return { status: 501, body: { error: "Workspace thiếu scripts/new-project.sh" } };
 
-  const made = await run("bash", [script, name, "--aspect", aspect, "--duration", String(duration)], { cwd: root, env: { ...process.env, OV }, timeout: SCRIPT_TIMEOUT_MS });
+  const made = await run("bash", [script, name, "--aspect", aspect, "--duration", String(duration)], { cwd: root, env: { ...process.env, ...p.projectEnv }, timeout: SCRIPT_TIMEOUT_MS });
   if (made.code !== 0) return { status: 500, body: { error: `new-project.sh lỗi (exit ${made.code})`, stderr: tail(made.stderr || made.stdout) } };
 
   const folder = aspect === "9:16" ? `${name}-9x16` : name;
@@ -78,12 +78,12 @@ export async function createProject(root, input, { run = runFile } = {}) {
   writeFileSync(tmp, setFrontmatter(old, pairs));
   renameSync(tmp, brief);
 
-  const imp = await run(process.execPath, [join(SCRIPTS, "manifest-import.mjs"), "--project", dir, "--write"], { cwd: dir, timeout: IMPORT_TIMEOUT_MS });
-  if (imp.code !== 0) return { status: 500, body: { error: `manifest-import.mjs lỗi (exit ${imp.code})`, stderr: tail(imp.stderr || imp.stdout) } };
+  const imp = await run(process.execPath, [p.commands.import, "--project", dir, "--write"], { cwd: dir, timeout: IMPORT_TIMEOUT_MS });
+  if (imp.code !== 0) return { status: 500, body: { error: `${basename(p.commands.import)} lỗi (exit ${imp.code})`, stderr: tail(imp.stderr || imp.stdout) } };
 
   let m;
   try { m = load(dir); } catch (e) { return { status: 500, body: { error: `project.json không đọc được: ${e.message}` } }; }
   let request = null;
-  if (String(input.first_request ?? "").trim()) request = enqueue(dir, { scope: "project", base: m.version, text: input.first_request.trim() });
+  if (String(input.first_request ?? "").trim()) request = p.requests.enqueue(dir, { scope: "project", base: m.version, text: input.first_request.trim() });
   return { status: 200, dir, body: { name: folder, editable: Boolean(m.capabilities?.editable), request } };
 }
