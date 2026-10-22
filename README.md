@@ -61,6 +61,23 @@ Không chạy khi con trỏ đang ở ô nhập liệu.
 | Cmd/Ctrl+Z | Hoàn tác |
 | Cmd/Ctrl+Shift+Z | Làm lại (nút "Làm lại" luôn bật; không còn gì để làm lại thì hiện thông báo) |
 
+## Bộ lớp dựng
+
+Nút "Xuất bộ lớp dựng" trong tab Xuất bản xuất dự án thành các lớp để dựng tiếp trong Concat, CapCut, DaVinci hay Premiere. Chạy tay bằng lệnh:
+
+```bash
+node bundle.mjs --project <thư mục dự án> [--ratio 9x16] [--source <mp4 đã render>] [--out <thư mục>]
+```
+
+Kết quả nằm trong `renders/<dự án>-<thời điểm>[-<tỉ lệ>]-bundle/`:
+
+- `shots/NN-<shot>.mp4`: hình từng shot (H.264 CRF 12, không tiếng), cắt theo mốc shot trong `project.json` làm tròn về khung.
+- `audio/mix.wav`, `voice.wav`, `music.wav`, `sfx.wav`: tiếng tổng và tiếng tách theo vai, 48 kHz, dài bằng video, đặt từ giây 0.
+- `captions.srt`: phụ đề từ các câu thoại, câu dài được tách theo mốc từng từ.
+- `manifest.json` (schema `motion-studio/bundle@1`): khung vào và ra của từng shot, file tiếng, câu thoại, SFX.
+
+HyperFrames không render riêng một đoạn, nên lệnh render cả video một lần rồi cắt. Chuyển cảnh nằm sẵn trong hình của các shot nó vắt qua: giữ thứ tự và độ dài shot thì nối lại liền mạch. Lệnh dùng chung hàng đợi với Xuất video, mỗi dự án chạy một việc xuất một lúc. Bước nào lỗi thì cả thư mục bị xoá.
+
 ## Biến môi trường
 
 | Biến | Dùng để |

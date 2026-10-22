@@ -22,7 +22,8 @@
 // (studio/gates.mjs). POST /api/redo replays the last undo. GET /api/sounds lists project and
 // <root>/shared-assets/sfx audio; POST /api/sounds/import copies a shared sound into assets/sfx/
 // without overwriting. GET /api/gates runs check-preflight --stage final (one run per project at a
-// time). createServer's run and mediaRoots options exist for tests.
+// time). POST /api/bundle runs bundle.mjs (shots, stems, SRT, manifest for an NLE) as an export
+// job. createServer's run and mediaRoots options exist for tests.
 import { createServer as httpServer } from "node:http";
 import { constants as FS, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, watch, createReadStream } from "node:fs";
 import { execFile, execFileSync } from "node:child_process";
@@ -40,6 +41,7 @@ const { load, patch, undo, redo, readHistory, EXIT, enqueue, cancelRequest, expi
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const PUBLIC = join(HERE, "public");
+const BUNDLE = join(HERE, "bundle.mjs");
 const COMPRESS = process.env.OPUS_COMPRESS_FINAL || "/Volumes/2/Edit-Video/scripts/compress-final.sh";
 const RATIO = /^\d+x\d+$/;
 export const NAME = /^[A-Za-z0-9._-]+$/;
@@ -434,6 +436,20 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
               });
             },
           });
+          return send(res, 200, { job });
+        } catch (e) { return send(res, e.code === "BUSY" ? 409 : 500, { error: e.message }); }
+      }
+      if (p === "/api/bundle") {
+        const pd = withManifest(b.name);
+        if (pd.error) return send(res, pd.status, { error: pd.error });
+        const ratio = b.ratio ?? "16x9";
+        if (!RATIO.test(String(ratio))) return send(res, 400, { error: "ratio dạng 9x16" });
+        if (ratio !== "16x9" && !existsSync(join(pd.dir, `compositions/main-${ratio}.html`))) return send(res, 400, { error: `không có compositions/main-${ratio}.html (chạy reframe.mjs trước)` });
+        const d = new Date(), z = (n) => String(n).padStart(2, "0");
+        const out = `renders/${b.name}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}${ratio !== "16x9" ? `-${ratio}` : ""}-bundle`;
+        // Same job kind as the export: one heavy render per project at a time.
+        try {
+          const job = startJob({ name: b.name, kind: "export", cmd: process.execPath, args: [BUNDLE, "--project", pd.dir, "--ratio", ratio, "--out", out], cwd: pd.dir, meta: { step: "bundle", output: out } });
           return send(res, 200, { job });
         } catch (e) { return send(res, e.code === "BUSY" ? 409 : 500, { error: e.message }); }
       }

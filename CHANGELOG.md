@@ -2,6 +2,7 @@
 
 ## Chưa phát hành
 
+- Xuất bộ lớp dựng (`bundle.mjs`, nút "Xuất bộ lớp dựng" trong tab Xuất bản, `POST /api/bundle`): MP4 từng shot cắt đúng khung, tiếng tổng cùng giọng, nhạc, SFX tách riêng, phụ đề SRT và `manifest.json`, để dựng tiếp trong Concat, CapCut, DaVinci hay Premiere.
 - Sửa: bấm chọn hướng hay "Duyệt" trên thẻ đạo diễn vẫn có lúc không gửi gì và không báo gì. Giữ nguyên node thẻ chưa đủ: mỗi lần vẽ lại, panel gỡ thẻ ra rồi gắn vào khung mới, và Chromium bỏ cú click khi nút rời trang giữa lúc nhấn và nhả chuột, kể cả khi nút được gắn lại. Panel giờ hoãn vẽ lại tới khi nhả chuột (hoặc phím Space), rồi mới vẽ sau cú click.
 - Câu trả lời thẻ chờ tối đa 90 giây; quá hạn hay lỗi trong trang thì thẻ ghi rõ lý do thay vì khoá nút mãi. Mỗi câu trả lời tới server được ghi một dòng trong `studio.log`.
 

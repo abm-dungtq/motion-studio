@@ -13,12 +13,13 @@ const TABS = [
   { id: "voice", label: "Lời & giọng", lead: "Sửa lời từng câu. Câu đã sửa cần qua cổng viet-pro và lồng tiếng lại." },
   { id: "music", label: "Nhạc & âm thanh", lead: "Nhạc nền và hiệu ứng âm thanh gắn theo shot." },
   { id: "library", label: "Thư viện mẫu", lead: "Tìm video, cảnh hoặc phong cách có sẵn để AI làm theo." },
-  { id: "output", label: "Xuất bản", lead: "Xuất MP4 bản giao (render rồi nén) và tải file đã xuất." },
+  { id: "output", label: "Xuất bản", lead: "Xuất MP4 bản giao (render rồi nén), bộ lớp dựng cho phần mềm dựng, và tải file đã xuất." },
 ];
 const IDS = TABS.map((t) => t.id);
 const STORE = "studio.tab";
 
 const KIND = { director: "Đạo diễn", export: "Xuất video" };
+const STEP = { bundle: "bộ lớp dựng" };
 const safeUrl = (u) => (/^https?:\/\//i.test(String(u ?? "")) ? u : null);
 // Shortens text at a word boundary so a card never ends mid-word.
 const clip = (t, n) => { const s = String(t ?? "").trim(); if (s.length <= n) return s; const cut = s.slice(0, n); return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), n * 0.6)).trimEnd()}…`; };
@@ -243,8 +244,18 @@ export function mountPanels(ctx, railEl, panelEl) {
       if (!name || !ctx.state.m) return [needManifest()];
       const renders = h("div", { class: "stack" }, loading());
       ctx.api(`/api/files?name=${encodeURIComponent(name)}&dir=renders`).then((fs) => {
-        const mp4 = fs.filter((f) => /\.mp4$/i.test(f.path)).reverse();
-        renders.replaceChildren(...(mp4.length ? mp4.map((f) => h("div", { class: "card file-row" }, h("a", { href: fileUrl(name, f.path), target: "_blank", rel: "noopener" }, f.path.replace(/^renders\//, "")), h("span", { class: "muted num" }, mb(f.size))))
+        // A bundle folder is one row (its manifest), not one row per shot MP4.
+        const bundles = new Map();
+        for (const f of fs) {
+          const m = /^renders\/([^/]+-bundle)\//.exec(f.path);
+          if (m) { const x = bundles.get(m[1]) ?? { size: 0, manifest: null }; x.size += f.size; if (f.path.endsWith("/manifest.json")) x.manifest = f.path; bundles.set(m[1], x); }
+        }
+        const mp4 = fs.filter((f) => /\.mp4$/i.test(f.path) && !/^renders\/[^/]+-bundle\//.test(f.path)).reverse();
+        const rows = [
+          ...[...bundles].filter(([, x]) => x.manifest).reverse().map(([dir, x]) => h("div", { class: "card file-row" }, h("a", { href: fileUrl(name, x.manifest), target: "_blank", rel: "noopener", title: "manifest.json của bộ lớp dựng" }, `${dir}/`), h("span", { class: "muted num" }, mb(x.size)))),
+          ...mp4.map((f) => h("div", { class: "card file-row" }, h("a", { href: fileUrl(name, f.path), target: "_blank", rel: "noopener" }, f.path.replace(/^renders\//, "")), h("span", { class: "muted num" }, mb(f.size)))),
+        ];
+        renders.replaceChildren(...(rows.length ? rows
           : [h("p", { class: "empty" }, "Chưa có bản xuất. Bấm Xuất video ở trên; file MP4 hiện ở đây khi xong.")]));
       }).catch((e) => renders.replaceChildren(fail(e)));
       logEls.clear();
@@ -253,7 +264,7 @@ export function mountPanels(ctx, railEl, panelEl) {
         logEls.set(j.id, pre);
         const live = j.status === "running" || j.status === "cancelling";
         return h("div", { class: "card" },
-          h("div", { class: "row" }, h("strong", {}, `${KIND[j.kind] ?? j.kind}${j.meta?.step ? ` · ${j.meta.step}` : ""}`), h("span", { class: "muted" }, live ? "đang chạy" : j.status === "cancelled" ? "đã huỷ" : `exit ${j.code ?? j.signal}`)),
+          h("div", { class: "row" }, h("strong", {}, `${KIND[j.kind] ?? j.kind}${j.meta?.step ? ` · ${STEP[j.meta.step] ?? j.meta.step}` : ""}`), h("span", { class: "muted" }, live ? "đang chạy" : j.status === "cancelled" ? "đã huỷ" : `exit ${j.code ?? j.signal}`)),
           j.meta?.message ? h("span", {}, j.meta.message) : null,
           h("details", { open: live }, h("summary", {}, "Log"), pre),
           live ? h("div", { class: "row" }, h("button", { class: "btn", onclick: () => ctx.cancelJob(j.id) }, "Dừng")) : null);
@@ -265,7 +276,8 @@ export function mountPanels(ctx, railEl, panelEl) {
         : null;
       return [
         gates,
-        h("section", { class: "group" }, h("div", { class: "row" }, h("button", { class: "btn primary", onclick: () => ctx.exportVideo() }, "Xuất video"))),
+        h("section", { class: "group" }, h("div", { class: "row" }, h("button", { class: "btn primary", onclick: () => ctx.exportVideo() }, "Xuất video"),
+          h("button", { class: "btn", title: "MP4 từng shot, tiếng tách lớp (giọng, nhạc, SFX), phụ đề SRT và manifest.json, để dựng tiếp trong Concat, CapCut hay DaVinci", onclick: () => ctx.exportBundle() }, "Xuất bộ lớp dựng"))),
         h("section", { class: "group" }, h("h3", {}, "Việc đang chạy"), ...(jobs.length ? jobs : [h("p", { class: "empty" }, "Không có việc nào đang chạy. Bấm Xuất video để render bản giao.")])),
         h("section", { class: "group" }, h("h3", {}, "File đã xuất"), renders),
       ];

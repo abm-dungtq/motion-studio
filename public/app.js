@@ -166,6 +166,15 @@ const ctx = {
     toast("Đang xuất video: render bản giao rồi nén");
     await refreshQueue();
   },
+  // Bộ lớp dựng (bundle.mjs): shot MP4s, stems, SRT and manifest for an NLE, as an export job.
+  async exportBundle() {
+    const { name } = ctx.state;
+    if (!name || !ctx.state.m) return;
+    const r = await ctx.send("/api/bundle", { name });
+    if (r.status !== 200) return toast(r.error ?? `Lỗi ${r.status}`, true);
+    toast("Đang xuất bộ lớp dựng: render rồi cắt từng shot");
+    await refreshQueue();
+  },
   // Show a block in the inspector; sel follows to the shot it belongs to (music keeps sel).
   pick(kind, id) {
     const m = ctx.state.m;
@@ -277,7 +286,8 @@ function onJob(e) {
   if (e.type === "exit" && e.job.kind === "export") {
     if (e.job.code === 5) toast(e.job.meta?.message ?? "Thiếu cổng", true);
     else if (e.job.code === 0 && e.job.meta?.step === "compress") toast(`Đã xuất ${e.job.meta.output}`);
-    else if (e.job.code !== 0 && e.job.status !== "cancelled") toast(`Xuất video lỗi (exit ${e.job.code})`, true);
+    else if (e.job.code === 0 && e.job.meta?.step === "bundle") toast(`Đã xuất bộ lớp dựng ${e.job.meta.output}`);
+    else if (e.job.code !== 0 && e.job.status !== "cancelled") toast(`${e.job.meta?.step === "bundle" ? "Xuất bộ lớp dựng" : "Xuất video"} lỗi (exit ${e.job.code})`, true);
   }
   ctx.emit("jobs", e);
 }

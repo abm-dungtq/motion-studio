@@ -204,6 +204,16 @@ test("export: a project without demo approval stops at the gate (exit 5) and is 
   assert.equal((await post("/api/export", { name: "old", ratio: "9x16" })).status, 400);
 });
 
+test("bundle: bad ratio, missing reframe and a folder without project.json are refused before any job starts", async () => {
+  assert.equal((await post("/api/bundle", { name: "demo", ratio: "tall" })).status, 400);
+  const r = await post("/api/bundle", { name: "demo", ratio: "9x16" });
+  assert.equal(r.status, 400);
+  assert.match(r.json.error, /main-9x16\.html/);
+  assert.notEqual((await post("/api/bundle", { name: "fresh" })).status, 200);
+  assert.notEqual((await post("/api/bundle", { name: ".." })).status, 200);
+  assert.equal((await http("GET", "/api/jobs?name=demo")).json.length, 0);
+});
+
 test("GET /api/agent reports claude, runner, last job and ffmpeg; no claude on PATH is found: false", async () => {
   const keys = ["claude", "runner", "last_job", "ffprobe", "ffmpeg"];
   const prevPath = process.env.PATH;
