@@ -6,6 +6,7 @@
   "license": "MIT",
   "bin": { "motion-studio": "bin/motion-studio.mjs" },
   "scripts": {
+    "setup": "node bin/motion-studio.mjs setup",
     "test": "node --test tests/*.test.mjs"
   }
 }

@@ -5,6 +5,8 @@
 //   node bin/motion-studio.mjs start [--background] [--root <dir>]   serve http://127.0.0.1:4317
 //   node bin/motion-studio.mjs status                                 running <url> … | stopped
 //   node bin/motion-studio.mjs stop                                   SIGTERM, then the pidfile is removed
+//   node bin/motion-studio.mjs setup [--yes] [--ref <ref>] [--host claude|codex|all]
+//                                    install or update the provider (lib/setup.mjs; npm run setup)
 //   node bin/motion-studio.mjs --help | -h
 // Root: --root, else $MOTION_STUDIO_ROOT, else the root of the last run (kept in the state file),
 // else /Volumes/2/Edit-Video (fallback until 2.0). Projects are its direct
@@ -149,6 +151,12 @@ export async function main(argv = process.argv.slice(2)) {
   STATE = stateFile();
   LOG = logFile();
   const [cmd, ...rest] = argv;
+  if (cmd === "setup") {
+    const { parseArgs, runSetup } = await import("../lib/setup.mjs");
+    const so = parseArgs(rest);
+    if (so.error) { console.error(`setup: ${so.error}`); return 2; }
+    return runSetup(so);
+  }
   const o = {};
   for (let i = 0; i < rest.length; i++) {
     if (rest[i] === "--background") o.background = true;
@@ -160,7 +168,7 @@ export async function main(argv = process.argv.slice(2)) {
   if (cmd === "start") return start(o);
   if (cmd === "status") return status();
   if (cmd === "stop") return stop();
-  console.error("usage: node bin/motion-studio.mjs start [--background] [--root <dir>] | status | stop");
+  console.error("usage: node bin/motion-studio.mjs start [--background] [--root <dir>] | status | stop | setup [--yes] [--ref <ref>] [--host claude|codex|all]");
   return 2;
 }
 
