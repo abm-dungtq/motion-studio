@@ -3,7 +3,7 @@
 // ctx.patch; anything for the director (a task, "Dùng cho dự án", a changed line) through
 // ctx.direct. The open panel is kept in localStorage ("studio.tab") and in the URL (?tab=).
 // Keys: Alt+1…Alt+6 pick a panel; arrow keys, Home and End move along the rail (ARIA tabs).
-import { h, thumb, fmtS, isMedia } from "/dom.js";
+import { h, thumb, fmtS, isMedia, toast } from "/dom.js";
 import { icon } from "/icons.js";
 import { answerFailure, cardCache, cardKey, liveDirectorJob, pressGate } from "/gate-cards.js";
 
@@ -12,7 +12,7 @@ const TABS = [
   { id: "media", label: "Footage & chất liệu", lead: "Thêm video quay sẵn, B-roll, ảnh. File nằm ngoài workspace sẽ được chép vào footage/raw." },
   { id: "voice", label: "Lời & giọng", lead: "Sửa lời từng câu. Câu đã sửa cần qua cổng viet-pro và lồng tiếng lại." },
   { id: "music", label: "Nhạc & âm thanh", lead: "Nhạc nền và hiệu ứng âm thanh gắn theo shot." },
-  { id: "library", label: "Thư viện mẫu", lead: "Tìm video, cảnh hoặc phong cách có sẵn để AI làm theo." },
+  { id: "library", label: "Thư viện mẫu", lead: "Video, cảnh, phong cách và prompt mẫu làm bằng Claude Opus 5.5, có giải thích tiếng Việt, để AI làm theo." },
   { id: "output", label: "Xuất bản", lead: "Xuất MP4 bản giao (render rồi nén), bộ lớp dựng cho phần mềm dựng, và tải file đã xuất." },
 ];
 const IDS = TABS.map((t) => t.id);
@@ -30,36 +30,42 @@ const mss = (s) => { const t = Math.round(Number(s) || 0); return `${Math.floor(
 const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }); };
 const fileUrl = (name, path) => `/p/${encodeURIComponent(name)}/${path.split("/").map(encodeURIComponent).join("/")}`;
 
-// The three library sources share one search box. run(q) returns rows; use(row) is the request
-// text sent to the director. These are segments inside the library panel, not rail tabs.
+// The four library sections share one search box and page through GET /api/library. use(row) is
+// the request text sent to the director; copy(row) what "Chép" puts on the clipboard.
+const LIB_EXCERPT = 1500;
+const promptExcerpt = (p) => (p ? `\nPrompt gốc (trích):\n${clip(p, LIB_EXCERPT)}` : "");
 const LIBRARY = {
-  cases: {
-    label: `Video mẫu`, placeholder: "Từ khoá: logo, chart, product…",
-    run: (ctx, q) => ctx.api(`/api/cases?q=${encodeURIComponent(q)}`),
-    title: (c) => c.title || c.id,
-    lines: (c) => [`${c.author ?? "?"} · ${c.category ?? ""}`, clip(c.prompt, 160)],
-    link: (c) => safeUrl(c.url),
-    use: (c) => `Dùng case ${c.id} cho dự án này (nhanh theo case ${c.id}): đọc case qua ov-cases và case-template, giữ nội dung và lời của dự án.`,
+  videos: {
+    label: "Video mẫu", placeholder: "Từ khoá: logo, biểu đồ, ra mắt, 3D…",
+    title: (v) => v.title_vi ?? v.titles?.en ?? v.titles?.zh ?? v.id,
+    copy: (v) => v.prompt,
+    use: (v) => `Lấy cảm hứng từ video mẫu "${LIBRARY.videos.title(v)}" (@${v.author ?? "?"}, ${v.url ?? ""}) cho dự án này. ${v.vi ? `Học theo: ${v.vi.why} ${v.vi.how}` : ""} Giữ nội dung, lời và nhịp của dự án.${promptExcerpt(v.prompt)}`,
   },
   scenes: {
-    label: `Cảnh mẫu`, placeholder: "Từ khoá: biểu đồ, logo, chuyển cảnh…",
-    run: async (ctx, q) => {
-      const d = await ctx.api("/api/directions");
-      const k = q.toLowerCase();
-      return d.directions.filter((x) => !k || [x.id, x.ten_vi, x.mo_ta_vi].some((s) => String(s ?? "").toLowerCase().includes(k)));
-    },
-    title: (x) => x.ten_vi ?? x.id,
-    lines: (x) => [x.mo_ta_vi ?? "", x.seams?.length ? `Chuyển cảnh: ${x.seams.join(", ")}` : ""],
-    use: (x) => `Dùng mẫu cảnh ${x.id} (${x.ten_vi ?? x.id}) cho dự án này: dựng lại các shot theo hướng cảnh đó, giữ nội dung và lời của dự án.`,
+    label: "Cảnh mẫu", placeholder: "Từ khoá: chữ động, HUD, biến hình…",
+    title: (t) => t.name ?? t.id,
+    copy: (t) => t.prompt_hint,
+    use: (t) => t.source === "opus-video"
+      ? `Dùng mẫu cảnh ${t.id} (${t.name}) cho dự án này: dựng lại các shot theo hướng cảnh đó, giữ nội dung và lời của dự án.`
+      : `Áp kỹ thuật cảnh "${t.name}" vào những shot hợp của dự án này: ${t.what} Gợi ý cho prompt: ${t.prompt_hint ?? ""}. Giữ nội dung, lời và nhịp.`,
   },
   styles: {
-    label: `Phong cách`, placeholder: "Ví dụ: minimal, neon, editorial…",
-    run: (ctx, q) => ctx.api(`/api/styles?q=${encodeURIComponent(q)}`),
-    title: (s) => s.ten_vi ?? s.id,
-    lines: (s) => [s.mo_ta_vi ?? "", s.id],
-    use: (s) => `Áp phong cách ${s.id} (${s.ten_vi ?? s.id}) cho dự án này: đổi màu, chữ và chuyển động theo phong cách đó, giữ nội dung, lời và nhịp.`,
+    label: "Phong cách", placeholder: "Ví dụ: tối giản, neon, pixel, 3D…",
+    title: (s) => s.name ?? s.id,
+    copy: (s) => s.recipe ?? s.what,
+    use: (s) => s.source === "opus-video"
+      ? `Áp phong cách ${s.id} (${s.name}) cho dự án này: đổi màu, chữ và chuyển động theo phong cách đó, giữ nội dung, lời và nhịp.`
+      : `Áp phong cách "${s.name}" cho dự án này: đổi màu, chữ và chuyển động theo công thức sau, giữ nội dung, lời và nhịp.\n${s.recipe}`,
+  },
+  prompts: {
+    label: "Prompt mẫu", placeholder: "Từ khoá: mẫu điền, ra mắt, beat…",
+    title: (p) => p.title ?? p.id,
+    copy: (p) => p.prompt,
+    use: (p) => `Viết lại yêu cầu cho dự án này theo cấu trúc của prompt mẫu "${p.title}": ${p.structure} Giữ nội dung, lời và nhịp của dự án.${promptExcerpt(p.prompt)}`,
   },
 };
+const LIB_SOURCE = { library: null, "opus-video": "Plugin opus-video" };
+const nfmt = (n) => (Number(n) >= 1000 ? `${(Number(n) / 1000).toFixed(Number(n) >= 10000 ? 0 : 1)}k` : String(n));
 
 function readTab() {
   const fromUrl = new URL(location.href).searchParams.get("tab");
@@ -71,7 +77,7 @@ function readTab() {
 export function mountPanels(ctx, railEl, panelEl) {
   let tab = readTab();
   // Panel state that survives a redraw: drafts, the browse folder, reopened and rejecting cards.
-  const memo = { brief: "", libMode: "cases", libQuery: "", browse: null, drafts: {}, reopen: new Set(), rejecting: new Set() };
+  const memo = { brief: "", libMode: "videos", libQuery: "", libCat: "", libFeatured: false, libCats: [], browse: null, drafts: {}, reopen: new Set(), rejecting: new Set() };
   const logEls = new Map(); // job id → <pre> of the open Xuất bản panel
   let liveLog = null; // { id, pre } of the running director job in the open Giao việc panel
   const cards = cardCache(); // live director cards, kept across redraws (see gate-cards.js)
@@ -215,29 +221,90 @@ export function mountPanels(ctx, railEl, panelEl) {
       ];
     },
     library() {
-      const input = h("input", { type: "search", value: memo.libQuery, "aria-label": "Tìm trong thư viện mẫu", placeholder: LIBRARY[memo.libMode].placeholder });
+      const mode = memo.libMode, src = LIBRARY[mode];
+      const input = h("input", { type: "search", value: memo.libQuery, "aria-label": "Tìm trong thư viện mẫu", placeholder: src.placeholder });
       const out = h("div", { class: "stack", "aria-live": "polite" });
-      const seg = h("div", { class: "seg", role: "group", "aria-label": "Loại mẫu" }, ...Object.entries(LIBRARY).map(([k, src]) =>
-        h("button", { type: "button", class: "seg-btn", "aria-pressed": String(k === memo.libMode), onclick: () => { memo.libMode = k; render(); } }, src.label)));
-      const go = async () => {
-        const src = LIBRARY[memo.libMode];
-        memo.libQuery = input.value.trim();
-        out.replaceChildren(loading());
-        try {
-          const rows = await src.run(ctx, memo.libQuery);
-          if (!rows.length) return out.replaceChildren(h("p", { class: "empty" }, `Không thấy ${src.label.toLowerCase()} nào khớp "${memo.libQuery}". Thử từ khoá ngắn hơn hoặc đổi loại mẫu.`));
-          out.replaceChildren(...rows.slice(0, 40).map((row) => {
-            const url = src.link?.(row);
-            return h("div", { class: "card" },
-              h("strong", {}, src.title(row)),
-              ...src.lines(row).filter(Boolean).map((t) => h("span", { class: "muted clamp" }, t)),
-              h("div", { class: "row" }, h("button", { class: "btn", disabled: !ctx.state.m, title: ctx.state.m ? null : "Mở một dự án trước", onclick: () => ctx.direct({ scope: "project", text: src.use(row) }) }, "Dùng cho dự án"), url ? h("a", { class: "ext", href: url, target: "_blank", rel: "noopener noreferrer", title: url }, "Xem bản gốc") : null));
-          }));
-        } catch (e) { out.replaceChildren(fail(e)); }
+      const seg = h("div", { class: "seg seg-4", role: "group", "aria-label": "Loại mẫu" }, ...Object.entries(LIBRARY).map(([k, x]) =>
+        h("button", { type: "button", class: "seg-btn", "aria-pressed": String(k === mode), onclick: () => { memo.libMode = k; memo.libQuery = ""; render(); } }, x.label)));
+      const copy = (text) => navigator.clipboard.writeText(String(text ?? "")).then(() => toast("Đã chép vào bộ nhớ tạm"), () => toast("Trình duyệt không cho chép", true));
+      const thumbImg = (id, cls = "lib-thumb") => h("img", { class: cls, src: `/library/thumb/${encodeURIComponent(id)}`, alt: "", loading: "lazy" });
+      const more = (label, text) => (text ? h("details", { class: "lib-more" }, h("summary", {}, label), h("pre", { class: "lib-prompt" }, text)) : null);
+      const para = (label, text) => (text ? h("p", { class: "lib-p" }, label ? h("b", {}, `${label} `) : null, text) : null);
+      const exampleRow = (xs) => (xs?.length ? h("div", { class: "lib-examples" }, ...xs.slice(0, 4).map((x) =>
+        h("button", { type: "button", class: "lib-example", title: x.title, onclick: () => { memo.libMode = "videos"; memo.libQuery = x.id; memo.libCat = ""; memo.libFeatured = false; render(); } },
+          x.has_thumb ? thumbImg(x.id, "") : h("span", { class: "lib-noimg" }), h("span", {}, clip(x.title, 40))))) : null);
+      const actions = (row, url) => h("div", { class: "row" },
+        h("button", { class: "btn", disabled: !ctx.state.m, title: ctx.state.m ? "Gửi cho đạo diễn của dự án đang mở" : "Mở một dự án trước", onclick: () => ctx.direct({ scope: "project", text: src.use(row) }) }, "Dùng cho dự án"),
+        src.copy(row) ? h("button", { class: "btn", onclick: () => copy(src.copy(row)) }, mode === "styles" ? "Chép công thức" : mode === "scenes" ? "Chép gợi ý" : "Chép prompt") : null,
+        safeUrl(url) ? h("a", { class: "ext", href: url, target: "_blank", rel: "noopener noreferrer", title: url }, "Xem bản gốc") : null);
+      const CARD = {
+        videos: (v) => h("div", { class: "card lib-card" },
+          v.has_thumb ? thumbImg(v.id) : null,
+          h("strong", {}, src.title(v)),
+          h("span", { class: "muted" }, [v.author && `@${v.author}`, memo.libCats.find((c) => c.id === v.category)?.vi, v.featured && "Tuyển chọn", v.metrics?.bookmarks && `${nfmt(v.metrics.bookmarks)} lượt lưu`].filter(Boolean).join(" · ")),
+          v.vi ? [para("", v.vi.what), para("Đáng học:", v.vi.why), para("Cách dùng:", v.vi.how)] : para("", clip(v.titles?.en ?? v.desc ?? v.summary_zh, 200)),
+          more(v.prompt_partial ? "Xem prompt (bản gốc chỉ công bố một phần)" : "Xem prompt", v.prompt),
+          v.prompt_en && v.prompt_en !== v.prompt ? more("Bản dịch tiếng Anh của prompt", v.prompt_en) : null,
+          ...(v.links ?? []).filter((l) => safeUrl(l.url)).map((l) => h("a", { class: "ext", href: l.url, target: "_blank", rel: "noopener noreferrer" }, `${l.label} ↗`)),
+          actions(v, v.url)),
+        scenes: (t) => h("div", { class: "card lib-card" },
+          h("strong", {}, src.title(t)),
+          LIB_SOURCE[t.source] ? h("span", { class: "muted" }, LIB_SOURCE[t.source]) : null,
+          para("", t.what), para("Dùng khi:", t.when),
+          t.prompt_hint ? h("p", { class: "lib-p" }, h("b", {}, "Gợi ý cho prompt: "), h("code", {}, t.prompt_hint)) : null,
+          t.seams?.length ? para("Chuyển cảnh:", t.seams.join(", ")) : null,
+          exampleRow(t.examples), actions(t)),
+        styles: (s) => h("div", { class: "card lib-card" },
+          s.examples?.[0]?.has_thumb ? thumbImg(s.examples[0].id) : null,
+          h("strong", {}, src.title(s)),
+          h("span", { class: "muted" }, [s.name_en, LIB_SOURCE[s.source]].filter(Boolean).join(" · ")),
+          para("", s.what), para("Hợp với:", s.when),
+          more("Công thức (tiếng Việt)", s.recipe_vi), more("Công thức gốc để dán vào prompt", s.recipe),
+          exampleRow(s.examples), actions(s)),
+        prompts: (p) => h("div", { class: "card lib-card" },
+          p.has_thumb ? thumbImg(p.id) : null,
+          h("strong", {}, src.title(p)),
+          h("span", { class: "muted" }, [p.kind_vi, p.author && `@${p.author}`, p.metrics?.bookmarks && `${nfmt(p.metrics.bookmarks)} lượt lưu`].filter(Boolean).join(" · ")),
+          para("", p.what), para("Cấu trúc:", p.structure), para("Chuyển thể:", p.adapt),
+          more(p.template ? "Xem khung prompt" : "Xem prompt", p.prompt),
+          actions(p, p.url)),
       };
+      const toolkitCard = (k) => (k ? h("div", { class: "card lib-card" },
+        h("strong", {}, "Bộ công cụ đạo diễn"),
+        h("span", { class: "muted" }, k.source ?? ""),
+        k.workflow?.length ? h("details", { class: "lib-more" }, h("summary", {}, "Quy trình làm video"), h("ol", { class: "lib-list" }, ...k.workflow.map((w) => h("li", {}, h("b", {}, `${w.title}. `), w.text)))) : null,
+        k.vocabulary?.length ? h("details", { class: "lib-more" }, h("summary", {}, "Cách góp ý như đạo diễn"), h("ul", { class: "lib-list" }, ...k.vocabulary.map((w) => h("li", {}, h("b", {}, `${w.term}: `), `${w.when} Nói: `, h("code", {}, w.say), w.say_vi ? ` (${w.say_vi})` : "")))) : null,
+        k.checklist?.length ? h("details", { class: "lib-more" }, h("summary", {}, "Kiểm tra trước khi render"), h("ul", { class: "lib-list" }, ...k.checklist.map((c) => h("li", {}, c)))) : null) : null);
+      const footer = (sources) => h("p", { class: "muted lib-sources" }, "Nguồn: ", ...(sources ?? []).flatMap((x, i) => [i ? ", " : "", h("a", { href: x.url, target: "_blank", rel: "noopener noreferrer" }, x.repo), ` (${x.license.split(" ")[0]})`]), ". Prompt và video thuộc về tác giả gốc.");
+      let offset = 0;
+      const page = async (append) => {
+        const qs = new URLSearchParams({ kind: mode, q: memo.libQuery, offset: String(offset) });
+        if (mode === "videos" && memo.libCat) qs.set("cat", memo.libCat);
+        if (mode === "videos" && memo.libFeatured) qs.set("featured", "1");
+        const r = await ctx.api(`/api/library?${qs}`);
+        if (r.categories) { const had = memo.libCats.length; memo.libCats = r.categories; if (!had && mode === "videos") fillCats(); }
+        const cards = r.items.map((row) => CARD[mode](row));
+        offset = r.offset + r.items.length;
+        const tail = offset < r.total ? h("button", { class: "btn", onclick: (e) => { e.currentTarget.replaceWith(loading()); page(true).catch((err) => out.append(fail(err))); } }, `Xem thêm (còn ${r.total - offset})`) : footer(r.sources);
+        if (append) { out.querySelector(":scope > p.muted:last-child")?.remove(); out.append(...cards, tail); return; }
+        if (!r.items.length) return out.replaceChildren(h("p", { class: "empty" }, `Không thấy ${src.label.toLowerCase()} nào khớp "${memo.libQuery}". Thử từ khoá ngắn hơn, bỏ dấu, hoặc đổi loại mẫu.`), footer(r.sources));
+        out.replaceChildren(h("p", { class: "muted" }, `${r.total} mẫu`), ...(r.toolkit && !memo.libQuery ? [toolkitCard(r.toolkit)] : []), ...cards, tail);
+      };
+      const go = () => {
+        memo.libQuery = input.value.trim();
+        offset = 0;
+        out.replaceChildren(loading());
+        page(false).catch((e) => out.replaceChildren(fail(e)));
+      };
+      const cat = h("select", { "aria-label": "Thể loại", onchange: (e) => { memo.libCat = e.target.value; go(); } });
+      const fillCats = () => cat.replaceChildren(h("option", { value: "" }, "Mọi thể loại"), ...memo.libCats.map((c) => h("option", { value: c.id, selected: c.id === memo.libCat }, c.vi)));
+      fillCats();
+      const filters = mode === "videos" ? h("div", { class: "row lib-filters" }, cat,
+        h("label", { class: "lib-check" }, h("input", { type: "checkbox", checked: memo.libFeatured, onchange: (e) => { memo.libFeatured = e.target.checked; go(); } }), "Chỉ mẫu tuyển chọn")) : null;
+      const hint = ctx.state.m ? null : h("p", { class: "muted" }, "Chưa mở dự án: vẫn xem và chép prompt được. Mở một dự án để gửi mẫu cho đạo diễn.");
       input.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
       go();
-      return [seg, h("div", { class: "search" }, input, h("button", { class: "btn", onclick: go }, "Tìm")), out];
+      return [seg, h("div", { class: "search" }, input, h("button", { class: "btn", onclick: go }, "Tìm")), filters, hint, out];
     },
     output() {
       const { name } = ctx.state;

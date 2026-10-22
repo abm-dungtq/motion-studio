@@ -23,7 +23,7 @@
 // <root>/shared-assets/sfx audio; POST /api/sounds/import copies a shared sound into assets/sfx/
 // without overwriting. GET /api/gates runs check-preflight --stage final (one run per project at a
 // time). POST /api/bundle runs bundle.mjs (shots, stems, SRT, manifest for an NLE) as an export
-// job. createServer's run and mediaRoots options exist for tests.
+// job. GET /api/library pages the Thư viện mẫu (lib/library.mjs); /library/thumb/<id> its cover images. createServer's run and mediaRoots options exist for tests.
 import { createServer as httpServer } from "node:http";
 import { constants as FS, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, watch, createReadStream } from "node:fs";
 import { execFile, execFileSync } from "node:child_process";
@@ -36,6 +36,7 @@ import { createProject, runFile } from "./create.mjs";
 import { browse, register, readMedia, BROWSE_ROOTS, AUDIO_EXT } from "./media.mjs";
 import { agentStatus } from "./agent.mjs";
 import { answerCard } from "./gates.mjs";
+import { query as libraryQuery, thumbFile } from "./lib/library.mjs";
 
 const { load, patch, undo, redo, readHistory, EXIT, enqueue, cancelRequest, expireWaiting, list: listRequests, SCRIPTS, DIRECTIONS_FILE: DIRECTIONS } = await loadPlugin();
 
@@ -316,6 +317,15 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
       if (p === "/api/directions") {
         const d = JSON.parse(readFileSync(DIRECTIONS, "utf8"));
         return send(res, 200, { seams: Object.keys(d.seams ?? {}), directions: d.directions.map((x) => ({ id: x.id, ten_vi: x.ten_vi, mo_ta_vi: x.mo_ta_vi, seams: x.seams })) });
+      }
+      if (p === "/api/library") {
+        try {
+          return send(res, 200, libraryQuery({ kind: q("kind") ?? "videos", q: String(q("q") ?? "").slice(0, 200), cat: q("cat") ?? "", featured: q("featured") === "1", offset: q("offset"), limit: q("limit") }, { stylesDir: join(SCRIPTS, "..", "data", "styles"), directionsFile: DIRECTIONS }));
+        } catch (e) { return send(res, e.status ?? 500, { error: e.message }); }
+      }
+      if (p.startsWith("/library/thumb/")) {
+        const f = thumbFile(p.slice("/library/thumb/".length));
+        return f ? serveFile(req, res, f) : send(res, 404, "không có ảnh");
       }
       if (p === "/api/cases") {
         const args = ["--json", "--limit", "12", "--max-chars", "600"];

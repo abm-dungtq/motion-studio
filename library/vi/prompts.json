@@ -1,0 +1,220 @@
+{
+ "2102466523164274839": {
+  "title": "Phố Market, San Francisco năm 1906 trong Blender",
+  "kind_vi": "Đặc tả chi tiết",
+  "what": "Nhờ Opus dựng lại phố Market, San Francisco vào chiều 17/4/1906, trước trận động đất, bằng Blender Python, từ Ferry Building đến Fifth Street, rồi xuất video 10 giây đi dọc phố.",
+  "structure": "Gồm phạm vi (các công trình bắt buộc), bước lập hồ sơ nguồn trước khi dựng (bản đồ bảo hiểm Sanborn, phim “A Trip Down Market Street”, ảnh lưu trữ, địa hình USGS, mỗi dữ kiện kèm nguồn và độ tin cậy) và luật dựng: chỉ dùng Blender Python, không tải mesh hay texture, viết các bộ sinh tái sử dụng. Mọi tòa nhà truy được về dữ liệu nên kết quả kiểm chứng được.",
+  "adapt": "Thay địa điểm, mốc thời gian, phạm vi và danh sách nguồn tư liệu của bạn. Giữ bước lập hồ sơ nguồn trước khi dựng."
+ },
+ "2102476258948927543": {
+  "title": "Phù thủy pixel art niệm phép",
+  "kind_vi": "Đặc tả chi tiết",
+  "what": "Nhờ Opus viết một file HTML tự chứa, vẽ phù thủy pixel art 16-bit tụ phép rồi phóng phép thành vòng lặp liền, dùng Canvas 2D ở độ phân giải logic 128x96, không có asset hay thư viện ngoài.",
+  "structure": "Prompt chia các mục viết hoa: RENDERING, CHARACTER, ANIMATION, SCENE, QUALITY BAR. Mục nào cũng là ràng buộc đo được (bảng khoảng 24 màu, tọa độ nguyên, máy trạng thái IDLE, CHARGE, CAST, RECOVER, hệ hạt cấp phát sẵn), nên Opus không có chỗ để rơi về kiểu hình vector thu nhỏ.",
+  "adapt": "Đổi nhân vật, hành động và bảng màu trong CHARACTER, ANIMATION, SCENE. Giữ RENDERING và QUALITY BAR nếu vẫn muốn điểm ảnh sắc nét."
+ },
+ "2102503027340988559": {
+  "title": "Tranh khảm kính và vàng lá sống dậy",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus làm phim vuông 80 giây trong một file HTML bằng WebGL2 và JavaScript thuần, không thư viện, không file ảnh, font hay âm thanh: một bức tranh khảm kính và vàng lá có các viên chưa từng được dán, nên chúng bay lên, lật, bay đi rồi gắn lại chỗ cũ. Theo mô tả, các viên kết thành cá, hạc, ngôi sao, và âm thanh được tổng hợp ngay trong trình duyệt.",
+  "structure": "Prompt mở bằng ràng buộc kỹ thuật (độ dài, khung vuông, một file, không asset ngoài), rồi đưa ra một ý niệm duy nhất làm luật cho cả thế giới: mọi hình đều là đàn viên khảm, nên con cá bơi bằng chính các viên của nó. Một quy tắc rõ ràng như vậy giữ cho cả phim nhất quán.",
+  "adapt": "Thay chất liệu và quy tắc thế giới, cùng các hình bạn muốn chúng kết thành. Giữ phần ràng buộc kỹ thuật nếu muốn một file chạy độc lập."
+ },
+ "2102515055116063144": {
+  "title": "Nhân vật pixel né thiên thạch ngoài vũ trụ",
+  "kind_vi": "Đặc tả chi tiết",
+  "what": "Nhờ Opus viết một file HTML Canvas 2D ở 160x90: nhân vật pixel màu cam chạy trên sàn cầu vồng giữa vũ trụ, tự né thiên thạch và tia laser, lặp liền như màn demo của game 16-bit.",
+  "structure": "Prompt viết tiếng Nhật, chia mục: render, nhân vật, sàn cầu vồng, chướng ngại, hành động né, máy trạng thái, camera, hiệu ứng tốc độ, hệ hạt, cảnh, chuẩn chất lượng. Nhân vật được tả đến từng ô pixel, chướng ngại chạy theo chuỗi mẫu tấn công định sẵn chứ không ngẫu nhiên, nên vòng lặp tất định và nối liền.",
+  "adapt": "Thay hình nhân vật, bảng màu, loại chướng ngại và hành động né. Giữ mục render, máy trạng thái và hệ hạt."
+ },
+ "2102554209166000267": {
+  "title": "Mẫu video ra mắt sản phẩm tối giản",
+  "kind_vi": "Mẫu điền",
+  "what": "Nhờ Opus dựng video ra mắt 20 giây 1080p cắt theo lưới 120 BPM, dùng clip dọc thật của bạn, chữ hiện qua mặt nạ, carousel video 3D và hiệu ứng âm thanh đặt đúng đỉnh âm.",
+  "structure": "Khung sáu thẻ: inputs xin tên sản phẩm, lời hứa một dòng, 3 đến 5 khoảnh khắc UI và 10 đến 20 clip dọc; direction tối giản một màu nhấn kèm danh sách cấm dài; structure gồm 10 ô nhịp, mỗi ô 2 giây và một chuyển động. Build quy định trích clip thành chuỗi JPEG, phân tích nhạc bằng numpy, motion blur bằng subframe, chuẩn âm lượng -14 LUFS, còn start bắt trình storyboard với mọi mốc thời gian trên lưới beat trước khi dựng.",
+  "adapt": "Điền sản phẩm, lời hứa, màu nhấn, clip và bài nhạc có drop của bạn. Viết lại các ô nhịp trong structure nếu câu chuyện sản phẩm khác."
+ },
+ "2102606609574941028": {
+  "title": "Bài địa lý “hoàn lưu khí quyển” bằng nét vẽ",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus làm hoạt hình nét vẽ giảng bài hoàn lưu khí quyển của môn địa lý cấp ba, giọng vui, có nhạc, phụ đề song ngữ Trung Anh, thuyết minh bằng TTS và xuất được video ngay. Bản gốc dài gần 5 phút.",
+  "structure": "Vài câu nêu chủ đề, phong cách, nhạc, phụ đề, rồi chỉ chỗ lấy tài liệu TTS (TTS.md) cùng khóa API và giọng đọc (trong .env), kèm lưu ý tắt watermark nếu có tham số. Chỉ đúng đường dẫn tài liệu và khóa giúp Opus tự nối dịch vụ giọng đọc mà không phải hỏi lại.",
+  "adapt": "Thay bài học, cặp ngôn ngữ phụ đề và dịch vụ TTS của bạn. Để tài liệu API và khóa trong file của dự án rồi ghi tên file vào prompt."
+ },
+ "2102743212922384673": {
+  "title": "Lịch sử loài người bằng nét vẽ tay, kết ở Opus 5.5",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus làm hoạt hình kiểu origami và doodle kể quá trình phát triển của loài người từ thuở sơ khai đến khi AI ra đời rồi tiến hóa thành chính Opus 5.5. Bản gốc dài 108 giây, gần như không có chữ, viết bằng JavaScript thuần.",
+  "structure": "Một câu chuyện có điểm đầu, điểm cuối và cú kết nhắc đến chính người kể, cộng một dòng phong cách: dễ thương, ấm áp, giàu tính kể, không lời thoại, ít chữ để người thuộc nền văn hóa nào cũng hiểu. Lý do hạn chế chữ được nói rõ, nên Opus kể bằng hình.",
+  "adapt": "Thay câu chuyện và điểm kết. Giữ yêu cầu ít chữ nếu muốn video xem được ở nhiều thị trường."
+ },
+ "2102801274173587569": {
+  "title": "Làm lại MV “Claude Pop” bằng nhiều công cụ AI",
+  "kind_vi": "Quy trình nhiều công cụ",
+  "what": "Nhờ Opus tự làm trọn một bản MV mới dài khoảng 2,5 phút cho bài hát “Claude Pop”, giữ nguyên bản nhạc, kết hợp hoạt hình JavaScript có cảm giác giấy, nhân vật và bối cảnh sinh bằng API ảnh, cảnh nền từ Seedance 2.5 và âm thanh từ ElevenLabs.",
+  "structure": "Đây là một bản dặn dài theo lối nói miệng: trước tiên kể ra tài liệu đầu vào (file MP4, thư mục tham chiếu, các skill và API key có sẵn), sau đó trao quyền sáng tạo kèm vài mốc thẩm mỹ (lấy K-pop làm điểm neo, tránh kiểu Pixar, đưa meme trên Twitter vào), cuối cùng nhấn mạnh việc khớp tiếng hát với hình và một vòng kiểm tra. Cách viết này hiệu quả vì Opus biết rõ mình có công cụ gì, nằm ở đâu, và khán giả nào sẽ chấm điểm.",
+  "adapt": "Thay bài hát, thư mục tham chiếu, các API và mô tả nhân vật bằng tài nguyên thật của bạn. Đổi khán giả mục tiêu và các mốc thẩm mỹ cho hợp với kênh bạn đăng."
+ },
+ "2102827887732932956": {
+  "title": "Biến clip nói trước camera thành video minh họa nét vẽ",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus biến một clip dọc người nói trước camera thành bản mới: thu người nói vào khung tròn ở góc phải dưới, màn chính thay bằng B-roll hoạt hình nét vẽ bám theo lời nói, giữ nguyên tiếng, phụ đề và thời lượng.",
+  "structure": "Ba yêu cầu đánh số: vị trí và điều kiện của khung người nói, nội dung và phong cách B-roll, những gì không được đổi. Nói rõ phần giữ nguyên cũng quan trọng như phần thay đổi, nên Opus không đụng vào tiếng và phụ đề; bản gốc Opus vẽ từng khung bằng Python.",
+  "adapt": "Thay tên file đầu vào và đầu ra, vị trí khung tròn và phong cách B-roll mong muốn."
+ },
+ "2102853258582880547": {
+  "title": "Công thức cocktail dạng motion graphic từ một ảnh",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus dựng bằng JavaScript hoặc HTML một đoạn hoạt hình 30 giây kiểu explainer, đi từ ly rỗng đến ly cocktail hoàn chỉnh, hiện từng nguyên liệu và định lượng khi rót vào.",
+  "structure": "Một đoạn ngắn: nói đây là thử nghiệm, để Opus tự chọn công nghệ, nêu phong cách explainer, điểm đầu và điểm cuối của câu chuyện, cùng độ dài 30 giây. Có điểm đầu, điểm cuối rõ ràng nên Opus tự chia được các bước; bản gốc ra thẻ bước, thanh tiến độ 6 bước và vạch định lượng trên ly.",
+  "adapt": "Thay công thức (hoặc ảnh công thức) bằng món của bạn. Giữ mạch đi từ trạng thái rỗng đến thành phẩm và ghi độ dài mong muốn."
+ },
+ "2102919394775220530": {
+  "title": "Demo demoscene thập niên 90 khớp nhạc tracker",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus viết một bản demo demoscene kiểu thập niên 1990 bằng C/C++ và OpenGL, chạy thời gian thực, khớp hiệu ứng với bản nhạc S3M người dùng đưa. Bản gốc dài 6 phút, dùng bài Second Reality của Purple Motion.",
+  "structure": "Prompt xếp việc theo thứ tự: trước hết tìm cách phát và phân tích file S3M, vì khớp nhịp và hợp không khí từng đoạn nhạc là cốt lõi của demo; kế đến tìm hiểu nên phối hiệu ứng nào; sau cùng mới chọn ngôn ngữ, kỹ thuật và lưu ý giữ thời gian biên dịch gọn. Bắt phân tích nhạc trước giúp mỗi cảnh hợp với đoạn nhạc của nó.",
+  "adapt": "Thay file nhạc tracker, phong cách thời kỳ, ngôn ngữ và thư viện đồ họa bạn muốn."
+ },
+ "2103066071838466494": {
+  "title": "Video ra mắt SaaS do Opus tự chọn sản phẩm",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus tự chọn một SaaS nhiều người biết, lấy asset và hình ảnh thật trên mạng rồi dựng video ra mắt chuyên nghiệp kiểu motion graphics hay thấy trên Twitter, khoe tính năng và lợi ích. Bản gốc dài 46 giây, dựng bằng HyperFrames.",
+  "structure": "Một đoạn nói miệng gồm mục tiêu, cách chọn sản phẩm, yêu cầu dùng asset thật và tham chiếu đến một thể loại quen thuộc. Gọi tên một thể loại người xem đã quen giúp Opus hiểu ngay nhịp và bố cục cần làm.",
+  "adapt": "Thay phần tự chọn bằng tên sản phẩm của bạn và đưa asset thật của bạn thay vì để Opus lấy trên mạng."
+ },
+ "2103112945341251920": {
+  "title": "Diorama pixel art Paris đêm mưa làm nền lofi",
+  "kind_vi": "Đặc tả chi tiết",
+  "what": "Nhờ Opus làm diorama pixel art Paris về đêm trong một file HTML (canvas và JavaScript, không thư viện) để làm nền lặp 4 phút cho video lofi 10 tiếng trên YouTube, có tháp Eiffel, sông Seine, mưa và tiền euro rơi.",
+  "structure": "Prompt viết bằng tiếng Pháp, chia mục: không khí và màu, cảnh từ sau ra trước, hiệu ứng, kỹ thuật. Liệt kê cảnh theo từng lớp chiều sâu giúp Opus vẽ đúng thứ tự, còn mục kỹ thuật chốt độ phân giải trong 480x270 phóng 4 lần, mọi chuyển động là hàm của thời gian modulo 240 giây để lặp không giật, kèm phím tắt ghi lại đúng một vòng lặp.",
+  "adapt": "Thay thành phố, danh sách vật thể theo từng lớp và các hiệu ứng đặc trưng. Giữ mục kỹ thuật để vòng lặp liền và hình sắc."
+ },
+ "2103116235009347650": {
+  "title": "Trận Austerlitz thành phim 5 phút dựng bằng code",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus nghiên cứu trận Austerlitz (1805) rồi dựng hoàn toàn bằng code một phim 4 đến 5 phút, đúng lịch sử, kịch tính và dễ hiểu. Bản gốc có địa hình vệ tinh thật, bình minh đặt đúng sử liệu, nhạc và lời dẫn riêng.",
+  "structure": "Gồm yêu cầu chính, giao quyền kể chuyện cho Opus, tranh đính kèm làm cảm hứng (kèm danh sách điều mình thích: quy mô, khói, bầu trời, kỵ binh, đội hình), một câu cấm (không giống infographic hay game chiến thuật) và lời trao toàn quyền. Nói rõ mình thích gì ở tranh tham chiếu giúp Opus chuyển cảm giác đó thành code mà không bị buộc chép phong cách.",
+  "adapt": "Thay sự kiện lịch sử, tranh tham chiếu và những điều bạn thích ở chúng. Sửa câu cấm cho hợp thể loại bạn làm."
+ },
+ "2103129343253778767": {
+  "title": "Zoom vô tận xuyên qua đồ vật cổ",
+  "kind_vi": "Quy trình nhiều công cụ",
+  "what": "Nhờ Opus dựng vòng lặp 20 giây zoom vô tận kiểu After Effects: camera bay xuyên qua đồng hồ quả quýt, ống kính, kính lúp, gương để sang phong cảnh mới, phong cách cắt dán báo cũ. Ảnh, chuyển động Kling và nhạc đều sinh qua Magnific MCP.",
+  "structure": "Prompt chia mục LOOK, WORLDS, HOW, DELIVER. WORLDS kể chuỗi thế giới theo thứ tự vòng lặp, HOW ghi công thức (tách 3 lớp chiều sâu, parallax theo camera^Z, zoom hàm mũ với thời lượng tỉ lệ log(zoom), nhạc 96 BPM cắt đúng 8 ô nhịp) và buộc Opus liệt kê chi phí credit chờ duyệt, gửi ảnh chụp trước mỗi bước tốn kém. Nhờ vậy người dùng giữ được chi phí của cả chuỗi công cụ.",
+  "adapt": "Thay danh sách thế giới, các đồ vật làm cổng, phần LOOK và các mô hình sinh ảnh, nhạc bạn có. Giữ các bước duyệt chi phí."
+ },
+ "2103273003555402193": {
+  "title": "Vòng lặp UI: một hình khối biến hình theo nhạc",
+  "kind_vi": "Mẫu điền",
+  "what": "Nhờ Opus dựng một video vuông lặp liền, trong đó một hình khối duy nhất biến hình qua khoảng 12 trạng thái giao diện (nút, thanh tải, trình phát nhạc, thanh trượt, tab, biểu đồ, bảng lệnh ⌘K, thông báo toast) trên lưới 120 BPM. Mọi thay đổi đều do con trỏ điều khiển bằng cú bấm và kéo thật.",
+  "structure": "Prompt chia thành sáu thẻ inputs, direction, structure, build, gotchas, start, và chính là khung mà phần cấu trúc prompt chuyên nghiệp lấy làm mẫu. Direction có danh sách cấm (easing nảy, hạt, phát sáng, khoảng chết), structure chốt 120 BPM, 7 ô nhịp, beat nào cũng có sự kiện, còn build đặt luật kỹ thuật như một file HTML, mọi giá trị tính từ thời gian trong seek(t), lò xo dạng đóng và render thử một khung mỗi beat. Opus gần như không phải đoán, nên bản render ổn định và dễ sửa.",
+  "adapt": "Thay chuỗi trạng thái UI trong structure bằng các màn hình sản phẩm của bạn, đổi màu nhấn và bài nhạc khoảng 120 BPM có giấy phép thương mại. Giữ nguyên build và gotchas vì đó là phần giúp render chạy đúng."
+ },
+ "2103411244468498547": {
+  "title": "Đoạn chào kinetic typography cho thương hiệu creator",
+  "kind_vi": "Đặc tả chi tiết",
+  "what": "Nhờ Opus làm đoạn bumper nhận diện 20 giây, vuông 1080x1080, lặp liền cho creator TechHalla, chỉ dùng đen, hồng magenta và xanh acid, với lò xo cho từng ký tự, mặt nạ lật chữ và hiệu ứng lệch in.",
+  "structure": "Gồm vai và mức cược, thông số (độ dài, lặp, khổ hình, 60fps), bảng màu nghiêm ngặt, hệ ba font, thông điệp khóa theo đúng thứ tự, mạch 20 giây chia theo từng giây, các kỹ thuật bắt buộc và danh sách cấm. Khóa chặt thông điệp và màu khiến Opus dồn sức vào chuyển động thay vì tự thêm khẩu hiệu.",
+  "adapt": "Thay tên thương hiệu, các câu thông điệp, bảng màu và font. Chia lại mốc thời gian nếu số câu thay đổi."
+ },
+ "2103424524297420829": {
+  "title": "Showreel 15 giây của motion designer",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus đóng vai một motion designer hàng đầu làm showreel 15 giây: có hook ngay giây đầu, đi qua nhiều kỹ thuật (typography, chơi hình khối, chuyển động camera, đổi màu) và kết ở một khung cuối gọn, dễ nhớ.",
+  "structure": "Một đoạn ngắn gồm vai, mục tiêu, nhịp ba phần (mở, phát triển, kết) và cảm giác cắt theo nhạc, chạy ở mức effort max. Đặt Opus vào thế phải chứng tỏ tay nghề và kể sẵn các kỹ thuật cần có giúp kết quả đa dạng hơn hẳn câu “làm video đẹp”.",
+  "adapt": "Giữ khung câu, thêm chủ đề hoặc thương hiệu của bạn và đổi độ dài. Nhiều prompt khác trong thư viện là biến thể của chính câu này."
+ },
+ "2103444180861178199": {
+  "title": "Phim ngắn 35 giây có cú lật kết",
+  "kind_vi": "Quy trình nhiều công cụ",
+  "what": "Nhờ Opus làm biên kịch kiêm người hướng dẫn cho một phim ngắn tiếng Trung 30 đến 40 giây: trước hết đề xuất 5 ý tưởng và chọn một, sau đó kèm người mới từng bước tạo cảnh bằng AI video và dựng trong CapCut (Jianying).",
+  "structure": "Giai đoạn một liệt kê giới hạn sản xuất (tối đa 2 nhân vật, 1 đến 2 bối cảnh, 6 đến 8 cảnh, xung đột trong 3 giây đầu), mục tiêu nội dung, 10 mục cho mỗi ý tưởng, tiêu chí so sánh, ghi ra 01_story_candidates.md rồi dừng chờ duyệt. Giai đoạn hai là chế độ kèm cặp: mỗi lần một bước, chờ ảnh chụp xác nhận, tự soát lỗi từng cảnh và khuyên khi nào không cần tốn credit video. Chia giai đoạn và buộc dừng giúp người dùng giữ quyền quyết định và tiết kiệm chi phí.",
+  "adapt": "Thay khán giả, đề tài và công cụ dựng của bạn. Giữ phần giới hạn sản xuất và nguyên tắc mỗi lần một bước."
+ },
+ "2103481296018092204": {
+  "title": "Video ra mắt Cosmos dựng bằng HyperFrames",
+  "kind_vi": "Quy trình nhiều công cụ",
+  "what": "Nhờ Opus tự tìm hiểu Cosmos.so, rút ra giá trị cốt lõi rồi dựng một dự án HyperFrames Studio hoàn chỉnh cho video ra mắt khoảng 40 giây. Prompt thứ hai bắt Opus tự xem lại và làm bản v2 hấp dẫn gấp 5 lần.",
+  "structure": "Có hai lượt. Lượt đầu giao việc nghiên cứu và toàn quyền chọn ý tưởng, lời, nhịp, hình ảnh, nhưng đòi giao diện, màu, chữ phải đúng chất Cosmos và tự xem lại ở tốc độ thường. Lượt hai là góp ý cụ thể (chỗ chậm, chỗ nhàm, gợi ý Three.js hay shader) và yêu cầu Opus tự so khoảng cách giữa mô tả và kết quả, nên bản sửa đi đúng hướng thay vì làm lại từ đầu.",
+  "adapt": "Thay URL và tên sản phẩm của bạn. Ở lượt hai, ghi đúng những đoạn bạn thấy chậm hay nhàm và nền tảng sẽ đăng."
+ },
+ "2103483957266268381": {
+  "title": "Kể chuyện sản phẩm bằng một hình khối biến hình",
+  "kind_vi": "Mẫu điền",
+  "what": "Nhờ Opus dựng vòng lặp 20 giây trong đó một hình khối biến hình qua các trạng thái UI của sản phẩm theo lưới 120 BPM, vẽ trên một canvas duy nhất và render bằng ffmpeg.",
+  "structure": "Rút gọn từ khung sáu thẻ thành inputs, rules, structure, motion, export. Rules gom luật cứng (một file, một canvas, một hàm draw(t), không chuyển tiếp CSS, không timer, UI và dữ liệu thật), motion gom kỹ thuật chuyển động, export bắt render tờ contact sheet một khung mỗi beat trước, rồi xuất mọi tỉ lệ khung song song.",
+  "adapt": "Điền sản phẩm, URL, 8 đến 12 trạng thái UI, dữ liệu thật, màu, font và các tỉ lệ cần xuất. Thay chuỗi trạng thái trong structure bằng câu chuyện sản phẩm của bạn."
+ },
+ "2103499977632997524": {
+  "title": "Mẫu video giải thích doanh nghiệp 30 giây",
+  "kind_vi": "Mẫu điền",
+  "what": "Nhờ Opus đóng vai motion designer dựng video giải thích 30 giây cho doanh nghiệp của bạn trong một trang HTML, gồm 5 cảnh: vấn đề của khách, bạn làm gì, cách hoạt động trong 3 bước, một bằng chứng và tên bạn ở cuối.",
+  "structure": "Gồm vai, định dạng, dàn ý 5 cảnh cố định, yêu cầu hình thức (chữ đậm, chuyển cảnh mượt, màu thương hiệu) và một chỗ trống trong ngoặc vuông ở cuối. Dàn ý đã chốt sẵn nên chỉ cần điền thông tin doanh nghiệp là có video đủ ý; bản gốc chạy ngay trong khung chat Claude rồi quay màn hình.",
+  "adapt": "Điền vào ngoặc vuông: bạn bán gì, cho ai, màu thương hiệu là gì. Thay bằng chứng bằng con số thật của bạn."
+ },
+ "2103638102333858193": {
+  "title": "Promo 30 giây kiểu showreel cho Kody",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus làm video motion graphics 30 giây kiểu showreel cho dự án Kody, mục tiêu là giúp người xem hiểu ngay. Opus tự nghiên cứu, dựng bằng Remotion và làm thêm bản dọc.",
+  "structure": "Mượn câu showreel quen thuộc rồi thêm ba thứ: chủ đề, mục tiêu cho người xem và luồng giao hàng (bắt đầu bằng nghiên cứu, Opus tự quyết, được làm nhiều video, xuất vào Dropbox và nhắn link qua Discord). Một câu mục tiêu rõ ràng biến bài khoe tay nghề thành video có ích cho người xem.",
+  "adapt": "Thay chủ đề, mục tiêu, nơi xuất file và kênh báo kết quả bạn dùng."
+ },
+ "2103683057689522564": {
+  "title": "Video giải thích Transformer dài 12 phút",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus làm video bằng JS giải thích Transformer sao cho học sinh cấp ba cũng hiểu, có cả bức tranh tổng lẫn chi tiết như cơ chế attention và một số khái niệm toán. Theo mô tả, Opus tự tìm Edge TTS miễn phí để thuyết minh và dựng bằng Remotion cùng KaTeX.",
+  "structure": "Chỉ vài dòng: chủ đề, người xem, độ sâu mong muốn, cho phép cài công cụ và tra mạng, rồi một câu “hãy cho tôi bất ngờ”. Sức mạnh nằm ở chỗ nói rõ người xem là ai và cần chi tiết đến đâu, phần còn lại để Opus tự chọn công cụ; bản gốc chạy ở mức effort xhigh.",
+  "adapt": "Thay chủ đề và người xem, ghi rõ khái niệm nào bắt buộc phải có. Nếu cần thuyết minh tiếng Việt thì ghi thêm ngôn ngữ."
+ },
+ "2103723183899852885": {
+  "title": "Mẫu video motion graphics tập trung vào sản phẩm",
+  "kind_vi": "Mẫu điền",
+  "what": "Nhờ Opus làm video motion graphics 15 giây về sản phẩm của bạn, trong đó Opus tự vào trang sản phẩm tìm hiểu rồi tự viết nội dung video.",
+  "structure": "Chỉ hai câu: câu đầu mượn khung showreel để đặt chuẩn tay nghề, câu sau chừa chỗ trống [your product] và chốt thứ tự làm việc (đọc trang trước, viết nội dung sau). Bắt tìm hiểu trước giúp nội dung bám sản phẩm thật thay vì khẩu hiệu chung chung.",
+  "adapt": "Điền tên và đường dẫn sản phẩm vào chỗ [your product]. Đổi độ dài nếu cần."
+ },
+ "2103835273813496100": {
+  "title": "Mẫu phim ra mắt phong cách keynote Apple",
+  "kind_vi": "Mẫu điền",
+  "what": "Nhờ Opus dựng một phim ra mắt vuông 29 giây quay một mạch, cảnh sau sinh ra từ cảnh trước: wordmark co vào dấu chấm, sáu lá iris mở ra ảnh, thanh trượt kính lỏng đổi ánh sáng ảnh, trạng thái đơn hàng biến hình và kết trên cảnh quay bức tường thật, tất cả theo 120 BPM. Ví dụ gốc là app in ảnh “develop”.",
+  "structure": "Vẫn là khung sáu thẻ, nhưng structure chia theo chương (Open, Glass, Stage, Order, Wall) trên 54 beat, còn build đi sâu từng kỹ thuật: kính lỏng bằng SVG displacement, hiệu ứng goo, sáu lá iris, footage mã hóa toàn khung intra. Gotchas ghi lại các lỗi Chromium đã gặp, và start bắt Opus trình bản đồ beat cùng 4 khung tĩnh trước khi dựng cả phim, nên lỗi được bắt ở bước rẻ nhất.",
+  "adapt": "Thay tên thương hiệu một từ (nên là động từ), 9 đến 12 ảnh, bài nhạc khoảng 120 BPM có drop và đoạn lắng, cùng clip bức tường. Nếu sản phẩm không phải app in ảnh thì viết lại các chương trong structure."
+ },
+ "2103845264649761062": {
+  "title": "Video giới thiệu mdfor.dev theo khung showreel",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus làm video giới thiệu 30 giây cho mdfor.dev (trình soạn Markdown) theo khung showreel, dùng ảnh chụp, logo và asset thật của sản phẩm, có nhạc và chuyển động khớp nhạc.",
+  "structure": "Câu showreel làm nền, thêm URL sản phẩm và các yêu cầu sản xuất: dùng asset thật, phải có nhạc, làm như một sản phẩm chuyên nghiệp chứ không phải bản demo, và không dùng ảnh chụp thô mà tách thành thành phần, icon để làm chuyển động. Yêu cầu tách ảnh chụp ngăn video biến thành trình chiếu ảnh tĩnh.",
+  "adapt": "Thay URL và asset sản phẩm của bạn. Giữ yêu cầu tách ảnh chụp thành thành phần để animate."
+ },
+ "2103964025683927166": {
+  "title": "Biên niên sử thi văn minh Trung Hoa",
+  "kind_vi": "Mô tả ngắn",
+  "what": "Nhờ Opus làm phim biên niên 3,5 phút về lịch sử Trung Hoa, render từng khung bằng code rồi ghép bằng ffmpeg, xen kẽ nét mực trên giấy xuyến và nét vàng trên nền đen, nhạc ngũ cung có BPM nhanh dần theo thời đại.",
+  "structure": "Mỗi câu chốt một lớp: nhạc làm đồng hồ (nhạc cụ và BPM đổi theo thời đại, mọi điểm cắt khớp beat), hai phong cách vẽ và hoa văn theo từng quyển, nội dung mỗi cảnh, HUD toàn phim, chuyển cảnh giữa các quyển, thứ tự làm (chốt lưới beat và storyboard rồi mới render) và giới hạn (bản đồ chỉ minh họa, không vẽ nhân vật cận hiện đại có thật, kiểm niên đại trước khi giao). Prompt ngắn nhưng dày quyết định, nên Opus ít phải đoán.",
+  "adapt": "Thay đề tài lịch sử, hệ âm nhạc, phong cách vẽ và chuỗi hoa văn của nền văn hóa bạn chọn. Giữ thứ tự chốt lưới beat trước khi render."
+ },
+ "2104022075782332440": {
+  "title": "Phim ra mắt app đặt món quay một mạch",
+  "kind_vi": "Mẫu điền",
+  "what": "Nhờ Opus dựng phim ra mắt 15 giây 1920x1080 quay một mạch theo nhạc 130 BPM: người dùng gõ yêu cầu, bấm gửi, chảo xóc nguyên liệu, thẻ món ăn bung ra đúng drop, đặt món thành công và kết bằng logo.",
+  "structure": "Khung sáu thẻ, trong đó inputs có sẵn giá trị mặc định nếu bạn bỏ trống, direction ghi mã màu cụ thể, structure ghi từng đoạn theo số beat kèm cả câu chữ trên màn hình. Build quy định camera là một transform với zoom nội suy trong không gian log và mọi chuyển giao giữa các lớp là phần tử dùng chung; gotchas ghi những lỗi đã gặp, như 4 subframe để lại bóng ma nên phải dùng 8.",
+  "adapt": "Thay sản phẩm và câu yêu cầu người dùng gõ, 6 đến 8 ảnh cho thẻ kết quả, bài nhạc và logo. Sửa câu chữ trong structure cho đúng sản phẩm của bạn."
+ },
+ "2104085484347818226": {
+  "title": "Mẫu hiệu ứng nhận thưởng trong game mobile",
+  "kind_vi": "Mẫu điền",
+  "what": "Nhờ Opus làm hiệu ứng khoảnh khắc cao trào của game mobile như mở rương, lên hạng, mở khóa thành tựu, thành một trang web một file bấm là chạy, ngang tầm màn nhận thưởng của game thương mại: vật thể 3D Three.js tô kiểu toon, năm giai đoạn trình diễn, timeline GSAP và âm thanh Web Audio.",
+  "structure": "Prompt viết tiếng Trung, chia khối: thế giới và phong cách, vật thể 3D, minh họa 2D, nhịp năm giai đoạn, sân khấu công bố, ánh sáng, chất liệu và giao diện, nguyên tắc chuyển động, âm thanh, kỹ thuật, tự kiểm trước khi giao. Khối nào cũng nói cả nên làm gì lẫn vì sao không làm cách khác (ví dụ không dùng viền bằng mặt sau phóng to vì nét dày mỏng không đều), nên Opus tránh được các lỗi quen.",
+  "adapt": "Điền chủ thể vào chỗ trống đầu tiên và bậc màu theo cấp độ. Giữ nguyên năm giai đoạn và danh sách tự kiểm."
+ },
+ "khung-prompt": {
+  "title": "Khung prompt video chuyên nghiệp",
+  "kind_vi": "Khung",
+  "what": "Một khung prompt sáu phần để bạn chép, điền nội dung dự án của mình rồi dán cho Opus. Khung dựng theo cấu trúc của mẫu được lưu nhiều nhất trong thư viện (của @twoclipping).",
+  "structure": "Sáu thẻ đi theo đúng thứ tự làm phim: inputs là thứ Opus phải xin bạn, direction là phong cách kèm danh sách cấm, structure là lưới beat và chuỗi cảnh, build là luật kỹ thuật để render ổn định, gotchas là các lỗi đã biết, start là việc làm đầu tiên. Danh sách cấm thường có tác dụng hơn các tính từ phong cách, và bước start buộc Opus trình kế hoạch trước khi viết code, nên bạn sửa ở khâu rẻ nhất.",
+  "adapt": "Thay mỗi đoạn trong ngoặc vuông bằng nội dung của bạn và xóa ngoặc. Thẻ nào chưa có gì để điền thì giữ ví dụ hoặc bỏ thẻ đó, nhưng nên giữ direction kèm danh sách cấm và start.",
+  "template": "<inputs>\n[Những gì Opus phải hỏi bạn trước khi bắt đầu. Ví dụ: Hỏi tôi tên thương hiệu, 8 đến 12 ảnh hoặc trạng thái giao diện, và một bài nhạc miễn phí bản quyền khoảng 120 BPM.]\n</inputs>\n\n<direction>\n[Một đoạn tả phong cách hình ảnh, kèm danh sách cấm. Ví dụ: Phim ra mắt 2D, quay một mạch, cảnh sau sinh ra từ cảnh trước. Nền trắng ấm, giao diện đen, một màu nhấn, một font giao diện gọn. Cấm: chuyển cảnh mờ chồng, phát sáng, hạt, giữ một khung quá 1 giây, bất cứ thứ gì trông như template.]\n</direction>\n\n<structure>\n[Lưới beat và chuỗi cảnh, mỗi cảnh sinh ra từ cảnh trước. Ví dụ: 120 BPM, 54 beat, beat nào cũng có sự kiện. Nút bấm biến thành thanh tải, thanh tải thành dấu tích, dấu tích thành thẻ thông báo, thẻ thông báo trở lại thành nút bấm.]\n</structure>\n\n<build>\n[Luật kỹ thuật giúp render ổn định. Ví dụ: Một file HTML. Mọi giá trị tính từ thời gian trong seek(t), không chuyển tiếp CSS, không timer. Lò xo dạng đóng. Phân tích beat của bài nhạc trước khi dựng. Motion blur bằng cách trộn nhiều subframe.]\n</build>\n\n<gotchas>\n[Các lỗi đã biết cần tránh. Ví dụ: Chữ bị mờ khi camera phóng to. Chữ cũ và chữ mới chồng lên nhau khi đổi nội dung. Khung cuối không trùng khung đầu nên vòng lặp bị giật.]\n</gotchas>\n\n<start>\n[Việc đầu tiên Opus phải làm. Ví dụ: Hỏi tôi các đầu vào ở trên, rồi cho tôi xem kế hoạch trên lưới beat trước khi viết code.]\n</start>"
+ }
+}

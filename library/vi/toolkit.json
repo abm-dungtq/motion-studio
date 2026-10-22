@@ -1,0 +1,148 @@
+{
+ "source": "Li-Evan/awesome-opus-5.5-video-prompts (CC-BY-4.0)",
+ "workflow": [
+  {
+   "title": "Chọn video tham chiếu",
+   "text": "Chọn một hai video có nhịp và kiểu chữ bạn muốn, rồi bảo Opus làm theo. Gọi tên một phong cách hiệu quả hơn nhiều so với mô tả nó. Không có tham chiếu, Opus sẽ quay về kiểu mặc định: chữ đặt giữa, nền gradient, mọi thứ mờ dần hiện ra."
+  },
+  {
+   "title": "Cài trình render",
+   "text": "Cài HyperFrames hoặc Remotion để Opus viết mỗi cảnh thành code và render thẳng ra MP4. Khung nào cũng chính xác, sửa một chỗ chỉ là sửa một dòng, không phải làm lại từ đầu."
+  },
+  {
+   "title": "Dùng chất liệu thật",
+   "text": "Đưa cho Opus ảnh chụp màn hình, logo và thành phần giao diện thật của bạn, đừng để nó tự bịa nút và thẻ. Giao diện bịa ra là chỗ video bắt đầu trông rẻ tiền."
+  },
+  {
+   "title": "Đưa đủ bối cảnh một lần, xin ba bản storyboard",
+   "text": "Đưa thương hiệu, màu, font, ảnh chụp, video tham chiếu và kể nhanh video bạn đang hình dung trong đầu. Có ba bản storyboard, bạn được chọn hướng đi thay vì ngồi chỉnh ý tưởng đầu tiên của nó."
+  },
+  {
+   "title": "Duyệt khung tĩnh trước khi cho chuyển động",
+   "text": "Xin mỗi cảnh một khung tĩnh. Sửa storyboard chỉ mất vài giây, còn sửa bản đã render nghĩa là phải render lại."
+  },
+  {
+   "title": "Góp ý như đạo diễn",
+   "text": "Bản render đầu thường đã xong phần lớn. Nói “làm đẹp hơn” sẽ nhận về thay đổi ngẫu nhiên, còn dùng từ ngữ máy quay sẽ nhận đúng thay đổi bạn muốn."
+  }
+ ],
+ "vocabulary": [
+  {
+   "term": "push in",
+   "when": "Khi muốn nhấn mạnh một phần tử",
+   "say": "Push in on the button over 0.8s.",
+   "say_vi": "Đẩy máy vào gần nút bấm trong 0,8 giây."
+  },
+  {
+   "term": "pull out",
+   "when": "Khi muốn hé lộ toàn cảnh",
+   "say": "Start tight on the chart, then pull out to the full page.",
+   "say_vi": "Bắt đầu cận vào biểu đồ, rồi kéo máy ra thấy cả trang."
+  },
+  {
+   "term": "hard cut on the beat",
+   "when": "Khi muốn chuyển cảnh khớp nhạc",
+   "say": "Hard cut here, landing on beat 17.",
+   "say_vi": "Cắt thẳng ở đây, rơi đúng beat 17."
+  },
+  {
+   "term": "match cut / morph",
+   "when": "Khi muốn các cảnh chảy liền vào nhau",
+   "say": "The circle in this shot becomes the logo in the next one.",
+   "say_vi": "Hình tròn ở cảnh này trở thành logo ở cảnh sau."
+  },
+  {
+   "term": "one continuous take",
+   "when": "Khi muốn bỏ cảm giác trình chiếu slide",
+   "say": "Never cut. Every scene is built out of the previous one.",
+   "say_vi": "Không cắt lần nào. Mỗi cảnh được dựng từ chính cảnh trước."
+  },
+  {
+   "term": "hold",
+   "when": "Khi muốn cho người xem kịp đọc chữ",
+   "say": "Hold this line for 1.5s before it moves.",
+   "say_vi": "Giữ dòng chữ này 1,5 giây rồi mới cho chuyển động."
+  },
+  {
+   "term": "slow to 0.7x",
+   "when": "Khi muốn làm dịu một đoạn quá gấp",
+   "say": "Slow every zoom to 0.7x.",
+   "say_vi": "Làm chậm mọi cú zoom xuống 0,7 lần."
+  },
+  {
+   "term": "stagger",
+   "when": "Khi không muốn các phần tử bật ra cùng lúc",
+   "say": "Bring the cards in one by one, 80ms apart.",
+   "say_vi": "Đưa từng thẻ vào lần lượt, cách nhau 80 mili giây."
+  },
+  {
+   "term": "ease-out / spring",
+   "when": "Khi muốn chuyển động bớt máy móc",
+   "say": "Use a spring with a tiny overshoot, no bouncy easing.",
+   "say_vi": "Dùng lò xo chỉ vượt quá một chút, không dùng easing nảy."
+  },
+  {
+   "term": "parallax",
+   "when": "Khi muốn thêm chiều sâu cho khung hình phẳng",
+   "say": "Move the foreground faster than the background.",
+   "say_vi": "Cho tiền cảnh chạy nhanh hơn hậu cảnh."
+  },
+  {
+   "term": "rack focus / depth of field",
+   "when": "Khi muốn điểm nhìn chính thật rõ",
+   "say": "Blur the background and keep only the product sharp.",
+   "say_vi": "Làm mờ hậu cảnh, chỉ giữ sản phẩm sắc nét."
+  },
+  {
+   "term": "mask reveal",
+   "when": "Khi muốn chữ xuất hiện sang hơn",
+   "say": "Text rises out of a mask line instead of fading in.",
+   "say_vi": "Chữ trồi lên từ một đường mặt nạ thay vì mờ dần hiện ra."
+  },
+  {
+   "term": "kinetic typography",
+   "when": "Khi muốn chữ tự mang nhịp điệu",
+   "say": "Animate the voiceover word by word, locked to the waveform.",
+   "say_vi": "Cho lời thuyết minh hiện từng chữ, khóa theo dạng sóng âm thanh."
+  },
+  {
+   "term": "whip pan",
+   "when": "Khi muốn chuyển cảnh có lực",
+   "say": "Whip pan left into the next scene with motion blur.",
+   "say_vi": "Lia máy thật nhanh sang trái vào cảnh sau, kèm nhòe chuyển động."
+  },
+  {
+   "term": "speed ramp",
+   "when": "Khi muốn khoảnh khắc chính đánh mạnh hơn",
+   "say": "Ramp down to 0.3x right before the drop, then snap back.",
+   "say_vi": "Giảm xuống 0,3 lần ngay trước đoạn drop, rồi bật lại tốc độ thường."
+  },
+  {
+   "term": "screen-studio zoom",
+   "when": "Khi muốn demo sản phẩm bám theo thao tác",
+   "say": "Zoom to fill the frame wherever the cursor clicks; scale the cursor with it.",
+   "say_vi": "Con trỏ bấm vào đâu thì zoom vào đó cho kín khung, con trỏ phóng to theo."
+  },
+  {
+   "term": "seamless loop",
+   "when": "Khi muốn clip lặp được trên landing page",
+   "say": "Make the last frame identical to the first, cursor position and speed included.",
+   "say_vi": "Cho khung cuối giống hệt khung đầu, kể cả vị trí và tốc độ con trỏ."
+  },
+  {
+   "term": "beat grid",
+   "when": "Khi muốn mọi thứ đồng bộ với nhạc",
+   "say": "Analyze the song for beats first and put one change on every beat.",
+   "say_vi": "Phân tích beat của bài nhạc trước, mỗi beat đặt một thay đổi."
+  }
+ ],
+ "checklist": [
+  "Nhịp quá nhanh: làm chậm mọi chuyển động xuống 0,7 lần và giữ chữ quan trọng ít nhất 1 giây.",
+  "Quá nhiều hiệu ứng: thêm danh sách cấm vào prompt (phát sáng, hạt, chuyển cảnh mờ chồng, gradient).",
+  "Không có sự liền mạch, chuyển động đi đủ mọi hướng: mỗi cảnh chỉ giữ một trục chuyển động, hoặc yêu cầu quay một mạch.",
+  "Không có điểm nhìn chính: nói rõ mỗi cảnh chỉ nói về một thứ và đẩy máy vào thứ đó.",
+  "Cùng một kiểu easing chung chung ở mọi nơi: xin lò xo chỉ vượt quá một chút và cho các phần tử chạy nhịp khác nhau.",
+  "Không có biên đạo: đưa cho Opus một lưới beat và gán đúng một thay đổi cho mỗi beat.",
+  "Chuyển động không mang ý nghĩa: nói rõ mỗi chuyển động phải giải thích điều gì, ví dụ cột mọc cao để cho thấy doanh thu tăng gấp đôi."
+ ]
+}

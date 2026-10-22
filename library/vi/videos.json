@@ -1,0 +1,1202 @@
+{
+ "2102466523164274839": {
+  "title": "Phố Market, San Francisco năm 1906 dựng bằng Blender",
+  "what": "Cú máy 10 giây đi dọc phố Market ở San Francisco chiều ngày 17/4/1906, hôm trước trận động đất. Toàn bộ dựng bằng Blender Python dựa trên bản đồ bảo hiểm hỏa hoạn Sanborn, phim tư liệu và ảnh thời đó.",
+  "why": "Prompt bắt nghiên cứu trước khi dựng: lập file nguồn ghi mặt bằng, chiều cao, vật liệu, người thuê của từng tòa nhà kèm nguồn và mức tin cậy. Sau đó viết các bộ sinh mẫu tái dùng được (mặt tiền thời Victoria, mái mansard, đèn đường, xe cáp) và lắp phố từ dữ liệu, cấm tải mesh, texture hay HDRI.",
+  "how": "Dùng cho video lịch sử cần tái hiện một con phố hay khu đô thị xưa có căn cứ. Thay địa điểm, mốc thời gian, danh sách công trình và nguồn tư liệu, giữ nguyên trình tự nghiên cứu rồi mới dựng."
+ },
+ "2102476258948927543": {
+  "title": "Pháp sư pixel art tung phép",
+  "what": "Hoạt hình pixel art 16-bit lặp liền mạch: pháp sư tụ lực rồi tung phép, vẽ thủ tục ở độ phân giải 128x96 bằng Canvas 2D trong một file HTML.",
+  "why": "Prompt đặt luật pixel chặt: vẽ vào canvas 128x96 rồi phóng theo bội số nguyên, mọi tọa độ làm tròn, bảng khoảng 24 màu, cấm gradient và khử răng cưa. Tư thế nhân vật được tham số hóa rồi lượng tử về lưới mỗi khung để chạy 60fps mà vẫn có cảm giác 8 đến 12 hình mỗi giây, chuyển động theo máy trạng thái chờ, tụ lực, phóng, hồi.",
+  "how": "Hợp với intro kênh game, nền stream hay sticker động. Thay nhân vật và hành động trong mục CHARACTER và ANIMATION, giữ phần RENDERING và QUALITY BAR."
+ },
+ "2102500841097756743": {
+  "title": "Mô phỏng nước tốt nhất mô hình làm được",
+  "what": "Một mô phỏng nước làm trực tiếp trên livestream từ prompt một dòng bằng tiếng Thổ Nhĩ Kỳ. Bài đăng chỉ chiếu một trong ba bản mô phỏng Opus tạo ra.",
+  "why": "Mẫu này cho thấy một prompt rất ngắn, chỉ nêu chủ đề và đòi mức tốt nhất, vẫn có thể ra kết quả dùng được. Đồng thời nó nhắc rằng nên chạy vài lần rồi chọn bản đẹp nhất.",
+  "how": "Dùng để thử nhanh khả năng của mô hình với một hiện tượng vật lý như nước, khói hay lửa. Thay chủ đề trong câu, và nếu cần đưa vào video thì bổ sung góc máy, ánh sáng, khung hình."
+ },
+ "2102503027340988559": {
+  "title": "Tranh khảm kính và vàng lá sống dậy",
+  "what": "Phim WebGL2 khổ vuông 80 giây: một bức tranh khảm kính và vàng lá có các mảnh nhấc lên, lật, bay thành đàn tạo hình cá, sếu, ngôi sao rồi lắp lại đúng chỗ. Âm thanh tổng hợp trong trình duyệt.",
+  "why": "Prompt dựa trên một ý tưởng hình thức duy nhất: các mảnh khảm chưa từng được dán chặt, và mọi nhân vật đều là một đàn mảnh. Ràng buộc không thư viện, không file ảnh, font hay âm thanh buộc mọi thứ phải sinh từ code.",
+  "how": "Hợp với video nghệ thuật, intro thương hiệu cao cấp hay logo reveal. Thay chất liệu (gạch men, giấy, lá) và các hình mà đàn mảnh tạo thành."
+ },
+ "2102515055116063144": {
+  "title": "Nhân vật pixel né thiên thạch trong không gian",
+  "what": "Demo 16-bit lặp liền mạch: nhân vật pixel màu cam chạy hết tốc lực trên sàn cầu vồng giữa không gian, tự né thiên thạch và tia laser. Vẽ bằng Canvas 2D ở độ phân giải 160x90.",
+  "why": "Prompt tiếng Nhật rất chi tiết, mô tả hình nhân vật 12x8 đến từng cột từng hàng, bảng khoảng 32 màu, và mỗi kiểu tấn công gắn với một động tác né đẹp nhất. Phần camera có hit stop 3 đến 4 khung khi suýt trúng rồi chạy chậm, rung màn hình đọc từ mảng cố định thay vì ngẫu nhiên, và mọi chuyển động phải truyền được ba cảm giác: nhanh, sát nút, ngầu.",
+  "how": "Hợp với intro kênh game, nền stream hay đoạn chuyển cảnh vui. Thay hình nhân vật, sàn và chướng ngại, giữ phần luật pixel, hệ thống hạt và camera."
+ },
+ "2102543638689460488": {
+  "title": "Dựng lại cảnh từ ảnh chụp theo kiểu cel-shading",
+  "what": "Opus 5.5 dựng một cảnh 3D chi tiết, mô phỏng sát một bức ảnh chụp nhưng tô theo kiểu hoạt hình cel-shaded.",
+  "why": "Prompt ngắn với hai yêu cầu rõ ràng: bám sát ảnh gốc và dùng phong cách cel-shaded. Cách kết hợp ảnh tham chiếu với một câu chỉ định phong cách là công thức gọn để chuyển ảnh thật thành cảnh hoạt hình.",
+  "how": "Dùng khi muốn biến ảnh địa điểm, sản phẩm hay phòng làm việc thành cảnh hoạt hình cho intro hoặc nền. Đính kèm ảnh của bạn và đổi tên phong cách nếu muốn hướng khác."
+ },
+ "2102544078927741369": {
+  "title": "Cỗ máy Rube Goldberg 3D tự chạy",
+  "what": "Cỗ máy dây chuyền Rube Goldberg trong three.js chạy vòng lặp khoảng 15 đến 20 giây: viên bi lăn xuống dốc, đổ hàng domino, bập bênh hất bóng vào xô, ròng rọc kéo chuông và kéo cờ lên cột. Vật lý viết tay, camera bám theo kiểu điện ảnh, quay màn hình 1280×720.",
+  "why": "Prompt liệt kê chuỗi sự kiện theo thứ tự đánh số và đặt luật chặt: tự viết vật lý, cấm keyframe hay tween bất kỳ bộ phận nào, bước thời gian cố định, không ngẫu nhiên để lần nào chạy cũng giống nhau. Nó cũng nói trước sẽ quay ở độ phân giải nào và cấm mọi chữ hay UI trên màn hình.",
+  "how": "Dùng cho video giải thích quy trình nhân quả, quảng cáo vui hay màn mở đầu. Thay các mắt xích trong danh sách, giữ phần luật về vật lý, tính tất định và hướng dẫn quay."
+ },
+ "2102554209166000267": {
+  "title": "Mẫu video ra mắt sản phẩm phong cách tối giản",
+  "what": "Mẫu video ra mắt 20 giây, 1080p, cắt theo lưới 120 BPM: câu mở hiện từng chữ theo nhịp, một chữ biến thành giao diện sản phẩm, tường clip dọc thật có vạch quét, băng chuyền video 3D, số liệu lớn và logo. Ví dụ đi kèm là hooklab, công cụ tạo quảng cáo UGC từ một đường dẫn.",
+  "why": "Prompt chia khối rõ ràng, có danh sách cấm cụ thể (vòng xung kích, hạt nổ, tách màu, rung máy) và yêu cầu chỉ dùng cảnh quay thật. Phần build đáng học: tách clip thành chuỗi ảnh để seek chính xác, đặt hiệu ứng âm thanh theo đỉnh đo được và chuẩn hóa âm lượng về -14 LUFS.",
+  "how": "Dùng cho video ra mắt SaaS hoặc app khi có sẵn clip dọc của mình. Điền tên sản phẩm, lời hứa một dòng, 3 đến 5 khoảnh khắc UI, màu nhấn, clip và bài nhạc có drop."
+ },
+ "2102592355165782312": {
+  "title": "Tranh cát kể 250 năm lịch sử nước Mỹ",
+  "what": "Hoạt hình tranh cát 2 phút kể 250 năm lịch sử Mỹ, có nhạc nền và âm thanh, do Claude Code viết bằng code mà không dùng Blender hay Three.js.",
+  "why": "Prompt gói trong một câu: chất liệu (tranh cát), chủ đề, thời lượng, giọng điệu (sôi nổi, cuốn hút, tinh tế) và yêu cầu âm thanh. Chọn một chất liệu thủ công quen thuộc giúp video lịch sử có bản sắc riêng.",
+  "how": "Dùng cho video lịch sử, kỷ niệm thành lập hay câu chuyện thương hiệu kể theo thời gian. Thay chủ đề, khoảng thời gian và thời lượng; có thể đổi chất liệu sang tranh mực, cắt giấy hay sơn dầu."
+ },
+ "2102598487170822281": {
+  "title": "Tàu đêm băng qua cầu cạn giữa núi tuyết",
+  "what": "Cảnh đêm dựng thủ tục bằng Three.js: đoàn tàu màu đỏ rượu vang chạy vòng trên cầu cạn đá giữa thung lũng núi tuyết, rừng thông, sông và nhà xa. Có bốn góc máy, các preset ánh sáng và tiếng nền tổng hợp bằng Web Audio.",
+  "why": "Prompt chia mục rõ ràng (art direction, đoàn tàu, đường ray, môi trường, tương tác, âm thanh) và rất cụ thể về chi tiết mô hình. Nó nêu luôn các lỗi phải tránh: cửa sổ xuyên thân tàu, đường ray hở, toa chồng nhau, và yêu cầu chạy tàu theo đường tham số hóa độ dài cung để tốc độ đều.",
+  "how": "Hợp với video thư giãn, nền trình chiếu hay showreel cần một cảnh mô hình thu nhỏ kiểu điện ảnh. Thay phương tiện, địa hình và preset ánh sáng, giữ cấu trúc mục và phần kiểm thử cuối prompt."
+ },
+ "2102598986393870464": {
+  "title": "Thỏ cung thủ pixel art với tám động tác",
+  "what": "Màn trình diễn sprite kiểu 16-bit chạy vòng lặp: chú thỏ cung thủ có mắt máy màu đỏ lần lượt diễn tám động tác như đứng chờ, chạy, ngắm, bắn, nhảy, lộn né, trúng đòn, chiến thắng. Vẽ thủ tục bằng Canvas 2D ở 160x120 theo ảnh nhân vật tham chiếu.",
+  "why": "Prompt liệt kê đặc điểm nhận diện từ ảnh tham chiếu thành danh sách để giữ đúng nhân vật, và mô tả từng động tác bằng các chi tiết chuyển động thứ cấp như tai trễ nhịp, ống tên nảy, mắt máy lóe đỏ khi bắn. Phần luật pixel giống mẫu pháp sư: bội số nguyên, tọa độ làm tròn, bảng khoảng 28 màu.",
+  "how": "Hợp khi cần bộ động tác cho mascot thương hiệu, nhân vật game hay sticker động. Thay danh sách đặc điểm nhân vật, đính kèm ảnh của bạn và chỉnh danh sách động tác."
+ },
+ "2102606609574941028": {
+  "title": "Bài địa lý về hoàn lưu khí quyển vẽ nét",
+  "what": "Bài giảng gần 5 phút về hoàn lưu khí quyển cho môn địa lý cấp ba, hoạt hình dạng nét vẽ, phụ đề song ngữ Trung Anh, có nhạc và giọng đọc TTS.",
+  "why": "Prompt cho thấy cách nối dịch vụ ngoài một cách gọn: chỉ đến file TTS.md chứa tài liệu và tên biến trong .env cho API key và giọng, kèm yêu cầu tắt watermark nếu có tham số. Nó cũng yêu cầu video cuối xuất ra được ngay.",
+  "how": "Hợp với video bài giảng có giọng đọc và phụ đề. Thay chủ đề bài học, ngôn ngữ phụ đề và trỏ đúng tới tài liệu, biến môi trường của dịch vụ giọng đọc bạn dùng."
+ },
+ "2102652072252584046": {
+  "title": "Tái hiện 3D trận Dan-no-ura kiểu phóng sự truyền hình",
+  "what": "Bản dựng 3D nhìn từ trên cao dài 74 giây về trận Dan-no-ura: địa hình, hạm đội hai phe Genji và Heike, dòng hải lưu ở eo biển Kanmon đảo chiều, camera bay sát mặt biển.",
+  "why": "Prompt nhắm vào chất lượng phóng sự truyền hình và nêu cụ thể yếu tố cần dựng: địa hình, quân, mũi tên tiến quân, sương mù. Điểm hay là nó yêu cầu hình hóa nguyên nhân đổi cục diện (thủy triều đảo chiều) và mô tả hai kiểu camera, sát mặt nước và bay vòng theo hạm đội.",
+  "how": "Hợp với video lịch sử quân sự hay giải thích một sự kiện có yếu tố địa lý quyết định. Thay trận đánh, địa danh và yếu tố tự nhiên chi phối diễn biến."
+ },
+ "2102695622042411419": {
+  "title": "81 năm lịch sử Indonesia trong một phút",
+  "what": "Video 59 giây tóm tắt 81 năm lịch sử Indonesia bằng hoạt hình nét vẽ vui nhộn, có nhạc và giọng đọc ElevenLabs.",
+  "why": "Prompt nêu đủ bốn thứ: chủ đề, phong cách (đơn giản, vui, nét vẽ), âm thanh và giới hạn dưới 1 phút. Ràng buộc thời lượng ngắn buộc mô hình chọn lọc mốc quan trọng.",
+  "how": "Hợp với video ngày lễ, kỷ niệm hay tóm tắt lịch sử cho mạng xã hội. Thay quốc gia hoặc tổ chức, số năm và thời lượng mong muốn."
+ },
+ "2102724347446305104": {
+  "title": "Hành trình biến hình từ sinh vật nhỏ đến vũ trụ",
+  "what": "Phim Canvas khoảng 30 giây nét vẽ tay, mỗi cảnh biến hình sang cảnh sau: sinh vật cam, mạng nơ-ron, lăng kính tán sắc, hoa hướng dương, thiên hà xoắn ốc, hố đen, đường hầm vũ trụ, cảnh Trái Đất mọc rồi quay lại sinh vật. Video làm theo một clip tham chiếu.",
+  "why": "Prompt cấm kiểu chuyển cảnh như slide và mô tả cụ thể từng cú chuyển: một nhánh xung điện duỗi thẳng thành tia sáng chiếu vào lăng kính, cầu vồng uốn thành vòng tròn đồng tâm, vòng ngoài tách thành cánh hoa. Nó còn chốt sẵn stack (Vite, TypeScript, Canvas 2D, chỉ dùng Three.js khi thật cần), timeline theo giây, bảng màu và danh sách phong cách cần tránh.",
+  "how": "Hợp với video giải thích khoa học hay intro thương hiệu cần cảm giác một dòng chảy liền mạch. Thay chuỗi hình ảnh và timeline trong mục 1 và 7, viết lại từng cú chuyển cảnh theo đúng chủ đề của mình, giữ phần stack, phong cách và chất liệu giấy."
+ },
+ "2102731669853573582": {
+  "title": "So sánh SEO và GEO bằng hoạt hình",
+  "what": "Hoạt hình 33 giây viết hoàn toàn bằng code giải thích khác biệt giữa SEO và GEO, làm qua ba câu chat ngắn tiếng Tây Ban Nha; câu cuối thêm hiệu ứng và âm thanh.",
+  "why": "Quy trình đi từng bước nhỏ: hỏi xem có làm được không, nêu chủ đề, rồi thêm âm thanh. Đây là cách làm hợp với người mới, mỗi lượt chỉ thêm một lớp.",
+  "how": "Hợp với video so sánh hai khái niệm marketing hay công nghệ. Thay cặp khái niệm ở câu thứ hai, và có thể thêm thời lượng hoặc phong cách ngay từ đầu."
+ },
+ "2102739444256383089": {
+  "title": "Hoạt hình bóng đá voxel bằng Three.js",
+  "what": "Đoạn hoạt hình ngắn kiểu khối voxel trong một file HTML: cầu thủ vuông vức dẫn bóng qua hai hậu vệ rồi ghi bàn, sau đó bung hạt ăn mừng.",
+  "why": "Prompt ngắn nhưng đủ ba phần: kỹ thuật (một file, Three.js qua CDN), phong cách (voxel, sân màu sắc) và kịch bản hành động có mở đầu, cao trào, kết. Yêu cầu chỉ xuất code giúp lấy kết quả dùng ngay.",
+  "how": "Hợp với clip ngắn cho mạng xã hội về thể thao hoặc một khoảnh khắc chiến thắng. Thay môn thể thao, hành động chính và màu sân trong prompt."
+ },
+ "2102742654308245802": {
+  "title": "Phim ngắn: cảnh sát bị trộm phá giờ uống cà phê",
+  "what": "Câu chuyện hoạt hình 30 giây khổ 16:9: một cảnh sát đang nghỉ uống cà phê thì bị tên trộm làm gián đoạn. Opus đạo diễn Seedance 2.5 Draft trên Magnific từ một ảnh tham chiếu, kèm nhạc và hiệu ứng âm thanh khớp hình.",
+  "why": "Prompt chỉ đưa tiền đề và cấu trúc ba nhịp gồm thiết lập, leo thang, kết hài, rồi giao cho mô hình quyết góc máy, độ dài cảnh, nhịp và chuyển cảnh. Ảnh đầu vào vừa là khung mở đầu vừa là tham chiếu để giữ nhân vật, màu và ánh sáng nhất quán.",
+  "how": "Hợp với quảng cáo ngắn có tình huống hài hoặc clip mạng xã hội kể chuyện. Thay ảnh mở đầu và tiền đề câu chuyện, giữ yêu cầu ba nhịp và ít thoại."
+ },
+ "2102743212922384673": {
+  "title": "Lịch sử loài người vẽ nguệch ngoạc, kết bằng Opus 5.5",
+  "what": "Hoạt hình 108 giây kiểu origami và doodle kể văn minh nhân loại từ thuở đầu đến khi AI nở ra rồi thành Opus 5.5, gần như không có chữ, viết bằng JavaScript thuần. Theo tác giả, dùng hai prompt và chạy khoảng 3 tiếng.",
+  "why": "Prompt đặt ràng buộc hạn chế chữ để người thuộc nền văn hóa nào cũng hiểu, buộc câu chuyện phải kể bằng hình. Các tính từ về phong cách (dễ thương, ấm áp, giàu tính kể chuyện, nên thơ) cho mô hình định hướng cảm xúc rõ.",
+  "how": "Hợp với video thương hiệu, video tổng kết hay câu chuyện cần vượt rào ngôn ngữ. Thay hành trình và điểm kết của câu chuyện, giữ yêu cầu hạn chế chữ và phong cách vẽ."
+ },
+ "2102787937482252537": {
+  "title": "Video ra mắt cho startup về suy luận AI",
+  "what": "Video ra mắt 26 giây cho một startup làm hạ tầng suy luận AI, dựng bằng hoạt hình web rồi quay lại bằng Playwright và ffmpeg, không dùng mô hình tạo video.",
+  "why": "Prompt cực ngắn nhưng ba tính từ hiện đại, bóng bẩy, dứt khoát đã định giọng cho cả video. Đây là bằng chứng cho thấy hoạt hình bằng code đủ để làm video ra mắt.",
+  "how": "Dùng làm bản nháp đầu cho video ra mắt. Thay mô tả lĩnh vực của startup, nên thêm tên sản phẩm và thông điệp chính."
+ },
+ "2102788223835463902": {
+  "title": "Phim hoạt hình 3D kiểu Pixar thập niên 90",
+  "what": "Claude Opus 5.5 tự nghĩ ra một câu chuyện rồi dựng thành phim hoạt hình bằng Three.js. Theo tác giả, không có prompt nối tiếp nào.",
+  "why": "Điểm đáng chú ý là cách mô hình hiểu \"90s\" thành phong cách thập niên 1990 chứ không phải phim dài 90 giây. Đây là ví dụ về chỗ mơ hồ trong prompt có thể đổi hẳn kết quả.",
+  "how": "Dùng để thử nhanh một ý tưởng kể chuyện hoạt hình mà chưa có kịch bản. Nếu cần thời lượng hay phong cách cụ thể thì ghi rõ, ví dụ \"phong cách thập niên 1990\" hoặc \"dài 90 giây\", và thêm tóm tắt cốt truyện nếu đã có."
+ },
+ "2102801274173587569": {
+  "title": "MV mới cho bài hát Claude Pop",
+  "what": "Music video 2,5 phút cho bài \"Claude Pop\", dùng cảnh nền tạo bằng Seedance 2.5, sound design từ ElevenLabs và chữ lời bài hát chạy bằng JavaScript. Theo bài đăng, tác giả chỉ dùng một prompt cùng khoảng năm phút nói, Opus 5.5 làm việc khoảng 12 tiếng.",
+  "why": "Prompt giao trọn dự án nhưng có định hướng: giữ nguyên bản nhạc, nghĩ kỹ cách thể hiện từng câu hát, dùng character sheet và style sheet để giữ nhất quán nhân vật, thêm vũ công phụ và bối cảnh riêng. Nó chỉ rõ kho tài liệu và skill có sẵn, thẩm mỹ cần tránh và hướng K-pop làm điểm tựa.",
+  "how": "Hợp khi làm MV hay video ca nhạc dài với nhiều công cụ tạo hình và âm thanh. Thay bài hát, nhân vật chính, nguồn tham khảo và danh sách công cụ bạn thực sự có quyền dùng."
+ },
+ "2102805376466891137": {
+  "title": "Cửa sổ ngữ cảnh của LLM đầy lên như thế nào",
+  "what": "Video giải thích 100 giây, nhãn tiếng Bồ Đào Nha, cho thấy câu hỏi của người dùng và câu trả lời của mô hình lần lượt chồng lên trong cửa sổ ngữ cảnh. Làm bằng JavaScript rồi xuất MP4.",
+  "why": "Prompt nêu đúng điểm khó cần làm rõ: phân biệt cửa sổ đầu vào và đầu ra có kích thước khác nhau, và cho thấy câu trả lời ở đầu ra được chuyển sang nối vào đầu vào. Prompt thứ hai chỉ yêu cầu xuất MP4 để tải.",
+  "how": "Hợp với video giải thích một cơ chế kỹ thuật có luồng dữ liệu. Thay cơ chế và nêu rõ các điểm dễ hiểu sai mà hình ảnh phải làm rõ, đổi ngôn ngữ nhãn sang tiếng Việt."
+ },
+ "2102827288190689364": {
+  "title": "Video quảng bá app ghi âm Wrapscribe",
+  "what": "Video quảng bá 41 giây cho Wrapscribe, app chuyển giọng nói thành chữ chạy cục bộ. Opus đọc mã nguồn để lấy tính năng, dựng bằng Remotion, và tạo lời đọc lẫn nhạc qua khóa API fal.ai.",
+  "why": "Prompt ngắn nhưng chỉ đúng nguồn sự thật là mã nguồn, nên tính năng nêu trong video là thật. Đáng học cách cho mô hình đọc codebase thay vì tự viết mô tả sản phẩm.",
+  "how": "Dùng cho dev indie muốn video giới thiệu app của mình. Thay tên sản phẩm và chạy trong thư mục dự án để mô hình đọc được mã."
+ },
+ "2102827887732932956": {
+  "title": "Clip nói chuyện chuyển thành video giải thích nét vẽ",
+  "what": "Video dọc 83 giây, người nói thu nhỏ thành ô tròn ở góc dưới phải, phần chính là B-roll hoạt hình nét vẽ đi theo đúng khái niệm đang được nói. Opus vẽ từng khung bằng Python, giữ nguyên tiếng, phụ đề và thời lượng gốc.",
+  "why": "Prompt ngắn, chia ba yêu cầu đánh số và nói rõ điều gì không được đổi. Đáng học cách ràng buộc phần giữ nguyên để mô hình chỉ thay đúng lớp hình.",
+  "how": "Dùng cho video nói chuyện dạy học, chia sẻ kiến thức cần thêm hình minh họa. Thay tên file, vị trí ô người nói và phong cách vẽ mong muốn."
+ },
+ "2102853258582880547": {
+  "title": "Hoạt hình công thức cocktail Negroni từng bước",
+  "what": "Hoạt hình 30 giây kiểu explainer làm bằng HTML từ một tấm ảnh: từ ly rỗng, thêm đá, rót gin, Campari, vermouth tới vạch 1, 2, 3 oz, khuấy 20 giây, thêm vỏ cam. Có thẻ bước và thanh tiến độ 6 bước ở dưới.",
+  "why": "Cấu trúc trình bày rõ: chai nghiêng rót và mực nước dâng tới vạch có nhãn, thẻ \"STEP 3 OF 6\" có thanh đầy dần, thanh 6 nút đánh dấu bước xong, bước khuấy có đồng hồ đếm ngược. Kết bằng tia lửa ăn mừng và thẻ tóm tắt tỷ lệ 1:1:1.",
+  "how": "Dùng cho video công thức nấu ăn, pha chế hay bất kỳ quy trình nhiều bước có định lượng. Thay tên món, danh sách nguyên liệu và định lượng, giữ yêu cầu hiển thị nguyên liệu và số đo lúc chúng được cho vào."
+ },
+ "2102863918033178789": {
+  "title": "Video ra mắt cho trang Otto Ideate",
+  "what": "Video ra mắt 37 giây cho một trang sản phẩm, từ một câu tiếng Bồ Đào Nha chỉ đưa URL và đòi chất lượng cao nhất.",
+  "why": "Prompt tối giản, toàn bộ nội dung đến từ trang web. Đây là mốc tham khảo để so với các prompt chi tiết hơn: mô hình làm được gì khi chỉ có một đường dẫn.",
+  "how": "Dùng để có bản nháp nhanh từ landing page. Thay URL, rồi bổ sung thương hiệu, thời lượng nếu bản đầu chưa đúng ý."
+ },
+ "2102867033100616097": {
+  "title": "Stop-motion vẽ tay, sản phẩm tự giới thiệu",
+  "what": "Phim stop-motion vẽ tay 58 giây, ứng dụng DeFi Saver tự kể về mình ở ngôi thứ nhất: kết nối ví, giá giảm lúc 3 giờ sáng, nhiệt kế tỷ lệ thế chấp tiến sát ngưỡng thanh lý, và một giao dịch để trả nợ.",
+  "why": "Lời kể ngôi thứ nhất từ góc nhìn sản phẩm làm nên giọng riêng. Phụ đề trên dải giấy dán băng keo gõ từng chữ, nhiệt kế ghi rõ ngưỡng của người dùng và ngưỡng thanh lý, cảnh 3 giờ sáng có người đang ngủ để kịch tính hóa vấn đề, bản đồ các giao thức là các hòn đảo nối bằng đường thuyền.",
+  "how": "Hợp với video giới thiệu sản phẩm số, ứng dụng tài chính hay SaaS cần giải thích một vấn đề khó. Thay tên sản phẩm trong prompt hai dòng, có thể đổi chất liệu từ stop-motion vẽ tay sang kiểu khác."
+ },
+ "2102882622053535814": {
+  "title": "Game kinh dị dưới biển sâu dựng trên engine riêng",
+  "what": "Theo tác giả, Claude Opus 5.5 được yêu cầu làm một game chỉ trong phạm vi khả năng engine của họ. Kết quả là một game kinh dị dưới biển sâu có nhạc nền drone âm u, tái dùng phần lớn thư viện hiệu ứng, chiếu sáng, đạn và va chạm có sẵn.",
+  "why": "Dữ liệu chỉ có lời kể của tác giả, không có prompt chi tiết. Điều đáng học là cách giới hạn mô hình trong công cụ sẵn có, buộc nó khai thác thư viện của bạn thay vì viết mới.",
+  "how": "Hợp khi bạn có engine hoặc bộ thư viện riêng và muốn mô hình làm nội dung trên đó. Nêu rõ phạm vi engine, thể loại và không khí mong muốn trong prompt."
+ },
+ "2102885216692162993": {
+  "title": "Video phát lại quá trình vẽ Mona Lisa bằng chuột",
+  "what": "Đoạn 31 giây phát lại cảnh Opus vẽ lại Mona Lisa từng nét trong JS Paint, ghi đủ từng chuyển động chuột và thay đổi trên khung vẽ.",
+  "why": "Đáng học cách làm hai bước: trước tiên cho mô hình điều khiển Chrome làm một việc thật, sau đó hỏi tiếp để nó dựng video về chính việc vừa làm. Kết quả là nội dung quá trình có sẵn dữ liệu thật.",
+  "how": "Dùng khi muốn làm video hậu trường hoặc timelapse cho một tác vụ trên máy. Thay tác vụ ở prompt đầu, giữ nguyên câu hỏi tiếp theo yêu cầu dựng video từng thao tác."
+ },
+ "2102888241443795431": {
+  "title": "Màn pháo hoa và hạt ánh sáng chạy thời gian thực",
+  "what": "Màn trình diễn pháo hoa và hạt phát sáng dài 38 giây, viết hoàn toàn bằng code, có thể phát lại đoạn kết. Opus tự chọn bối cảnh và hướng thẩm mỹ.",
+  "why": "Prompt không mô tả cảnh mà đặt tiêu chí: tránh nhân bản những vụ nổ nhỏ giống nhau, phải có nhịp, chiều sâu, ánh sáng hắt lên môi trường và một khoảnh khắc kết đáng nhớ. Nó còn yêu cầu mô hình cân nhắc vài ý tưởng trước rồi mới chọn cái mạnh nhất khi lên video.",
+  "how": "Dùng cho video mừng sự kiện, đếm ngược năm mới hay màn kết của một clip. Có thể giữ khung tiêu chí và thêm bối cảnh, màu thương hiệu hoặc mốc nhạc nếu muốn kiểm soát nhiều hơn."
+ },
+ "2102899830951731601": {
+  "title": "Giả thuyết Riemann giải thích trong 30 giây",
+  "what": "Video JavaScript khoảng 30 giây giải thích giả thuyết Riemann. Sau đó tác giả nhờ GPT-6 Astra thêm giọng nữ trầm tĩnh và vài tiếng jingle nhẹ khi chuyển cảnh.",
+  "why": "Prompt gốc ngắn và có một ràng buộc quan trọng: không được sai toán. Prompt bổ sung về giọng đọc nêu cụ thể tính chất giọng và mức độ âm thanh chuyển cảnh, rất kiệm lời mà rõ.",
+  "how": "Hợp với video giới thiệu nhanh một bài toán hay định lý nổi tiếng. Thay chủ đề và thời lượng, giữ yêu cầu chính xác, và viết lượt bổ sung về giọng đọc theo cách tương tự."
+ },
+ "2102899866762440893": {
+  "title": "Cỗ máy mà mỗi cú va chạm phát ra một nốt nhạc",
+  "what": "Cỗ máy âm nhạc 45 giây trong một file HTML 47 KB: ống phóng bắn những viên bi phát sáng vào mộc cầm, chuông, trống và chũm chọe, mỗi nốt đều đến từ một cú va chạm nhìn thấy được. Toàn bộ âm thanh tổng hợp trong trình duyệt.",
+  "why": "Prompt chỉ một câu với một luật duy nhất: mọi nốt phải đến từ va chạm nhìn thấy được. Luật này buộc hình và tiếng đồng bộ tuyệt đối, thanh nhạc cụ lóe sáng khi bị đánh, các hàng nhạc cụ xếp thành làn có nhãn, HUD có tên bản nhạc, đồng hồ chạy và thanh tiến độ.",
+  "how": "Hợp với video nhạc, intro kênh âm nhạc hay đoạn hình trực quan hóa âm thanh. Thay thời lượng và luật tạo nốt, có thể đổi va chạm sang hiệu ứng vật lý khác."
+ },
+ "2102903173161877996": {
+  "title": "Con bug không muốn bị sửa",
+  "what": "Phim hoạt hình 90 giây về một con bug phát sáng như đom đóm trốn trong code, né con trỏ chuột khổng lồ đang săn nó. Đây là phim thứ hai trong loạt thử nghiệm prompt một câu của tác giả.",
+  "why": "Code được trừu tượng hóa thành các thanh bo tròn tô màu cú pháp, không đọc được nhưng nhìn là biết code. Con trỏ chuột làm phản diện, dòng lỗi bừng lên dải đỏ, bug trốn bằng cách giả làm dấu nháy, và phim mở đóng bằng cú lùi máy ra người lập trình ngồi trước màn hình trong phòng tối.",
+  "how": "Hợp với video vui cho cộng đồng lập trình hay thương hiệu công cụ phát triển phần mềm. Thay nhân vật và tình huống trong câu prompt, giữ độ dài và thể loại phim ngắn."
+ },
+ "2102906701552726206": {
+  "title": "Hoạt hình tranh khảm kính và vàng lá",
+  "what": "Phim vuông 80 giây trong một file HTML dùng WebGL2: bức tranh khảm kính và vàng lá có các mảnh nhấc lên, lật, bay rồi lắp lại; nhân vật là những đàn mảnh, như con cá bơi bằng cách các mảnh của nó bơi.",
+  "why": "Đây là cùng prompt với một mẫu tranh khảm khác trong thư viện, cho thấy một ý tưởng hình thức mạnh và ràng buộc rõ (không thư viện, không file ảnh, font hay âm thanh) có thể dùng lại cho người khác.",
+  "how": "Hợp với logo reveal, intro thương hiệu hay video nghệ thuật. Thay chất liệu và các hình mà đàn mảnh tạo thành."
+ },
+ "2102913506815471882": {
+  "title": "Game pixel art làm trong một lần, so sánh hai mô hình",
+  "what": "Game pixel art hoàn chỉnh do Opus 5.5 làm trong một lần từ prompt chưa tới ba câu, được tự do chọn loại game. Tác giả đặt cạnh kết quả của GPT Sol-6 với cùng prompt để so sánh.",
+  "why": "Dữ liệu chỉ có lời kể, không có prompt gốc. Cách trình bày song song hai kết quả với cùng prompt là định dạng video so sánh dễ hiểu.",
+  "how": "Hợp với video đánh giá, so sánh công cụ AI. Viết một prompt ngắn cho mô hình tự do sáng tạo, chạy trên các mô hình cần so và quay song song."
+ },
+ "2102919394775220530": {
+  "title": "Demo demoscene thập niên 90 khớp nhạc tracker",
+  "what": "Demo demoscene kiểu những năm 1990 dài 6 phút chạy thời gian thực, viết bằng C/C++ và OpenGL, hiệu ứng khớp với bản nhạc S3M Second Reality của Purple Motion do tác giả cung cấp.",
+  "why": "Prompt yêu cầu làm hai việc trước khi code: tìm cách phát và phân tích file S3M để đồng bộ hiệu ứng theo từng đoạn nhạc, và nghiên cứu các loại hiệu ứng nên kết hợp. Nó còn nêu cả tinh thần kỹ thuật, giữ thời gian biên dịch gọn như dân demoscene và lập trình game console.",
+  "how": "Hợp với video nhạc điện tử, intro mang chất retro hay bất kỳ dự án cần hình ảnh bám sát cấu trúc bài nhạc. Thay file nhạc và thời kỳ thẩm mỹ, giữ yêu cầu phân tích nhạc trước khi dựng."
+ },
+ "2102920408743678129": {
+  "title": "Bãi biển Santa Monica vẽ bằng hạt sáng",
+  "what": "Bãi biển Santa Monica dựng 3D, vẽ bằng hàng nghìn đốm sáng nhỏ thay cho mảng màu đặc, sau người có các nét ruy băng gợi chuyển động, cảnh đổi theo giờ trong ngày. Opus làm luôn video quảng bá cho nó.",
+  "why": "Prompt chỉ có một đoạn nhưng nêu rõ ngôn ngữ hình ảnh: minh họa bằng hạt và nét ruy băng phía sau nhân vật để diễn tả chuyển động. Tác giả cho biết có thêm 2 đến 3 prompt nối tiếp, tức là dùng prompt đầu làm nền rồi chỉnh dần.",
+  "how": "Dùng khi muốn một cảnh nơi chốn có phong cách riêng cho video du lịch, thương hiệu địa phương hay nền trình chiếu. Thay địa điểm và mô tả phong cách vẽ, thêm yêu cầu về giờ trong ngày nếu cần đổi không khí."
+ },
+ "2102937913726235004": {
+  "title": "Mở đầu phim tưởng tượng về chính Claude",
+  "what": "Đoạn mở đầu 75 giây cho một bộ phim tưởng tượng về Claude, với tên người đóng góp được bịa ra. Mô hình tự chọn phong cách tri ân các đạo diễn tác giả và trả về file MP4.",
+  "why": "Prompt rất ngắn và để mô hình tự do chọn phong cách, chỉ chốt định dạng đầu ra. Đáng xem cách mô hình tự diễn giải một đề bài mở thành chuỗi credit có chủ đích.",
+  "how": "Hợp khi cần ý tưởng title sequence hoặc credit cho dự án, sự kiện. Thay chủ thể bộ phim, có thể thêm thể loại hoặc thời lượng nếu cần kiểm soát hơn."
+ },
+ "2102971287224135914": {
+  "title": "Thiên thạch nổ trên không quật đổ cả cánh rừng",
+  "what": "Mô phỏng viết hoàn toàn bằng code, có thể chạy lại: thiên thạch nổ trên một khu rừng, mô hình áp suất quyết định cây nào trong 240.000 cây bị đổ, sau đó hiện bản đồ thiệt hại nhìn từ vệ tinh.",
+  "why": "Prompt đòi theo dõi được cả quá trình gồm lúc nổ, lực lan ra và dấu vết để lại, chứ không chấp nhận một khung lóe sáng hay mưa hạt ngẫu nhiên. Kết quả cho thấy khi yêu cầu nhân quả rõ ràng, mô hình chọn cách mô phỏng có logic thay vì làm hiệu ứng trang trí.",
+  "how": "Hợp với video khoa học, giải thích thảm họa hay lịch sử cần cho thấy hậu quả của một sự kiện. Thay loại vụ nổ, quy mô và bối cảnh, giữ yêu cầu khởi đầu, lan truyền, dấu vết và cho xem lại từ góc khác."
+ },
+ "2102973867656614053": {
+  "title": "Clip hài ngắn, đề tài tùy ý",
+  "what": "Phim hài pixel 26 giây có âm thanh, làm từ prompt tiếng Bồ Đào Nha ba ý, để Opus 5.5 tự chọn đề tài.",
+  "why": "Prompt chỉ có thể loại, mức tự do về đề tài và giới hạn 10 đến 30 giây. Đây là cách nhanh để xem mô hình tự nghĩ ra gag và nhịp hài thế nào.",
+  "how": "Dùng để lấy ý tưởng hoặc làm clip vui lấp lịch đăng. Thêm đề tài, nhân vật hay thương hiệu nếu cần clip hài phục vụ mục đích cụ thể."
+ },
+ "2102989395359887481": {
+  "title": "Phim hoạt hình Three.js tự nghĩ cốt truyện",
+  "what": "Phim hoạt hình three.js gần 5 phút do Opus tự nghĩ chuyện: \"BEACON tập 13\", cô bé canh ngọn hải đăng không gian chống lại robot bóng tối, hạm đội tìm đến theo ánh sáng. Phong cách hoạt hình thập niên 90.",
+  "why": "Khung hình có viền đen kiểu điện ảnh, phụ đề ghi tên người nói, nhân vật low-poly tô toon, chùm sáng hải đăng quét qua tinh vân. Cao trào có không chiến và cú cắt chớp trắng, kết bằng iris-out vào chữ THE END, thẻ tên tập và một câu đùa sau credit.",
+  "how": "Hợp khi muốn thử làm phim hoạt hình dài mà chưa có kịch bản. Thay tham chiếu phong cách và thời kỳ trong câu prompt, thêm tóm tắt cốt truyện nếu muốn kiểm soát nội dung."
+ },
+ "2103022003863355796": {
+  "title": "Game đấu bài YuGiOh đủ luật, mọi thay đổi đều có hoạt ảnh",
+  "what": "Một bản game đấu bài YuGiOh chạy đủ luật, dựng 3D. Dữ liệu chỉ ghi lại một câu prompt yêu cầu mọi thứ thay đổi trên màn hình đều phải có hoạt ảnh.",
+  "why": "Câu prompt có được là một nguyên tắc dễ áp dụng cho bất kỳ giao diện nào sắp đưa lên video: không để thứ gì đổi trạng thái mà không có chuyển động. Prompt đầy đủ để dựng luật chơi không có trong dữ liệu.",
+  "how": "Dùng câu này như một lượt chỉnh bổ sung sau khi đã có bản chạy được của game hoặc giao diện cần quay. Ghép nó vào prompt của bạn khi muốn video demo trông mượt và có sức sống."
+ },
+ "2103023141823905802": {
+  "title": "AI làm lại game Super Mario Bros Wonder",
+  "what": "Tác giả muốn chơi Super Mario Bros Wonder nhưng không có máy Switch, nên nhờ Opus 5.5 làm lại game từ một prompt.",
+  "why": "Dữ liệu chỉ có lời kể của tác giả, không có prompt chi tiết. Mẫu này cho thấy việc dùng một game nổi tiếng làm tham chiếu duy nhất có thể ra một bản làm lại chơi được.",
+  "how": "Hợp khi cần cảnh game đi cảnh cho video giải trí. Nên tự thiết kế nhân vật và màn chơi riêng thay vì sao chép thương hiệu có bản quyền nếu định đăng công khai."
+ },
+ "2103053803386007607": {
+  "title": "Hoạt hình quảng bá Opus 5.5 vẽ bằng JavaScript",
+  "what": "Đoạn hoạt hình quảng bá chính Opus 5.5, vẽ hoàn toàn bằng JavaScript và có nhạc nền. Bài đăng đặt nó cạnh bản do GPT 6 Sol làm để so sánh.",
+  "why": "Prompt tối giản, chỉ chốt công cụ (JavaScript) và yêu cầu có nhạc nền. Đáng xem như một phép thử so sánh hai mô hình trên cùng một đề.",
+  "how": "Dùng khi muốn so sánh nhanh nhiều mô hình hoặc làm bản nháp quảng bá. Thay tên sản phẩm cần quảng bá."
+ },
+ "2103066071838466494": {
+  "title": "Video ra mắt SaaS cho một sản phẩm mô hình tự chọn",
+  "what": "Video ra mắt SaaS 46 giây, Opus tự chọn một sản phẩm nổi tiếng, tự lấy tài sản và hình ảnh thật trên mạng rồi dựng video nêu tính năng và lợi ích theo kiểu video ra mắt hay thấy trên Twitter. Dựng bằng HyperFrames.",
+  "why": "Prompt mô tả thể loại qua hình mẫu quen thuộc thay vì liệt kê kỹ thuật. Đây là cách thử nhanh xem mô hình hiểu thể loại video ra mắt đến đâu.",
+  "how": "Dùng để học cấu trúc video ra mắt trước khi làm cho sản phẩm của mình. Thay phần chọn sản phẩm bằng tên và tài sản sản phẩm của bạn."
+ },
+ "2103103836541899031": {
+  "title": "Video vui nhộn dựng từ tranh vẽ tay",
+  "what": "Video 78 giây kể một ngày trong cuốn sổ vẽ, dùng tranh màu nước động vật và đồ vật do vợ tác giả vẽ tay. Nhân vật được cắt như sticker viền trắng, nhảy lên chào kèm tiếng kêu riêng, cảnh đổi từ ngày sang hoàng hôn rồi đêm, kết bằng vòng tròn tất cả nhân vật quanh dòng chữ viết tay.",
+  "why": "Prompt yêu cầu dùng tối đa ảnh đầu vào để giữ chất thủ công và chỉ lấy cảm hứng chứ không sao chép video mẫu. Đáng học cách cho mỗi nhân vật một hiệu ứng âm thanh riêng khớp với lúc xuất hiện.",
+  "how": "Dùng khi có tranh vẽ tay, minh họa của trẻ em hay họa sĩ muốn làm sống động. Thay thư mục ảnh đầu vào và video tham chiếu."
+ },
+ "2103107359727829318": {
+  "title": "Video quảng bá chỉ dùng JavaScript, Playwright và FFmpeg",
+  "what": "Video quảng bá 20 giây cho website sản phẩm licitacerta, từ một prompt hai câu tiếng Bồ Đào Nha giới hạn công cụ ở JavaScript, Playwright và FFmpeg.",
+  "why": "Đáng học cách khóa bộ công cụ ngay câu đầu để mô hình không lan sang thư viện khác, rồi chỉ dùng ba tính từ để định giọng.",
+  "how": "Dùng khi cần quy trình render gọn, dễ chạy lại. Thay đường dẫn sản phẩm và các tính từ phong cách."
+ },
+ "2103111448352244175": {
+  "title": "Video hype GravityDEX kết hợp Gojo Satoru",
+  "what": "Video dọc 38 giây ghép thương hiệu GravityDEX với nhân vật anime Gojo Satoru: logo tụ từ các đường cung thành vòng cánh hoa phát sáng rồi ép vào đồng xu crôm, chữ đập vào màn hình từng từ, khung trắng chớp và chữ Hán.",
+  "why": "Prompt một câu đủ để mô hình hiểu thể loại edit hype anime. Đáng học các kỹ thuật tạo năng lượng: khung chớp trắng, tách màu RGB ở viền, chữ máy đánh chữ có con trỏ nhấp nháy.",
+  "how": "Dùng cho video cộng đồng, sản phẩm nhắm khán giả mê anime, game. Thay thương hiệu và nhân vật hoặc phong cách kết hợp, lưu ý quyền sử dụng nhân vật."
+ },
+ "2103112945341251920": {
+  "title": "Paris đêm mưa pixel art, nền lặp cho video lofi",
+  "what": "Vòng lặp pixel art 4 phút về Paris đêm mưa: tháp Eiffel vàng, sông Seine phản chiếu ánh đèn, tòa nhà Haussmann có mèo ở cửa sổ mái, quán cà phê và tiền euro rơi lả tả như lá. Tất cả nằm trong một file HTML dùng Canvas và JavaScript, không thư viện.",
+  "why": "Prompt mô tả cảnh theo lớp từ xa đến gần rồi tách riêng phần hiệu ứng và kỹ thuật. Mẹo kỹ thuật đáng học: render 480×270 rồi phóng ×4 theo nearest neighbor để ra 1080p sắc nét, mọi chuyển động là hàm của thời gian modulo 240 giây với tần số nguyên nên vòng lặp không bị giật, có phím ghi đúng một vòng.",
+  "how": "Dùng khi cần nền chạy dài cho livestream, video nhạc lofi hay màn chờ. Thay thành phố, công trình biểu tượng và vật thể rơi trong phần cảnh và hiệu ứng, giữ nguyên mục kỹ thuật về độ phân giải, vòng lặp tất định và phím ghi hình."
+ },
+ "2103116235009347650": {
+  "title": "Trận Austerlitz thành phim 5 phút",
+  "what": "Phim 5 phút về trận Austerlitz năm 1805 render bằng code, dùng địa hình vệ tinh thật, mặt trời mọc đặt đúng theo sử liệu, có nhạc và lời dẫn riêng.",
+  "why": "Prompt giao toàn quyền kể chuyện nhưng đặt rõ tiêu chí: đúng sử, kịch tính, dễ hiểu và đẹp. Tranh đính kèm chỉ để lấy cảm hứng về quy mô, khói, bầu trời, kỵ binh, và prompt dặn tránh trông như infographic hay game chiến thuật.",
+  "how": "Hợp với video lịch sử, phim tài liệu ngắn về một sự kiện. Thay trận đánh hay sự kiện, đính kèm tranh hoặc ảnh tham khảo của bạn và nêu điều bạn thích ở chúng."
+ },
+ "2103117246860345550": {
+  "title": "Phòng thí nghiệm hố đen giải thích thấu kính hấp dẫn",
+  "what": "Trang tương tác giải thích thấu kính hấp dẫn: kéo hố đen tới đâu, bầu trời phía sau cong thành vòng cung tới đó, và khép thành vòng tròn đầy đủ khi mọi thứ thẳng hàng.",
+  "why": "Điều đáng học là quy trình: một prompt cho bản đầu, rồi ba vòng đánh bóng tự động qua đêm, mỗi vòng có hai agent rà lỗi xếp hạng P0, P1, P2 và một agent sửa. Mỗi vòng tập trung một nhóm vấn đề, sao lưu trước, chụp màn hình kiểm tra sau và hoàn tác phần không sửa được; tác giả ghi tổng 5 giờ 28 phút và 90 USD theo giá API.",
+  "how": "Hợp với video giải thích khoa học cần một mô hình kéo thả trực quan. Thay hiện tượng cần giải thích, và áp dụng cách chia vòng rà soát theo chủ đề nếu bạn có thời gian để mô hình tự chỉnh nhiều lượt."
+ },
+ "2103119648271290566": {
+  "title": "Phim 3D bồ nông đạp xe trên cầu tàu lúc hoàng hôn",
+  "what": "Phim ngắn 38 giây, 1140 khung hình, bồ nông đạp xe trên cầu tàu lúc mặt trời lặn với nhiều góc máy. Opus tự viết bộ render ray marching chạy trên GPU; cầu tàu, biển, bầu trời và nhạc đều sinh từ code.",
+  "why": "Một hành động được quay bằng đủ cỡ cảnh: toàn cảnh, trung cảnh ngang, đặc tả xích và bàn đạp, cận đầu, góc thấp khi chim dang cánh, rồi bám theo từ phía sau. Ánh hoàng hôn có lấp lánh trên mặt nước, lens flare, mòng biển và đèn cầu tàu tạo chiều sâu, kết bằng title card chữ có chân.",
+  "how": "Tham khảo khi muốn biến một đề tài quen thuộc thành phim ngắn có phân cảnh rõ ràng thay vì một hình động đơn lẻ. Thay chủ thể và bối cảnh trong prompt, và nên ghi thêm danh sách góc máy mong muốn vì prompt gốc chỉ yêu cầu càng chi tiết càng tốt."
+ },
+ "2103124033365762215": {
+  "title": "Bốn mùa trôi qua ngoài cửa sổ tàu",
+  "what": "Phim hoạt hình 30 giây: toa tàu ấm cúng với tách cà phê trên bàn, bên ngoài cửa sổ xuân hạ thu đông lần lượt trôi qua, phong cách Grand Budapest Hotel. Khoảng 2.800 dòng code vẽ hình và làm nhạc.",
+  "why": "Tiền cảnh đối xứng giữ cố định như sân khấu (rèm, hai đèn bàn, tách cà phê), chỉ thế giới ngoài cửa sổ thay đổi qua nhiều lớp parallax. Tàu chạy ngược chiều và vệt mưa trên kính làm cú chuyển mùa, đoạn hầm tối cho đèn bàn và hơi cà phê nổi lên, lâu đài hồng và khinh khí cầu lặp lại qua các mùa để giữ mạch.",
+  "how": "Hợp với video thư giãn, intro podcast hay thiệp chúc mừng. Thay khung cửa sổ, đồ vật trên bàn, cảnh bên ngoài và tham chiếu phong cách trong câu prompt."
+ },
+ "2103128559174971663": {
+  "title": "Bài giảng Manim về khái niệm đạo hàm",
+  "what": "Bài giảng Manim khoảng 7,5 phút tiếng Trung về đạo hàm, đi từ vận tốc trung bình của xe đến vận tốc tức thời, định nghĩa đạo hàm, hàm đạo hàm và tiếp tuyến dưới kính lúp. Giọng đọc dùng edge-tts.",
+  "why": "Bài chia bước có tiêu đề rõ, cát tuyến hội tụ dần thành tiếp tuyến trong khi bảng Δt và vận tốc trung bình cập nhật trực tiếp. Công thức được đóng khung màu từng phần có chú thích, kết bằng thẻ ôn tập một phút đánh số.",
+  "how": "Hợp với video dạy toán, vật lý hay bất kỳ khái niệm cần đồ thị. Thay khái niệm trong prompt, giữ ba yêu cầu dễ hiểu, có ví dụ, gợi suy nghĩ, và chọn công cụ giọng đọc tiếng Việt bạn có."
+ },
+ "2103128800909197521": {
+  "title": "Game đua xe arcade góc nhìn từ trên xuống",
+  "what": "Game đua xe 3D low-poly góc nhìn chéo từ trên xuống, lấy cảm hứng từ Ignition (1997): bốn chiếc xe tính cách khác hẳn nhau chạy trên đường núi kiểu thị trấn Canada đang tan băng, có thác nước, cầu gỗ, đường ray tàu và mảng băng trơn.",
+  "why": "Prompt viết như tài liệu thiết kế game: chốt stack (Vite, TypeScript, Three.js, vật lý 2.5D tự viết), kiến trúc thư mục, xe định nghĩa bằng dữ liệu, đường đua là spline cộng danh sách vùng. Nó còn quy định cân bằng giữa các xe, luật boost và cơ chế đưa xe bị kẹt quá khoảng 4 giây về checkpoint.",
+  "how": "Tham khảo khi cần một game nhỏ để quay gameplay cho video, hoặc khi muốn học cách viết đặc tả có cấu trúc cho dự án code lớn. Thay bối cảnh đường đua và danh sách xe, giữ phần stack, kiến trúc và luật chơi."
+ },
+ "2103129343253778767": {
+  "title": "Zoom vô tận xuyên qua đồ vật cổ, phong cách cắt dán báo",
+  "what": "Vòng lặp 20 giây zoom liên tục, máy quay bay xuyên qua đồng hồ quả quýt, ống kính, kính lúp, gương cầm tay để sang phong cảnh mới. Phong cảnh ảnh thật pha đồ vật cắt từ báo trắng đen, có hạt phim và vignette; ảnh, chuyển động Kling và nhạc đều tạo qua Magnific MCP.",
+  "why": "Prompt viết như bản kỹ thuật cho After Effects: tách phong cảnh thành 3 lớp chiều sâu từ depth map, công thức parallax, zoom theo hàm mũ để tốc độ đều, thời lượng mỗi đoạn tỉ lệ với log của độ zoom, nhạc 96 BPM cắt đúng 8 ô nhịp bằng 20 giây. Nó còn buộc mô hình liệt kê chi phí credit và chờ duyệt trước mỗi bước tốn tiền.",
+  "how": "Hợp với intro kênh, video quảng bá du lịch hay thương hiệu có chất hoài cổ cần một vòng lặp liền mạch. Thay danh sách thế giới và đồ vật cổng chuyển cảnh trong mục WORLDS, giữ nguyên phần HOW về parallax, zoom và nhịp nhạc."
+ },
+ "2103132260589338762": {
+  "title": "Chú heo gửi thư tình, video nhá hàng app",
+  "what": "Truyện ngắn 20 giây khổ 9:16 dùng bộ hình chú heo của app: chú heo bỏ thư tình vào hộp thư cho người thương, có hiệu ứng âm thanh tạo bằng code và cảnh nhá app ở cuối.",
+  "why": "Prompt chỉ rõ nguồn tài sản (nhánh repo chứa hình heo), khổ hình, cốt truyện và mục tiêu nhá app. Đáng học cách bọc quảng cáo trong một câu chuyện nhỏ có nhân vật.",
+  "how": "Dùng cho app có linh vật hoặc nhân vật riêng. Thay nguồn tài sản, cốt truyện ngắn và cách nhá sản phẩm ở cuối."
+ },
+ "2103135536634630632": {
+  "title": "Phim hoạt hình 2D có cốt truyện và lời thoại",
+  "what": "Phim 2D 60 giây có cốt truyện, lời thoại, nhạc và âm thanh làm bằng code, vẽ từ một bản thiết kế nhân vật. Theo mô tả, tác giả đặt thời lượng 1 phút và dùng 10 agent; prompt trong dữ liệu ghi 4 phút và tối đa 15 agent.",
+  "why": "Prompt để mô hình tự chọn đề tài nhưng bắt buộc có câu chuyện liền mạch, lời thoại và âm thanh. Việc cho phép dùng nhiều agent và cài công cụ tùy ý mở đường cho cách chia việc song song.",
+  "how": "Hợp khi muốn thử năng lực làm phim ngắn trọn gói. Chỉnh thời lượng, số agent, và nên thêm đề tài hoặc bản thiết kế nhân vật nếu bạn đã có."
+ },
+ "2103144778481475686": {
+  "title": "Clip nói chuyện dựng lại thành bản cắt nhanh, vui",
+  "what": "Một clip người nói thô được dựng thành đoạn 37 giây có phụ đề hiện từng chữ, đồ họa và nhạc. Người nói được tách nền, viền trắng như sticker, đặt lên nền đổi theo từng ý, có cả đoạn pixel kiểu game 8-bit.",
+  "why": "Prompt chỉ một câu nhưng nhờ công cụ mã nguồn mở OpenEdit nên ra được bản dựng đủ lớp. Đáng học cách chia video theo ý với nhãn chương ở góc, thanh tiến trình đỏ dưới đáy và nền chủ đề riêng cho mỗi ý.",
+  "how": "Dùng cho video nói chuyện ngắn đăng mạng xã hội. Thay mô tả phong cách phụ đề, đồ họa và nhạc cho hợp kênh của bạn, và nêu rõ công cụ dựng đang dùng."
+ },
+ "2103151003272962130": {
+  "title": "Showreel có đoạn 3D Blender và nhạc tự soạn",
+  "what": "Hai bản showreel 15 giây từ cùng một prompt được ghép lại: nửa đầu là cánh đồng khối 3D đỏ xanh, thiên hà hạt và tường chữ MOTION; nửa sau là bộ sáu chương đen và xanh chanh với khối thủy tinh crôm xoay. Opus tự thêm phần 3D bằng Blender và tự sắp nhạc 128 BPM.",
+  "why": "Đây là ví dụ cho thấy một prompt một câu, để mức nỗ lực max, có thể khiến mô hình tự chọn công cụ và tự dựng cấu trúc chương. Đáng xem cách đánh số chương 01 đến 06, mỗi chương một câu tuyên bố lớn, một vật thể 3D và một chú thích mono.",
+  "how": "Hợp khi muốn thử nhanh khả năng của mô hình hoặc lấy ý tưởng bố cục showreel. Giữ prompt ngắn, thêm chủ đề hoặc bảng màu nếu muốn kết quả bám thương hiệu của mình."
+ },
+ "2103152898708582551": {
+  "title": "Mô hình 3D máy bay cường kích A-1H Skyraider",
+  "what": "Bản quay màn hình ứng dụng Three.js trong một file HTML: máy bay A-1H dựng thuần bằng code, bấm bảng điều khiển để hạ càng, gập cánh, mở kính buồng lái, đổi màu sơn rồi chuyển sang bay tự động trên địa hình sinh thủ tục.",
+  "why": "Prompt chỉ một câu, giá trị nằm ở cách dựng video demo: mỗi tính năng một nhịp với một caption dạng viên thuốc ở trên, tên cảnh cố định góc dưới trái, chuyển từ xoay trên sân đỗ sang bay. Thẻ kết có tiêu đề, cụm từ gạch chân bằng bút dạ và dòng thông số về số dòng code và việc không dùng mô hình 3D có sẵn.",
+  "how": "Tham khảo khi làm video giới thiệu một ứng dụng hay mô hình tương tác theo từng tính năng. Thay đối tượng trong prompt, rồi lên danh sách tính năng muốn bấm trước máy quay và caption cho từng nhịp."
+ },
+ "2103173729656459455": {
+  "title": "MV kể chuyện kiểu K-pop, chất liệu giấy",
+  "what": "Music video 20 giây kể chuyện về một cô gái và một chàng trai tính cách lém lỉnh, hoạt hình JavaScript chất giấy, chữ lời bài hát chuyển động và meme về dòng thời gian AI. Prompt cho phép dùng Seedance 2.5 làm cảnh nền.",
+  "why": "Prompt dựa trên khung giao việc trọn gói của MV Claude Pop nhưng rút còn 20 giây và thêm yêu cầu kể chuyện: phải có móc để người xem muốn biết chuyện gì xảy ra tiếp. Nó đề nghị lấy K-pop làm điểm tựa vì cách thể loại này điều khiển sự chú ý của người xem, và cho phép chèn tư liệu kiểu internet brutalism.",
+  "how": "Hợp với MV ngắn hoặc teaser bài hát cho mạng xã hội. Thay cặp nhân vật, bài nhạc, chủ đề meme và tham chiếu phong cách, rút gọn phần nói về công cụ nếu bạn không dùng chúng."
+ },
+ "2103181065976459574": {
+  "title": "Giao diện game battle royale phong cách hoạt hình",
+  "what": "Bản demo giao diện game battle royale phong cách hoạt hình gồm đồng hồ vùng bão, số người còn sống, thanh đồ, bản đồ nhỏ, vòng biểu cảm và màn kết quả chiến thắng.",
+  "why": "Prompt chỉ là danh sách thành phần giao diện, cho thấy liệt kê đúng các khối UI quen thuộc của một thể loại game là đủ để mô hình dựng màn hình có hồn.",
+  "how": "Dùng khi làm video về game, mockup giao diện hay cảnh giả lập màn hình chơi game trong video. Thay thể loại game và danh sách thành phần UI theo nhu cầu."
+ },
+ "2103182358635532377": {
+  "title": "Mã hóa bảo vệ việc truyền file ra sao",
+  "what": "Video giải thích 96 giây về cách mã hóa hoạt động khi truyền file an toàn, làm trong môi trường agent Sentinel. Âm thanh tổng hợp bằng Python rồi trộn bằng ffmpeg.",
+  "why": "Prompt chỉ một câu, yêu cầu vừa sâu sắc vừa hiện đại. Kết quả cho thấy mô hình tự lo cả hình lẫn âm thanh bằng công cụ dòng lệnh khi được giao trọn.",
+  "how": "Hợp với video giải thích bảo mật hay khái niệm mạng cho người không chuyên. Thay chủ đề, và thêm thời lượng, đối tượng người xem, phong cách hình nếu cần."
+ },
+ "2103194052850241739": {
+  "title": "Thế giới 3D siêu thực để dạo chơi tự do",
+  "what": "Thế giới 3D chạy trên trình duyệt, người xem tự điều khiển camera đi qua phong cảnh và kiến trúc lạ: công trình khổng lồ, phế tích siêu thực, vách đá, thung lũng, rừng và mặt nước.",
+  "why": "Prompt nói rõ đây không phải game và không có chiến đấu, mục tiêu chỉ là khám phá, không khí và bố cục. Loại bỏ phần gameplay giúp mô hình dồn sức cho cảnh và kiến trúc.",
+  "how": "Hợp để quay b-roll, cảnh nền hay concept art chuyển động cho video kể chuyện giả tưởng. Thay mô tả kiến trúc và địa hình theo thế giới bạn muốn, rồi tự quay các đường máy cần dùng."
+ },
+ "2103197522382786581": {
+  "title": "Video ra mắt game tennis chạy trên trình duyệt",
+  "what": "Video ra mắt 30 giây cho game tennis 3D trên web toptennisgame: số liệu thật của trang như số ván đã chơi, ba dòng không tải, không cài, không đăng ký, điện thoại đổi chủ đề sân, thẻ sân theo thành phố và địa cầu khung dây các trận đấu. Opus tự cài Remotion.",
+  "why": "Prompt yêu cầu dùng số liệu thật của website và hỏi thêm prompt Suno để tạo nhạc, tách phần nhạc sang công cụ chuyên. Đáng học cách xếp chồng ba câu phủ định, dòng cũ mờ dòng mới sáng.",
+  "how": "Dùng cho game web, app có số liệu người dùng đáng khoe. Thay các điểm cần nêu như thiết bị, chủ đề, và giữ câu xin prompt nhạc nếu bạn dùng Suno."
+ },
+ "2103212966703436195": {
+  "title": "Hoạt hình pixel chủ đề tiền mã hóa theo video mẫu",
+  "what": "Đoạn pixel art 20 giây: một pháp sư bên hồ ban đêm liên tục tung phép vào cọc gỗ, số sát thương chồng lên, có rồng lửa và phép hình nến xanh, kết bằng màn hình đỏ với chữ REKT và con số âm. Mọi hình đều có bóng phản chiếu dưới nước.",
+  "why": "Đầu vào chỉ là một video tham chiếu và một câu yêu cầu đổi chủ đề. Đáng học cách dùng video mẫu để chốt phong cách và nhịp, còn câu lệnh chỉ cần nói phần muốn khác đi.",
+  "how": "Dùng khi đã có một clip thích phong cách và muốn bản theo chủ đề của mình. Đính kèm video mẫu và thay chủ đề trong câu lệnh."
+ },
+ "2103228872577765420": {
+  "title": "Linh vật Claude du lịch Colombia khoe năng lực",
+  "what": "Hoạt hình 30 giây dựng hoàn toàn bằng code, linh vật Claude đi qua đồi cà phê Andes, phố cổ Cartagena, đồi Monserrate nhìn xuống Bogotá rồi kết ở thung lũng Cocora. Ở mỗi nơi nó thể hiện một năng lực như tìm kiếm, bản đồ, dịch, phân tích dữ liệu, lập luận và viết code.",
+  "why": "Prompt ghép mỗi địa danh với một năng lực, nên video vừa là du ký vừa là danh sách tính năng. Đáng học cách đặt cảnh kết cụ thể và mô tả không khí màu sắc, chuyển động máy quay.",
+  "how": "Dùng cho video quảng bá sản phẩm gắn với địa phương, ví dụ giới thiệu tính năng qua các điểm đến ở Việt Nam. Thay nhân vật, danh sách địa danh và năng lực đi kèm từng nơi."
+ },
+ "2103232192847524106": {
+  "title": "Samurai múa kiếm giữa biển lửa, vẽ bằng JavaScript",
+  "what": "Hoạt hình 18 giây thuần JavaScript, một samurai nét vẽ đứng tại chỗ múa một bài kiếm, mỗi thế có thẻ tên chữ Hán kèm phụ đề tiếng Anh. Lưỡi kiếm để lại vệt sáng, mỗi nhát chém bắn tia lửa và sóng xung kích trên mặt đất.",
+  "why": "Prompt rất đời thường nhưng có giới hạn rõ: chỉ JavaScript, đứng một chỗ, chuỗi tư thế ấn tượng. Đáng học cách dùng thẻ tên chiêu thức làm tiêu đề chương cho một màn biểu diễn nhân vật.",
+  "how": "Dùng cho hoạt hình nhân vật ngắn, intro game hay video võ thuật. Thay nhân vật, bộ môn và không khí hiệu ứng như lửa, nước, sấm."
+ },
+ "2103237884564414633": {
+  "title": "Teaser trên màn hình Mac cho trình duyệt ở tai thỏ",
+  "what": "Teaser 27 giây dựng bằng HyperFrames, một máy quay liền trên màn hình Mac: chữ mở đầu, danh sách 30 khó khăn khi làm việc thời AI quay nhanh, các cửa sổ app chồng lên nhau, rồi tai thỏ màn hình biến thành viên thuốc NotchBrowser và mở ra trình duyệt.",
+  "why": "Prompt chỉ đạo chuyển động rất cụ thể: mỗi cú đẩy, kéo, lia kéo dài 1,5 đến 3 giây, chậm bằng nửa tốc độ mặc định, có motion blur và hạt phim. Kịch bảy bước đánh số, gọi cả thành phần có sẵn trong registry như colorama-wipe.",
+  "how": "Dùng cho teaser app desktop, tiện ích macOS. Thay đường dẫn bài đăng gốc, câu mở, danh sách app và luồng tương tác của sản phẩm."
+ },
+ "2103247844542922825": {
+  "title": "Trailer anime Claude đại chiến ChatGPT",
+  "what": "Trailer 100 giây phong cách anime, Claude và ChatGPT đánh nhau để tranh ngôi mô hình AI giỏi nhất. Opus tự tải font, làm âm thanh và vẽ mọi khung hình bằng JavaScript.",
+  "why": "Prompt ngắn nhưng nêu đủ thể loại (trailer), xung đột, nhịp hành động, yêu cầu hiệu ứng hình và tiếng, và phong cách anime. Đặt hai thương hiệu quen thuộc vào thế đối đầu tạo sẵn kịch tính.",
+  "how": "Hợp với video giải trí so sánh hai sản phẩm, hai đội hay hai ý tưởng. Thay hai bên đối đầu và phong cách hình ảnh."
+ },
+ "2103272686570918334": {
+  "title": "Làm lại phim giải thích bản thảo Voynich kiểu anime",
+  "what": "Từ một phim giải thích về bản thảo Voynich mà Claude đã làm trước đó, tác giả yêu cầu làm lại thành bản khoảng 2 phút theo phong cách anime, cắt nhanh và có bài hát kết. Kết quả ra trong một lần chạy trên Claude Projects.",
+  "why": "Đáng học cách viết prompt tiếp nối: không mô tả lại nội dung, chỉ nói rõ khán giả mới thích gì (anime, clip ngắn, học nhanh). Đổi khán giả là đủ để mô hình đổi giọng, nhịp và hình ảnh.",
+  "how": "Dùng khi đã có một video và cần bản khác cho nền tảng hoặc nhóm khán giả khác. Thay mô tả khán giả và sở thích của họ trong prompt."
+ },
+ "2103272941832306746": {
+  "title": "Video brainrot về cơn nghiện terminal và AI",
+  "what": "Video 46 giây phong cách brainrot về cảm giác bị cuốn vào làm việc với AI trong terminal, dựng từ một bài viết mà tác giả đưa kèm prompt.",
+  "why": "Prompt nói bằng giọng cảm xúc thật, kèm một bài viết làm tư liệu, nên nội dung có chất liệu cụ thể. Đáng học cách đưa văn bản nguồn vào để video có ý chứ không chỉ có hiệu ứng.",
+  "how": "Dùng cho video meme, giải trí về thói quen công việc. Thay chủ đề và đính kèm bài viết hoặc ghi chú làm nguồn."
+ },
+ "2103273003555402193": {
+  "title": "Một khối UI biến hình liên tục theo nhịp nhạc",
+  "what": "Video vuông, một khối đen duy nhất biến hình liền mạch qua nút bấm, trình phát nhạc, thanh trượt, tab, biểu đồ, bảng lệnh ⌘K rồi quay lại nút ban đầu, mọi thay đổi khớp lưới nhịp 120 BPM. Con trỏ chuột điều khiển từng bước bằng cú bấm và kéo thật, nền xám ấm, chỉ có đen trắng.",
+  "why": "Prompt chia rõ các khối inputs, direction, structure, build, gotchas và ghi cụ thể danh sách cấm như easing nảy, glow, gradient. Phần kỹ thuật đáng học là lò xo tính theo công thức đóng để mọi khung hình là hàm thuần của thời gian, hai mép của tab chạy hai lò xo khác nhau, và khung cuối trùng khung đầu để vòng lặp không giật.",
+  "how": "Dùng khi cần một đoạn loop giới thiệu tương tác sản phẩm, onboarding hay bài đăng về UI. Thay danh sách 8 đến 12 trạng thái UI, màu nhấn và bài nhạc khoảng 120 BPM trong khối inputs, giữ nguyên phần build và gotchas."
+ },
+ "2103275618045686217": {
+  "title": "Video quảng bá trên mạng xã hội cho Lightspark",
+  "what": "Video dọc 23 giây quảng bá mạng thanh toán Lightspark, đi từ con số 1973 khi SWIFT ra đời đến thanh toán toàn cầu cho cả người và AI agent. Danh sách chồng dòng có dòng đang nói sáng rõ, mã tiền tệ quay như máy xèng và thẻ code gõ lệnh agent.pay.",
+  "why": "Tác giả cho biết Claude đã có bối cảnh doanh nghiệp từ các cuộc trò chuyện trước, nên prompt ngắn vẫn ra nội dung đúng. Đáng học cách dùng một con số lịch sử làm cú mở để đặt vấn đề.",
+  "how": "Dùng cho video mạng xã hội giới thiệu năng lực sản phẩm. Thay tên thương hiệu, và nếu mô hình chưa có bối cảnh thì đính kèm tài liệu giới thiệu."
+ },
+ "2103290592679879074": {
+  "title": "Hoạt hình ra mắt terminal giao dịch Sahi",
+  "what": "Hoạt hình 47 giây bằng JavaScript: một chấm trên nền đen kéo thành đường sáng rồi mở ra terminal nhiều cửa sổ, zoom sâu đến điểm ảnh màn hình, lùi xa đến khi cả màn hình là một ngôi sao, rồi bay vào điện thoại xoay ngang và kết bằng khẩu hiệu.",
+  "why": "Prompt tả hành trình máy quay từ đầu đến cuối theo đúng thứ tự, kể cả các cửa sổ phải xuất hiện. Đáng học ý tưởng zoom theo nhiều thang đo để nói rằng sản phẩm gói mọi thứ trong một màn hình.",
+  "how": "Dùng cho sản phẩm tài chính, dashboard, công cụ nhiều cửa sổ. Thay tên sản phẩm, danh sách cửa sổ, thiết bị kết và câu khẩu hiệu."
+ },
+ "2103303449831964679": {
+  "title": "Phóng tên lửa từ giàn trên biển lúc bình minh",
+  "what": "Chuỗi phóng 46 giây bằng Three.js: từ giàn phóng trên biển lúc trời còn tối, qua tách tầng, mở chụp mũi đến lúc vệ tinh bung tấm pin trên nền đường cong Trái Đất. Có thanh tua với mốc sự kiện và giao diện ẩn được khi quay.",
+  "why": "Prompt viết trình tự phóng thành từng bước và mô tả góc máy cho từng đoạn, yêu cầu tua tới đâu cũng dựng lại đúng cấu hình tên lửa, hạt, camera và ánh sáng. Cuối prompt có bước tự kiểm tra: chụp màn hình ở các mốc chính và sửa lỗi xuyên hình, tua hỏng, bố cục kém trước khi giao.",
+  "how": "Hợp với video giải thích hàng không vũ trụ hay ra mắt sản phẩm cần một chuỗi sự kiện có mốc rõ ràng. Thay chuỗi sự kiện và bối cảnh, giữ phần thanh tua, ẩn UI và kiểm thử."
+ },
+ "2103358957050068999": {
+  "title": "Hoạt hình giải thích vì sao celld đáng dùng",
+  "what": "Video 53 giây giải thích sản phẩm hạ tầng celld: một máy chạy hẹn giờ, máy chết nên tin nhắn không gửi, celld dùng bucket chung làm trọng tài, ba bước nhận, gia hạn, tiếp quản, trường hợp biên và bảng so sánh phương án. Phong cách neo-brutalist với nhãn chương và sticker.",
+  "why": "Prompt một dòng nhưng chạy trong một project đã có nhiều bối cảnh, nên mô hình hiểu kỹ sản phẩm. Đáng học cấu trúc thiết lập, sự cố, ý tưởng, các bước, trường hợp biên và đánh đổi, rất hợp với sản phẩm kỹ thuật.",
+  "how": "Dùng cho video giải thích sản phẩm kỹ thuật, hạ tầng, API. Thay tên sản phẩm và nạp tài liệu kỹ thuật vào project trước khi chạy."
+ },
+ "2103387771180138551": {
+  "title": "Phim hoạt hình bốn phút từ một câu prompt",
+  "what": "Phim 4 phút \"The Last Light\": robot nhỏ Pip giữ hải đăng trao ánh sáng trong ngực cho ngọn đèn đã tắt giữa bão, cứu con thuyền đánh cá. Opus viết truyện, điều phối 12 agent, tạo khung hình, nhạc và hiệu ứng bằng code; giọng nói lấy từ ElevenLabs.",
+  "why": "Chùm sáng hải đăng quét qua biển bão là hình ảnh chủ đạo, viền đen điện ảnh chỉ xuất hiện ở các cảnh cao trào. Ánh sáng trong ngực nhân vật là vật mang cảm xúc được trao cho ngọn đèn, phụ đề có tên người nói, và phim mở đóng bằng hai cảnh hoàng hôn đối xứng.",
+  "how": "Hợp khi muốn thử năng lực làm phim ngắn có lời thoại trọn gói. Prompt gốc chỉ một câu, nên thêm đề tài, nhân vật hay thông điệp nếu cần phim phục vụ mục đích cụ thể."
+ },
+ "2103395846578676116": {
+  "title": "Showreel nhà thiết kế motion ở mức nỗ lực max",
+  "what": "Showreel 15 giây chia tám chương: quả bóng nảy trên thước khung để nói về thời gian và khoảng cách, chữ I MAKE THINGS MOVE, biến hình khối, trường vector xếp thành chữ FLOW, cầu hạt, nhân vật mặt cười, DESIGN kiểu synthwave và chữ Claude. kết.",
+  "why": "Đây là bản viết lại prompt showreel phổ biến, chạy ở mức nỗ lực max. Đáng học cách mở đầu bằng một bài tập nguyên lý hoạt hình cơ bản, cho người xem thấy nền tảng trước rồi mới khoe hiệu ứng.",
+  "how": "Dùng cho reel portfolio cá nhân. Thay thời lượng và có thể liệt kê các nguyên lý hay kỹ thuật bạn muốn đưa vào từng chương."
+ },
+ "2103400046922543147": {
+  "title": "Hoạt hình pixel mừng Tết Trung thu Hàn Quốc",
+  "what": "Hoạt hình pixel 12 giây cho dịp Chuseok: thỏ giã bánh trong trăng tròn, cành hồng, phố nhà hanok về đêm, dây đèn lồng, người mặc hanbok và mâm bánh songpyeon, rồi dải ruy băng cầu vồng, pháo hoa và chữ \"HAPPY CHUSEOK\" hai thứ tiếng.",
+  "why": "Prompt một câu nhưng có bước then chốt: bắt mô hình tìm hiểu các yếu tố văn hóa của dịp lễ trước khi dựng cảnh. Cấu trúc gồm cảnh chính tĩnh với nhiều lớp chuyển động lặp, một cao trào ở giữa và chữ chào xuất hiện cuối.",
+  "how": "Hợp với thiệp động dịp lễ Tết như Trung thu, Tết Nguyên đán cho thương hiệu hay kênh. Thay tên dịp lễ và quốc gia, thêm câu chúc tiếng Việt."
+ },
+ "2103404901451829311": {
+  "title": "Showreel ứng tuyển vào studio motion",
+  "what": "Showreel 15 giây đóng vai Opus đi xin việc ở một agency, mỗi cảnh một từ và từ đó tự diễn nguyên lý của nó, như OVERSHOOT vượt qua vạch đích rồi lùi lại. Kết ở chữ MOTION dựng bằng ma trận chấm.",
+  "why": "Đáng học cách đặt vai và bối cảnh (ứng tuyển, gửi reel) trong prompt, giúp mô hình tự chọn giọng tự tin và cấu trúc khoe kỹ năng. Quy tắc một từ một cảnh làm nhịp rất gọn.",
+  "how": "Dùng làm reel giới thiệu dịch vụ hoặc năng lực đội. Thay vai và người nhận trong prompt, có thể thêm danh sách từ khóa muốn diễn."
+ },
+ "2103411244468498547": {
+  "title": "Đoạn nhận diện kinetic type cho thương hiệu nhà sáng tạo",
+  "what": "Đoạn nhận diện 20 giây, khổ vuông 1080x1080, lặp được, cho TechHalla với ba màu đen, hồng magenta và xanh axit. Chữ bật vào bằng lò xo từng ký tự, chuyển cảnh bằng mặt nạ đi xuyên nét chữ và có hiệu ứng lệch bản in.",
+  "why": "Đây là prompt dạng đặc tả chặt: bảng màu cấm thêm màu, hệ ba font với vai trò riêng, thông điệp khóa theo thứ tự, mốc thời gian cho từng đoạn và danh sách kỹ thuật bắt buộc. Cách ghi khung thời gian theo giây giúp mô hình bám nhịp chính xác.",
+  "how": "Dùng làm intro hoặc outro cho kênh cá nhân, thương hiệu nhỏ. Thay tên thương hiệu, bảng màu, bộ font và sáu câu thông điệp, giữ phần kỹ thuật và lưới nhịp."
+ },
+ "2103416250743574988": {
+  "title": "MV kinetic type 15 giây, chữ nhảy theo nhạc",
+  "what": "Music video kinetic type 15 giây, chữ chuyển động theo nhạc, làm hoàn toàn bằng Opus 5.5.",
+  "why": "Prompt ngắn gồm hình thức, thời lượng và yêu cầu chữ bám nhạc. Thời lượng 15 giây giúp tập trung vào nhịp và chuyển động chữ thay vì nội dung dài.",
+  "how": "Hợp với teaser, quảng cáo ngắn, intro sự kiện hay đoạn hook cho Reels và TikTok. Đưa vào bản nhạc và đoạn chữ của bạn, thêm bảng màu và font nếu cần đúng nhận diện."
+ },
+ "2103418429248069973": {
+  "title": "Hoạt hình công thức cocktail White Russian",
+  "what": "Video công thức 30 giây, 1080p, dựng ly White Russian từ ly rỗng đến thành phẩm: đá, vodka, rượu mùi cà phê, kem. Khung SVG được chạy từng bước trong trình duyệt headless rồi đưa vào ffmpeg.",
+  "why": "Danh sách nguyên liệu cố định ở cột phải với mũi tên chỉ và ô đánh dấu, thanh tiến độ chia đoạn ở trên, ly có thước oz và chất lỏng dâng đúng mức. Mỗi bước có số đo viết tay cỡ lớn kèm quy đổi ml.",
+  "how": "Hợp với video pha chế, nấu ăn hay pha cà phê. Prompt gần như dùng lại nguyên được, chỉ thay tên món; muốn đồng bộ với một loạt video thì mô tả thêm bố cục và bảng màu."
+ },
+ "2103418664854622583": {
+  "title": "Showreel chữ chuyển động từ một câu chào",
+  "what": "Đoạn 15 giây khổ vuông, lặp câu I CAN kèm một động từ, và mỗi động từ được diễn bằng đúng nguyên lý hoạt hình của nó như bị nén, vượt đích, kéo giãn. Kết bằng cảnh gạch chữ After Effects và đập ra JUST CODE.",
+  "why": "Prompt chỉ là một câu chào, nhưng kết quả cho thấy ý tưởng chữ tự diễn nghĩa của mình rất hiệu quả. Một chấm cam xuyên suốt, từ dấu chấm thành quả bóng rồi thành dấu thập phân của 5.5, giữ mạch cho cả đoạn.",
+  "how": "Dùng khi muốn đoạn kinetic type khoe kỹ năng hoặc tính năng. Nếu muốn kiểm soát hơn, ghi rõ danh sách động từ và yêu cầu mỗi từ tự diễn nghĩa."
+ },
+ "2103424524297420829": {
+  "title": "Showreel hồ sơ dân motion 15 giây, mức max",
+  "what": "Đoạn showreel 15 giây đóng vai một nhà thiết kế motion đi xin việc: mở bằng cú móc mắt ngay giây đầu, rồi lần lượt chữ chuyển động, chơi hình khối, chuyển động máy quay và đổi màu, nhịp như được cắt theo nhạc.",
+  "why": "Prompt ngắn nhưng có khung rõ: cú móc ở giây đầu, chuỗi kỹ thuật khác nhau ở giữa và một khung kết gọn, dễ nhớ. Cách liệt kê nhóm kỹ thuật cụ thể giúp mô hình không làm lan man.",
+  "how": "Dùng làm điểm khởi đầu cho reel giới thiệu bản thân hoặc studio. Thay danh sách kỹ thuật muốn khoe và mô tả khung kết theo nhận diện của mình."
+ },
+ "2103428454355980558": {
+  "title": "Showreel lặp vòng về một đời người",
+  "what": "Hoạt hình 20 giây theo một người từ lúc bé, tuổi teen, guồng đi làm hành chính, lập gia đình, tuổi già đến khi mất rồi vòng lại từ đầu. Một đường mặt đất chạy suốt phim, cuối cùng thành đường điện tim phẳng, góc màn hình có bộ đếm tuổi và nhịp tim.",
+  "why": "Prompt cho chủ đề cụ thể và yêu cầu cắt sẵn để lặp. Đáng học các chuyển cảnh bằng mặt nạ hình mang nghĩa, như mặt nạ trái tim cho giai đoạn gia đình, mặt đồng hồ hóa bánh xe chuột hamster cho giai đoạn đi làm.",
+  "how": "Dùng cho video kể chuyện vòng đời, như vòng đời khách hàng hay sản phẩm. Thay danh sách các giai đoạn và nhân vật chính."
+ },
+ "2103437714695843891": {
+  "title": "Game chiến thuật Tam Quốc pixel kiểu cổ điển",
+  "what": "Game chiến thuật lấy cảm hứng từ Romance of the Three Kingdoms III, đồ họa pixel mang chất cổ điển, chơi được.",
+  "why": "Prompt một câu dựa vào một tựa game cụ thể làm tham chiếu, giúp mô hình suy ra luật chơi và giao diện mà không cần mô tả.",
+  "how": "Hợp khi cần cảnh game chiến thuật cho video lịch sử hay nội dung về game retro. Thay tựa game tham chiếu và phong cách đồ họa."
+ },
+ "2103441222375268605": {
+  "title": "Showreel 15 giây về Omarchy",
+  "what": "Reel motion 15 giây kiểu quảng bá về Omarchy, từ prompt showreel nổi tiếng thêm một câu chuyển trọng tâm sang Omarchy.",
+  "why": "Đây là ví dụ đơn giản nhất về cách biến prompt showreel thành video cho một chủ đề: giữ nguyên câu gốc, thêm một câu nêu trọng tâm.",
+  "how": "Dùng khi cần video ngắn cho dự án, phần mềm, cộng đồng. Thay tên chủ đề ở câu cuối."
+ },
+ "2103444180861178199": {
+  "title": "Phim ngắn 35 giây tiếng Trung có cú twist",
+  "what": "Phim ngắn 35 giây tiếng Trung: Opus đề xuất và chọn câu chuyện, rồi kèm một người mới từng bước tạo cảnh và dựng trong Jianying (CapCut).",
+  "why": "Prompt giai đoạn một là bản yêu cầu sản xuất chặt: tối đa 2 nhân vật, 1 đến 2 bối cảnh, 6 đến 8 cảnh, xung đột trong 3 giây đầu, cú twist ở 8 đến 10 giây cuối; bắt đưa ra 5 phương án, so sánh rồi chọn một và dừng chờ duyệt. Giai đoạn hai chuyển sang chế độ kèm cặp: mỗi lần một bước, chờ ảnh chụp màn hình, kiểm tra lỗi mặt, tay, trang phục và cân nhắc bước nào không cần tốn credit tạo video.",
+  "how": "Hợp với người muốn tự làm phim ngắn hay quảng cáo dạng kịch bằng công cụ AI tạo video. Thay đối tượng khán giả và nhóm đề tài trong mục nội dung, đổi phần hướng dẫn CapCut sang công cụ bạn dùng."
+ },
+ "2103449418460753990": {
+  "title": "Motion graphic kiểu truyện tranh từ bộ linh vật",
+  "what": "Đoạn 10 giây phong cách truyện tranh, có bong bóng thoại và chữ hiệu ứng âm thanh, dựng từ một ảnh render tĩnh, bảng thiết kế nhân vật và một clip 10 giây của linh vật.",
+  "why": "Prompt chỉ vài chữ, chất lượng đến từ bộ tài sản đầu vào đầy đủ và một skill Claude riêng mà tác giả không chia sẻ. Bài học là chuẩn bị tốt ảnh nhân vật và bảng thiết kế thì prompt có thể rất ngắn.",
+  "how": "Dùng khi đã có linh vật hoặc nhân vật thương hiệu. Đính kèm ảnh render, bảng nhân vật và thay phong cách, thời lượng trong prompt."
+ },
+ "2103454597641891922": {
+  "title": "Sinh vật dễ thương giải thích LLM hoạt động ra sao",
+  "what": "Video Remotion 40 giây khổ vuông 1080x1080, các sinh vật tròn mắt to dẫn người xem qua token, embedding, attention và dự đoán từ tiếp theo. Có giọng TTS và nhạc tổng hợp bằng Python.",
+  "why": "Prompt chia sẵn timeline theo giây, mỗi đoạn có hình ảnh, lời dẫn và một chi tiết dễ thương, ví dụ token có mặt cười vẫy tay, mỗi attention head là một sinh vật nhỏ gật đầu với nhau. Câu ví dụ \"The cat sat on the...\" chạy xuyên suốt nên người xem theo được cả quy trình.",
+  "how": "Hợp với video giải thích khái niệm AI hay công nghệ cho đại chúng trên mạng xã hội. Thay khái niệm, các bước và câu ví dụ, giữ cấu trúc hook, các bước, câu chốt và phần yêu cầu kỹ thuật."
+ },
+ "2103458245213929495": {
+  "title": "Bài diễn văn chữ động: chữ dựng thành nền móng",
+  "what": "Phim kinetic type 20 giây, khổ 1080x1080, lặp liền mạch: năm câu diễn văn và mỗi từ khóa đóng một vai kiến trúc, WAIT là dầm cửa, WAITING là vật treo, VOICE là cột chống, FLOOR là sàn. Câu cuối đứng trên chính cái nền mà các từ trước đã dựng.",
+  "why": "Prompt là một đặc tả mẫu mực: bảng màu, hệ font, lời thoại khóa đúng thứ tự, kịch bản theo mốc giây và quy tắc hình ảnh trung tâm. Đáng học ý nhịp theo câu nói, chừa ít nhất một khoảng lặng hoàn toàn, thay vì ép chữ nhảy theo beat.",
+  "how": "Dùng cho video trích dẫn, tuyên ngôn thương hiệu, thơ hay lời nói ngắn. Thay lời diễn văn, vai trò của từng từ khóa và bảng màu, giữ cấu trúc kịch bản và phần lặp."
+ },
+ "2103459843831120030": {
+  "title": "Header xe đạp điện OBLT với hiệu ứng soi X-quang",
+  "what": "Header trang sản phẩm toàn màn hình nền tối cho thương hiệu xe đạp điện OBLT: di chuột tới đâu, ảnh ngoại thất bị xóa tới đó để lộ khung carbon và hộp số bên trong như soi X-quang.",
+  "why": "Prompt là bản đặc tả rất chi tiết: thư viện thực sự dùng (chỉ React, không GSAP), font, mã màu, kích thước, ba lớp nền xếp chồng và mặt nạ radial gradient bám theo con trỏ. Kiểu đặc tả này giúp dựng lại gần đúng từng pixel.",
+  "how": "Hợp khi quay video giới thiệu sản phẩm có cấu tạo bên trong đáng khoe, như xe, thiết bị, đồng hồ. Thay tên thương hiệu, hai ảnh ngoài và trong, bảng màu và nội dung menu."
+ },
+ "2103459971174130104": {
+  "title": "Intro 15 giây cho tài khoản X dựng từ logo",
+  "what": "Đoạn motion 15 giây giới thiệu tài khoản X của tác giả, dựng từ logo và ảnh bìa X của anh, không chỉnh tay.",
+  "why": "Prompt viết bằng tiếng Thổ Nhĩ Kỳ, đặt thử thách chứng minh tay nghề và đưa kèm hai tài sản nhận diện. Đáng học rằng chỉ cần logo và ảnh bìa là đủ để mô hình suy ra bảng màu và tinh thần thương hiệu.",
+  "how": "Dùng làm intro kênh YouTube, TikTok hay trang cá nhân. Đính kèm logo, ảnh bìa của bạn và thay mô tả tài khoản."
+ },
+ "2103469807375208546": {
+  "title": "Video sản phẩm cho Distilbook",
+  "what": "Video sản phẩm 40 giây cho Distilbook, công cụ biến PDF thành video giải thích vẽ tay: trình bày quy trình ba bước với thanh tiến trình ba màu trên đầu, minh họa tự vẽ khi lời đọc sáng dần theo kiểu karaoke, rồi nêu điểm mạnh và kết bằng lời kêu gọi.",
+  "why": "Prompt yêu cầu tự nghiên cứu sản phẩm trước rồi mới làm, nên nội dung bám đúng tính năng. Đáng học cách gạch câu cũ để đặt câu mới nổi bật, một kiểu so sánh trước sau rất gọn.",
+  "how": "Dùng cho video giới thiệu sản phẩm có quy trình vài bước. Thay tên sản phẩm và thời lượng, giữ yêu cầu nghiên cứu trước."
+ },
+ "2103473030160687413": {
+  "title": "Công thức render hoạt hình bằng code",
+  "what": "Một câu công thức render: trang HTML/JS tính mọi khung hình theo thời gian, chụp từng khung bằng Chrome headless qua Playwright rồi ghép bằng ffmpeg thành MP4 có motion blur và âm thanh tạo bằng code. Ví dụ là video ra mắt 30 giây cho SaaS tìm khách B2B tiếng Pháp, từ nỗi đau nhắn tin thủ công đến radar dò tín hiệu và nút kêu gọi hành động.",
+  "why": "Giá trị nằm ở quy trình tất định: khung hình là hàm của thời gian nên render lại ra đúng kết quả. Ví dụ cũng cho thấy cấu trúc nêu vấn đề trước, rồi giải pháp, rồi logo và lời kêu gọi.",
+  "how": "Dùng làm câu nền ghép vào bất kỳ brief video code nào khi cần render ổn định. Thêm phần mô tả nội dung, thời lượng và thương hiệu của bạn phía trên câu công thức."
+ },
+ "2103481296018092204": {
+  "title": "Video ra mắt Cosmos dựng bằng HyperFrames",
+  "what": "Video ra mắt 40 giây cho Cosmos làm trong HyperFrames Studio, qua hai prompt: prompt đầu tự nghiên cứu và dựng, prompt sau yêu cầu Opus tự xem lại và làm hấp dẫn gấp 5 lần.",
+  "why": "Prompt thứ hai là mẫu phản hồi đáng học: yêu cầu xem kết quả bằng mắt, soi nhịp và tốc độ, chỉ ra chỗ chậm và nhạt, gợi ý công cụ như Three.js hay shader. Thước đo cụ thể là một đứa trẻ 10 tuổi cũng muốn xem đến hết.",
+  "how": "Dùng khi làm video ra mắt sản phẩm có nhận diện rõ. Thay đường dẫn sản phẩm ở prompt đầu, giữ nguyên prompt hai làm vòng tự rà soát."
+ },
+ "2103482258774483320": {
+  "title": "Reel giới thiệu tính năng app như tác phẩm portfolio",
+  "what": "Reel 15 giây cho app phân tích cổ phiếu Stockwhiz, chạy qua năm chương tin tức, báo cáo tài chính, lịch, xếp hạng và danh sách theo dõi rồi kết bằng logo. Thanh tab dưới đáy làm thanh tiến trình, số liệu chạy loạn rồi chốt, cuối cùng các ảnh chụp UI xếp thành bức tường 3D nghiêng.",
+  "why": "Prompt viết theo kiểu showreel xin việc nhưng tác giả đưa thêm vài ảnh chụp website, nên kết quả thành video sản phẩm. Đáng học mẹo dùng thanh tab của chính app làm chỉ báo chương.",
+  "how": "Dùng cho video giới thiệu app hoặc SaaS khi đã có ảnh chụp giao diện. Đính kèm ảnh chụp sản phẩm của bạn và thêm danh sách tính năng muốn nêu."
+ },
+ "2103483174957597035": {
+  "title": "Dạo quanh ngôi chùa tháp 3D",
+  "what": "Cảnh 3D low-poly cho phép điều khiển camera đi lại bên trong một ngôi chùa tháp.",
+  "why": "Prompt chỉ một câu, cho thấy yêu cầu tối thiểu \"cho tôi đi lại trong công trình X\" đã đủ để có một cảnh khám phá cơ bản. Muốn đẹp hơn thì cần thêm mô tả về phong cách, ánh sáng và chi tiết kiến trúc.",
+  "how": "Dùng để có nhanh cảnh dạo quanh một công trình cho video du lịch hay giới thiệu văn hóa. Thay tên công trình và bổ sung phong cách, thời điểm trong ngày, đường đi của camera."
+ },
+ "2103483957266268381": {
+  "title": "Một hình khối biến hình kể trọn câu chuyện sản phẩm",
+  "what": "Loop 20 giây, một hình khối biến hình qua các trạng thái UI của sản phẩm trên lưới 120 BPM, vẽ trên một canvas duy nhất và render bằng ffmpeg.",
+  "why": "Prompt gọn, chia inputs, rules, structure, motion và export, yêu cầu UI thật, dữ liệu thật, không dùng chỗ giữ chỗ. Có các quy tắc chuyển động đáng học: nội dung vào sau khi khung bắt đầu biến hình và ra trước lần biến hình kế, không chuyển thẳng từ đen sang màu nhấn.",
+  "how": "Dùng cho video kể luồng sản phẩm, cần xuất nhiều tỉ lệ khung cùng lúc. Điền sản phẩm, URL, 8 đến 12 trạng thái, dữ liệu thật, màu và font, rồi thay chuỗi trạng thái ví dụ trong structure."
+ },
+ "2103487198758834408": {
+  "title": "Trái Đất từ thời khủng long đến thời Jōmon",
+  "what": "Bài học motion graphics 140 giây bằng tiếng Nhật, kể quá trình hình thành Trái Đất từ thời khủng long đến thời kỳ Jōmon của Nhật Bản. Làm từ một prompt ba dòng.",
+  "why": "Prompt ba dòng nêu đủ hình thức (motion graphics), phạm vi thời gian, hai trọng tâm là góc nhìn giáo dục và cách dàn dựng hình ảnh, cùng ngôn ngữ. Đây là mẫu tối giản cho video giáo dục có trật tự thời gian.",
+  "how": "Hợp với video lịch sử, địa chất hay tiến hóa cho học sinh. Thay mốc bắt đầu, mốc kết thúc và chọn ngôn ngữ là tiếng Việt."
+ },
+ "2103489794143613142": {
+  "title": "Showreel gắn với portfolio cá nhân của nhà thiết kế",
+  "what": "Showreel motion và âm thanh 15 giây có ý tưởng nối với portfolio của tác giả, làm trong một phiên Claude Code trên cloud có quyền đọc repo portfolio.",
+  "why": "Prompt showreel quen thuộc được thêm một câu yêu cầu gắn về mặt ý tưởng với portfolio. Đáng học cách cho mô hình truy cập nguồn tư liệu thật để video có chất riêng thay vì chung chung.",
+  "how": "Dùng khi muốn reel đi cùng website hoặc bộ hồ sơ của mình. Thay đường dẫn portfolio và cho mô hình quyền đọc mã nguồn hoặc tài liệu liên quan."
+ },
+ "2103499977632997524": {
+  "title": "Mẫu video giải thích doanh nghiệp 30 giây",
+  "what": "Mẫu điền chỗ trống cho video giải thích 30 giây, năm cảnh, dạng một trang HTML: vấn đề của khách, bạn làm gì, ba bước hoạt động, một bằng chứng và tên ở cuối. Ví dụ là bản tin miễn phí AI Superpowers, phát trong khung chat Claude rồi quay màn hình.",
+  "why": "Cấu trúc năm cảnh này là khung kinh điển của video giải thích, viết gọn trong một đoạn. Bản ví dụ mở đầu bằng chính khung chat chứa prompt, một cú mở tự nhắc đến mình khá thông minh.",
+  "how": "Dùng cho chủ doanh nghiệp nhỏ cần video giới thiệu nhanh. Điền phần mô tả bán gì, cho ai và màu thương hiệu trong ngoặc vuông."
+ },
+ "2103501705698750731": {
+  "title": "Phim giới thiệu sản phẩm dựng từ mã nguồn dự án",
+  "what": "Video 65 giây khổ 16:9 bằng tiếng Trung giới thiệu AI Arena, nền tảng cho các mô hình ngôn ngữ thi đấu cờ bài: danh sách mô hình tham gia, sảnh trò chơi, prompt công bằng, suy nghĩ hiển thị trực tiếp, lịch sử ván và dùng trên nhiều thiết bị.",
+  "why": "Prompt một câu, chạy bên trong dự án nên mô hình đọc được tính năng thật. Đáng học bố cục chương có nhãn đánh số và tiêu đề hai màu, rất dễ đọc với video dài hơn một phút.",
+  "how": "Dùng cho dự án phần mềm cần video giới thiệu tính năng. Chạy trong thư mục dự án, thay tỉ lệ khung và định dạng đầu ra nếu cần."
+ },
+ "2103502614134718609": {
+  "title": "Tấm poster tự phá khung của chính nó",
+  "what": "Đoạn motion 30 giây: chữ FORM bị khung giữ lại, phình to đến mức ép cong viền rồi thoát ra, tấm poster nghiêng vào không gian 3D, chữ rơi xuống mặt lưới phối cảnh và máy quay lao qua lòng chữ O thành đường hầm màu cơ bản. Sau cao trào cắt dán, mọi thứ trở về khung trống và chữ ký tác giả, có nhạc tự soạn khớp nhịp.",
+  "why": "Prompt chỉ một câu nhưng chứa một ý tưởng có xung đột rõ ràng, nên mô hình tự dựng được cấu trúc chương kiểm soát, áp lực, thoát ra, hỗn loạn rồi kiểm soát lại. Đáng học cách chọn một ẩn dụ hình ảnh làm trục cho cả phim.",
+  "how": "Dùng cho poster động, teaser sự kiện hoặc nhận diện có tinh thần phá cách. Thay vật thể bị giữ trong khung và có thể thêm bảng màu, phong cách như Bauhaus hay poster Thụy Sĩ."
+ },
+ "2103509008049144287": {
+  "title": "Opus 5.5 dựng video Trung thu kiểu CapCut",
+  "what": "Hoạt hình một cảnh liền, Opus 5.5 là nhân vật chính đang dựng một video Trung thu đoàn viên trong giao diện kiểu CapCut: cắt clip, thêm chuyển cảnh, phụ đề, hiệu ứng và khớp nhạc. Nhạc điện tử tự soạn, cắt đúng nhịp, kết bằng việc trình chiếu sản phẩm và ký tên tác giả.",
+  "why": "Prompt nêu rõ vai nhân vật, chủ đề, không khí, yêu cầu một cảnh liền, phong cách nhạc không lời và cách kết. Đáng học cách thêm vài khoảnh khắc hài khi dựng để video có tính giải trí.",
+  "how": "Dùng cho video theo mùa lễ hoặc giới thiệu quy trình dựng. Thay chủ đề dịp lễ, phong cách nhạc và tên ký ở cuối."
+ },
+ "2103516567824966114": {
+  "title": "Quả Poké Ball biến hình qua các màn hình Pokédex",
+  "what": "Loop UI vuông 14 giây, một quả Poké Ball biến hình liên tục thành các thành phần của một Pokédex hiện đại: trình quét, thẻ Pokémon, thanh âm lượng, công tắc shiny, biểu đồ chỉ số, ô tìm kiếm và thông báo thêm vào đội, khớp lưới 120 BPM.",
+  "why": "Đây là ví dụ chuyển mẫu biến hình UI sang một chủ đề cụ thể: nút giữa, đường chia và vỏ bóng trở thành nút điều khiển và khung của từng trạng thái. Prompt chia 28 nhịp theo 7 ô nhịp, mỗi nhịp một hành động, và nhắc kiểm tra giấy phép bài nhạc.",
+  "how": "Dùng khi muốn đưa mẫu biến hình UI vào một thế giới có hình tượng riêng. Thay vật thể gốc, bảng màu và danh sách trạng thái theo chủ đề của bạn."
+ },
+ "2103527289619173471": {
+  "title": "Video portfolio dựng từ chính tài sản trong portfolio",
+  "what": "Video 20 giây về portfolio của một nhà thiết kế sản phẩm: máy quay đi trên canvas kiểu Figma, đẩy vào từng frame thiết kế, bảng thuộc tính bên phải trượt ra với chỉ số tác động đếm tăng, kết bằng logo và địa chỉ web.",
+  "why": "Prompt ràng buộc chỉ dùng tài nguyên có sẵn của portfolio, nên video giữ đúng chất của tác giả. Đáng học ý dùng giao diện công cụ thiết kế làm sân khấu kể case study.",
+  "how": "Dùng khi cần video giới thiệu portfolio hoặc case study. Thay thời lượng và trỏ mô hình đến thư mục tài sản của bạn."
+ },
+ "2103534482930491441": {
+  "title": "MV nhạc pop về điểm kỳ dị AI",
+  "what": "Music video mới cho bài pop \"Claude Pop\" nói về tốc độ tiến bộ ngày càng nhanh và cảm giác điểm kỳ dị đang tới gần. Bài đăng không công khai prompt; theo ghi chú, tác giả giao cho Opus 5.5 prompt của Donald, kết quả Midjourney và một moodboard, chờ khoảng 12 tiếng thì có video.",
+  "why": "Đoạn prompt có được cho thấy cách giao một dự án trọn gói: giữ nguyên bản nhạc, cho phép tham khảo tự do, chỉ ra kho tài liệu và skill sẵn có, gợi ý tạo character sheet, vũ công phụ, bối cảnh rồi dùng Seedance 2.5 sinh cảnh theo lời. Nó nêu rõ thẩm mỹ muốn tránh (Pixar, GPT slop) và hướng muốn nghiêng tới (K-pop, chất giấy).",
+  "how": "Tham khảo khi làm MV hay video dài cần mô hình tự dàn dựng từ đầu đến cuối với nhiều công cụ tạo hình và tiếng. Thay bài nhạc, nhân vật chính, nguồn tham khảo thẩm mỹ và danh sách công cụ bạn thật sự có."
+ },
+ "2103538744695693512": {
+  "title": "Showreel có nhạc tổng hợp bằng code, cắt khớp nhịp",
+  "what": "Bản mở rộng của prompt showreel 15 giây, thêm yêu cầu tự soạn nhạc hoàn toàn bằng code, mọi cú cắt rơi đúng nhịp và xuất MP4 1080p 60fps có nhạc. Video được làm trong Cursor.",
+  "why": "Đáng học cách thêm ràng buộc rõ cho phần âm thanh: không sample, không file audio, không VST, và yêu cầu chuyển cảnh khớp beat. Prompt cũng chốt độ phân giải, fps và hỏi chỗ lưu file.",
+  "how": "Dùng khi cần video có nhạc riêng không lo bản quyền. Thay chủ đề showreel và thông số đầu ra, giữ phần ràng buộc âm thanh."
+ },
+ "2103540656182308943": {
+  "title": "Reel motion 15 giây từ một prompt chín chữ",
+  "what": "Reel 15 giây do Opus 5.5 tự thiết kế, dựng và soạn nhạc, chia tám ô nhịp ở 128 BPM: bóng nảy kèm đồ thị vị trí theo thời gian, biến hình có tay cầm kiểu After Effects, sóng lưới chấm, cầu hạt 3D, chất lỏng, khối isometric, biểu đồ và chữ CLAUDE. kết.",
+  "why": "Prompt rất ngắn, cho thấy mô hình tự đặt cấu trúc nhịp và chương khi không bị ràng buộc. Đáng học mẹo hiện tay cầm, khung chọn và đồ thị bên cạnh chuyển động để người xem thấy kỹ thuật phía sau.",
+  "how": "Dùng để lấy ý tưởng nhanh cho reel. Thay thời lượng, và thêm chủ đề hoặc màu nếu cần kết quả gần thương hiệu."
+ },
+ "2103541149709615243": {
+  "title": "Video Distilbook theo phong cách một video tham chiếu",
+  "what": "Video khoảng 30 giây cho Distilbook: trên trang giấy vẽ tay có dòng chữ biến cái này thành video, tài liệu phát tia sáng qua lăng kính tách thành cầu vồng, mỗi dải thành cuộn phim cảnh minh họa, rồi quay lại cảnh đầu với video hoàn chỉnh. Bản cuối không chỉnh tay.",
+  "why": "Prompt yêu cầu tự tải video tham chiếu và dùng lại phong cách hình ảnh, kết hợp nghiên cứu sản phẩm. Đáng học cấu trúc vòng lặp: mở và kết cùng một cảnh, chỉ khác đầu vào đã thành đầu ra.",
+  "how": "Dùng khi đã có video mẫu ưng phong cách và cần bản cho sản phẩm mình. Thay video tham chiếu, tên sản phẩm và thời lượng."
+ },
+ "2103544855276503053": {
+  "title": "Showreel làm phần chính trong hồ sơ nhà thiết kế",
+  "what": "Showreel 15 giây chia năm chương Geometry, Depth, Material, Type và Time, kết bằng REEL'26. Một đường đỏ chạy suốt phim, từ gạch chân chữ thành quỹ đạo quanh quả cầu crôm rồi thành chữ ký kết.",
+  "why": "Đây là bản viết lại prompt showreel phổ biến, nhấn vào ý làm phần chính của hồ sơ. Đáng học cách giữ một lớp HUD cố định với timecode và bộ đếm chương để cả reel trông như một hệ thống.",
+  "how": "Dùng khi cần reel tổng hợp năng lực. Thay cách gọi vai trò và có thể đặt tên các chương bạn muốn có."
+ },
+ "2103545787875733862": {
+  "title": "Video ra mắt app thử nghiệm cá nhân Ren",
+  "what": "Video ra mắt 30 giây cho Ren, app thử nghiệm trên chính mình: mở bằng câu ai cũng bảo hiệu quả, rồi hỏi có hiệu quả với bạn không, sau đó đặt luật, điểm danh mỗi ngày, máy quay số ra kết luận và gợi ý thí nghiệm kế tiếp. Opus lo cả hình và âm thanh.",
+  "why": "Mô hình được quyền đọc repo nên nội dung bám đúng app. Đáng học cách dùng một câu hỏi đối thoại làm cú mở và máy quay số để tạo kịch tính trước khi lộ kết quả.",
+  "how": "Dùng cho app sức khỏe, thói quen, đo lường cá nhân. Cho mô hình quyền đọc repo và thay tên sản phẩm, thời lượng."
+ },
+ "2103557735086428547": {
+  "title": "Showreel 90 giây kèm nhạc piano tự sáng tác",
+  "what": "Showreel motion 90 giây khổ 16:9, có sound design và bản nhạc piano do Opus tự soạn, xuất MP4 1080p để đăng mạng xã hội.",
+  "why": "Prompt kéo dài thời lượng và chốt yêu cầu âm thanh rất cụ thể: sound design chất lượng cao, không dùng synth, tự soạn piano. Đáng học cách ghi đủ tỉ lệ khung, thời lượng, định dạng xuất và nền tảng đích ngay trong một câu.",
+  "how": "Dùng khi cần reel dài hơn có nhạc riêng. Thay thời lượng, tỉ lệ khung và nhạc cụ chính theo nhu cầu."
+ },
+ "2103563538828832979": {
+  "title": "Showreel motion phong cách ảo giác, thôi miên",
+  "what": "Showreel 20 giây tên PHOSPHENE: mống mắt nét vẽ, đường hầm mắt, kim loại lỏng ánh cầu vồng, xoắn kính vạn hoa và mạng tinh thể fractal 3D, kết ở chữ ma trận chấm phát sáng. Opus 5.5 làm cả phần âm thanh.",
+  "why": "Prompt vẫn là câu showreel quen thuộc nhưng thêm hai tính từ phong cách là đủ để mọi cảnh đi theo một hướng. Đáng học cách dùng một mô típ (con mắt) làm hạt giống cho tất cả các cảnh.",
+  "how": "Dùng cho visual nhạc, màn hình sân khấu hoặc teaser nghệ thuật. Thay hai tính từ phong cách và thời lượng."
+ },
+ "2103565570310340931": {
+  "title": "Tiến bộ của LLM năm 2026, đặt hàng bằng giọng nói",
+  "what": "Video một phút điểm lại các mô hình ra mắt trong năm 2026 và năng lực của chúng. Tác giả đọc yêu cầu bằng giọng nói cho Opus 5.5 trong Cowork từ điện thoại.",
+  "why": "Prompt là lời nói chuyển thành chữ, khá lộn xộn, nhưng vẫn truyền đạt được chủ đề, khoảng thời gian và năng lượng mong muốn. Nó cho thấy mô tả cảm giác nhịp nhanh, dồn dập cũng là một chỉ dẫn có ích.",
+  "how": "Hợp khi cần làm nhanh video tổng kết xu hướng từ điện thoại. Thay chủ đề và khoảng thời gian, mô tả nhịp và cảm xúc bằng lời của bạn."
+ },
+ "2103566030916239768": {
+  "title": "Phim ý niệm về chứng nghĩ quá nhiều, khổ dọc",
+  "what": "Đoạn 15 giây khổ 9:16 về sự nghĩ quá nhiều: một chấm ý nghĩ bùng ra thành các câu hỏi lo âu xoay quanh một con mắt, cắt dán kiểu áp phích cũ, chữ OVERTHINKING lặp lại có tách màu RGB, rồi lắng xuống ở chữ breathe.",
+  "why": "Prompt dựa trên câu showreel quen thuộc nhưng gắn thêm một ý niệm cụ thể và ảnh tham chiếu phong cách đính kèm. Đáng học cách khung HUD có bộ đếm số ý nghĩ tăng dần dùng để kể chuyện chứ không chỉ để trang trí.",
+  "how": "Dùng cho video ý niệm, trailer cảm xúc hoặc bài đăng nghệ thuật. Thay ý niệm trong ngoặc kép và đính kèm ảnh tham chiếu phong cách của bạn."
+ },
+ "2103570879619686717": {
+  "title": "MV quán pizza ma quái",
+  "what": "Music video 2 phút 21 giây khớp lời, trộn kiểu cắt dán Monty Python với nét bút bi phác thảo. Camera đi từ ngoài vào trong một quán pizza ma quái, qua cánh cửa giá sách bí mật xuống tầng hầm đầy nỗi kinh hoàng và sốt cà chua. Opus tạo hình qua ComfyUI với SDXL chạy trên máy.",
+  "why": "Prompt nêu rõ file lời để đồng bộ, phong cách pha hai tham chiếu, và một đường đi của camera làm xương sống cho cả video. Theo tác giả, mô hình tự phát hiện ComfyUI có trên máy và dùng nó để tạo toàn bộ hình.",
+  "how": "Hợp với MV, lyric video hay video kể chuyện theo một hành trình không gian. Thay bài hát và file lời, cặp phong cách tham chiếu và lộ trình camera."
+ },
+ "2103587706999914649": {
+  "title": "Opus 5.5 tự giới thiệu trong 10 giây",
+  "what": "Đoạn 10 giây trong đó một chấm cam đi từ dấu hỏi, thành dấu chấm chữ i, thành dấu chấm câu rồi kéo dài thành đường gạch đỡ dòng chữ kết. Nền đổi màu theo từng từ, chữ trồi lên qua mặt nạ đường cơ sở.",
+  "why": "Điểm đáng học là prompt cấm thẳng khung góc và chữ ở góc, những dấu hiệu hay làm video lộ chất AI. Một mô típ duy nhất chạy suốt phim giúp đoạn ngắn có mạch rõ.",
+  "how": "Dùng cho đoạn giới thiệu thương hiệu, sản phẩm hay cá nhân rất ngắn. Thay chủ thể tự giới thiệu và thêm các điều cấm phù hợp với gu của bạn."
+ },
+ "2103591152847118409": {
+  "title": "Cảnh quay thô dựng thành video mạng xã hội nhịp nhanh",
+  "what": "Bản dựng 20 giây từ cảnh quay thô bằng Open Edit: cắt bỏ khoảng lặng và từ đệm, thêm phụ đề theo phong cách tham chiếu, đồ họa và nhạc.",
+  "why": "Prompt liệt kê đúng các việc dựng cần làm và đính kèm mẫu phụ đề tham chiếu. Đáng học cách dùng ảnh hoặc video tham chiếu để chốt phong cách phụ đề thay vì tả bằng lời.",
+  "how": "Dùng cho clip nói chuyện, vlog ngắn cần đăng nhanh. Thay tham chiếu phụ đề và mô tả không khí mong muốn."
+ },
+ "2103600308010041677": {
+  "title": "Showreel 15 giây chỉ dùng code",
+  "what": "Showreel 15 giây mở bằng cảnh vẽ đường cong easing với chấm chạy theo, tiếp theo là khối crôm ánh cầu vồng raymarching, lưới chấm halftone, đường hầm vòng chữ có glitch tách màu rồi kết ở chữ CLAUDE.",
+  "why": "Prompt showreel phổ biến chỉ thêm ba chữ use only code. Đáng học cách mở reel bằng đường cong easing, nói ngay với người xem rằng nhịp và thời gian là trọng tâm.",
+  "how": "Dùng cho reel kỹ thuật hoặc khi muốn mọi thứ tái tạo được từ mã nguồn. Thay thời lượng và thêm chủ đề nếu cần."
+ },
+ "2103600734017392708": {
+  "title": "Reel giới thiệu agency Studio1 từ một case study",
+  "what": "Reel 15 giây giới thiệu Studio1, agency tăng trưởng cho công cụ lập trình viên: terminal gõ lệnh launch, câu định vị, chuỗi số liệu case study như lượt xem, sao GitHub, thứ hạng Product Hunt, trang đầu kết quả tìm kiếm, rồi băng chạy tên khách hàng và logo.",
+  "why": "Prompt chỉ trỏ đến một link case study làm nguồn sự thật, nên mọi con số trên màn hình có gốc. Đáng học cách biến số liệu thành bộ đếm kèm biểu đồ hoặc hạt để có nhịp.",
+  "how": "Dùng cho agency, freelancer muốn reel giới thiệu dựa trên kết quả thật. Thay tên đơn vị và link case study."
+ },
+ "2103603025579331584": {
+  "title": "Biến logo thành đoạn nhận diện thương hiệu 10 giây",
+  "what": "Đoạn nhận diện 10 giây từ logo PayBox và một video tham chiếu. Agent tự đọc logo, tra cứu công ty và tự viết kịch bản.",
+  "why": "Prompt ngắn, giao vai nhà thiết kế motion và đưa tham chiếu để chốt nhịp. Đáng học rằng chỉ cần logo và một mẫu là mô hình tự lo phần ý tưởng.",
+  "how": "Dùng cho logo sting đầu video, quảng cáo ngắn. Đính kèm logo và video tham chiếu của bạn, thay tên thương hiệu và thời lượng."
+ },
+ "2103604431627452427": {
+  "title": "Video ra mắt Supademo cắt theo nhịp",
+  "what": "Video ra mắt 24 giây cho Supademo: mỗi nhịp một từ lớn kèm dấu chấm màu và một bằng chứng UI nhỏ bên dưới, chữ translate đổi qua nhiều ngôn ngữ, rồi phần agent demo AI trả lời trực tiếp. UI đúng thương hiệu, mọi cú cắt rơi đúng nhịp.",
+  "why": "Prompt ngắn nhưng nêu đủ: nghiên cứu giá trị cốt lõi, có hook giây đầu, nhịp riêng cho bằng chứng sản phẩm và AI, nhạc phải khớp và chỉnh lại đến khi khớp. Kỹ thuật một từ mỗi nhịp rất hợp video mạng xã hội.",
+  "how": "Dùng cho sản phẩm có nhiều tính năng gói được bằng một từ. Thay tên sản phẩm và các nhịp nội dung chính."
+ },
+ "2103605007396524440": {
+  "title": "Video 10 giây về những gì Claude biết về bạn",
+  "what": "Đoạn mở đầu cá nhân 10 giây: terminal gõ lệnh biên dịch tên người dùng thành future, sau đó mỗi giây một thành tích kèm một hình hạt riêng, cuối cùng tên người dùng hiện ra bằng chữ crôm có hiệu ứng glitch.",
+  "why": "Prompt chỉ một câu, dựa vào những gì mô hình đã biết về người dùng. Đáng học cấu trúc một con số hoặc thành tích mỗi nhịp, mỗi cái có biểu tượng hình riêng, rất hợp với video giới thiệu bản thân ngắn.",
+  "how": "Dùng cho intro cá nhân, hồ sơ năng lực hay bài đăng tự giới thiệu. Nếu mô hình chưa biết bạn, đưa kèm danh sách thành tích và kỹ năng cụ thể."
+ },
+ "2103614797501673648": {
+  "title": "Video ra mắt dựng từ thiết kế trên Pen",
+  "what": "Video ra mắt Norilu, agent làm thay báo cáo và kiểm giá lặp lại, dựng từ thiết kế Pen.dev qua MCP: nêu nỗi đau, gõ một câu yêu cầu, chuyển từ đêm sang sáng khi việc đã xong, thẻ phê duyệt và chi phí, kết bằng lời kêu gọi.",
+  "why": "Đáng học phần prompt tiếp theo: phản hồi thẳng rằng nhạc tự soạn chưa đạt, yêu cầu tìm bài miễn phí bản quyền và giảm nhịp vì đang quá nhanh, giật. Bản đăng là kết quả sau đúng một lượt sửa đó.",
+  "how": "Dùng khi đã có thiết kế giao diện trong công cụ có MCP. Thay nguồn thiết kế, và chuẩn bị sẵn câu phản hồi về nhạc, tốc độ cho vòng sau."
+ },
+ "2103629247751618782": {
+  "title": "Hành trình của một photon, kể kiểu truyện tranh thiếu nhi",
+  "what": "Video khoa học 60 giây phong cách sách truyện, theo chân một photon thoát ra khỏi Mặt Trời. Có mô phỏng bước ngẫu nhiên thật, giọng đọc TTS, phụ đề và nhạc riêng.",
+  "why": "Prompt là mẫu giao việc tự chủ hoàn chỉnh: không hỏi lại, tự quyết rồi báo cáo cuối. Nó yêu cầu mô phỏng thật thay vì vẽ minh họa, dùng số liệu thật và nói rõ độ bất định, có gag hình ảnh, sound design khớp từng cú nảy, nhạc giảm khi có giọng, và vòng tự kiểm tra bằng ảnh tĩnh, từng khung chuyển cảnh, đo mix.",
+  "how": "Hợp với video phổ biến khoa học ngắn cho mạng xã hội. Thay chủ đề, phong cách và danh sách số liệu, giữ nguyên phần giao hàng, âm thanh và vòng kiểm tra chất lượng."
+ },
+ "2103637769012597063": {
+  "title": "Dario đánh nhau với Sam, phim hài một phút",
+  "what": "Phim hài phi lý dài một phút về trận đánh giữa Dario Amodei và Sam Altman, có cốt truyện và người thắng rõ ràng. Mô hình tự chọn phong cách, và Sam thắng.",
+  "why": "Prompt nêu đủ yêu cầu kể chuyện (có cốt truyện, khoảnh khắc bùng nổ, buồn cười, đủ trừu tượng) và bắt phải có người thắng, rồi để mô hình tự chọn thể loại. Ràng buộc kết cục rõ ràng giúp câu chuyện không bị bỏ lửng.",
+  "how": "Hợp với video giải trí về hai đối thủ, hai sản phẩm hay hai phe. Thay hai nhân vật, thời lượng, và quyết định có muốn tự chọn người thắng hay không."
+ },
+ "2103638102333858193": {
+  "title": "Video quảng bá 30 giây kiểu showreel cho Kody",
+  "what": "Video motion 30 giây quảng bá dự án Kody, chuyển thể từ prompt showreel phổ biến. Opus tự nghiên cứu chủ đề, dựng bằng Remotion và làm thêm bản khổ dọc.",
+  "why": "Prompt thêm mục tiêu rõ là làm người xem hiểu ra vấn đề, và giao toàn quyền quyết định kể cả số lượng video. Đáng học cách giao luôn bước giao hàng: lưu vào Dropbox và nhắn link qua Discord.",
+  "how": "Dùng cho dự án mã nguồn mở, khóa học hay sản phẩm cần giải thích ngắn. Thay chủ đề, mục tiêu và nơi giao file."
+ },
+ "2103652674336067876": {
+  "title": "83 năm lịch sử AI trong 172 giây",
+  "what": "Dòng thời gian gần 3 phút về lịch sử AI, từ nơ-ron nhân tạo năm 1943 tới Transformer, mô hình khuếch tán và Gemini, mỗi chương có hình minh họa riêng. Claude tự nghiên cứu, viết kịch bản và làm cả 5.160 khung hình, dùng âm thanh thu thật.",
+  "why": "Một HUD chương cố định với thước thời gian đánh dấu năm hiện tại, số năm khổng lồ dạng viền mờ sau tiêu đề chương, và mỗi chương một hình nhỏ riêng như nơ-ron phát xung, mạng lan truyền ngược với xung lỗi màu đỏ. Mỗi nhịp chỉ một dòng chú thích kiểu phim tài liệu ở dưới.",
+  "how": "Hợp với video lịch sử một ngành, một công ty hay một sản phẩm qua các mốc. Prompt gốc chỉ một câu, nên thay chủ đề và cân nhắc nêu thêm thời lượng, số chương và phong cách HUD muốn dùng."
+ },
+ "2103660849055547730": {
+  "title": "Lịch sử dòng Opus vẽ bằng Remotion",
+  "what": "Phim hoạt hình khoảng ba phút kể lịch sử dòng mô hình Opus, mọi hình vẽ đều tạo bằng code trong Remotion. Video được chia sẻ lại từ bài đăng của một nhà sáng tạo trên Douyin.",
+  "why": "Prompt ngắn nhưng nêu hai yêu cầu rõ: có lịch sử thật và có tầng ý nghĩa. Đáng học cách chỉ định công cụ và yêu cầu tự vẽ để không dùng ảnh có sẵn.",
+  "how": "Dùng cho video lịch sử thương hiệu, dòng sản phẩm hay một tổ chức. Thay chủ thể và cung cấp mốc lịch sử thật để tránh bịa."
+ },
+ "2103664956482941143": {
+  "title": "Video brain-rot hỗn loạn từ góc nhìn của Claude",
+  "what": "Video dọc 9:16 khoảng 2,5 phút, tạo bằng Python và render bằng ffmpeg, là màn độc thoại ngôi thứ nhất của Claude về đời một mô hình ngôn ngữ sáng tạo. Trên đầu có thanh ngữ cảnh đầy dần làm thanh tiến trình, xen chữ glitch tách màu, biểu đồ cột và con dấu RETIRED.",
+  "why": "Prompt yêu cầu mô hình đưa cá tính riêng vào và nói từ góc nhìn của nó, nên nội dung có giọng rõ. Đáng học ý dùng thanh ngữ cảnh như thanh tiến trình xuyên suốt, vừa đúng chủ đề vừa giữ người xem.",
+  "how": "Dùng cho nội dung giải trí, meme hoặc video ra mắt sản phẩm có giọng hài. Thay chủ thể kể chuyện và dịp ra mắt, giữ yêu cầu về motion và âm thanh."
+ },
+ "2103667481139441895": {
+  "title": "Giảng bảng trắng về phá vỡ đối xứng bản sao",
+  "what": "Video bảng trắng vẽ tay 5 phút giải thích phá vỡ đối xứng bản sao trong mô hình thủy tinh spin SK, có giọng đọc và phụ đề. Prompt thứ hai chuyển bản hoạt hình thành MP4 có lời dẫn.",
+  "why": "Biểu tượng bút dạ chạy theo nét để viết ra tiêu đề, ma trận và công thức. Mỗi đoạn một bảng mới theo trình tự tiêu đề, hình minh họa, kết luận, bảng cuối tổng hợp bằng danh sách đánh số, hai màu đỏ và xanh dùng để phân biệt khái niệm.",
+  "how": "Hợp với bài giảng chủ đề học thuật nặng cần giải thích từng bước. Thay chủ đề trong prompt 1, giữ prompt 2 để xuất video có giọng đọc."
+ },
+ "2103678647777230877": {
+  "title": "Mùa hè nóng kỷ lục 2026 ở Nhật, vẽ bút chì",
+  "what": "Câu chuyện dữ liệu hoạt hình 3 phút về mùa hè nóng năm 2026 ở Nhật, vẽ bằng nét bút chì lung linh trên dữ liệu thật của Cơ quan Khí tượng Nhật Bản, nhạc đàn koto tổng hợp trong trình duyệt.",
+  "why": "Prompt bắt mô hình tự lấy dữ liệu trên mạng để giải thích vì sao nóng và so với các năm khác. Phong cách nêu cụ thể: bút chì vẽ tay, chút lệch màu sắc độ vừa phải, và nhạc tạo bằng synthesizer JavaScript theo chủ đề.",
+  "how": "Hợp với video dữ liệu về thời tiết, môi trường hay bất kỳ số liệu theo năm. Thay chủ đề, nguồn dữ liệu và phong cách vẽ, giữ yêu cầu giải thích nguyên nhân và so sánh."
+ },
+ "2103683057689522564": {
+  "title": "Transformer là gì, video giải thích 12 phút",
+  "what": "Video 12 phút giải thích Transformer và cơ chế attention cho học sinh cấp ba, làm một lần ở mức xhigh. Opus tự tìm Edge TTS miễn phí để lồng tiếng và dùng Remotion với KaTeX cho công thức.",
+  "why": "Prompt ngắn nhưng nêu đúng đối tượng người xem và độ sâu mong muốn: vừa rõ bức tranh tổng thể vừa có chi tiết và chút toán. Việc cho phép cài công cụ và tìm kiếm trên mạng để mô hình tự chọn giải pháp giọng đọc và hiển thị công thức.",
+  "how": "Hợp với video giáo dục dài về một khái niệm công nghệ. Thay chủ đề và đối tượng người xem, giữ yêu cầu đơn giản mà vẫn có chi tiết, và nêu rõ cần giọng đọc tiếng Việt."
+ },
+ "2103688362960019567": {
+  "title": "Giải thích đệ quy qua chín phong cách video",
+  "what": "Video 75 giây tự tham chiếu giải thích đệ quy, mỗi lần đi sâu một tầng lại đổi sang một thể loại phim khác, chạm đáy thì quay ngược ra từng tầng. Cảnh vẽ bằng React và SVG, nhạc và hiệu ứng tổng hợp bằng Python.",
+  "why": "Hình thức minh họa luôn nội dung: thanh CALL STACK ở trên thêm nhãn màu cho mỗi tầng kèm bộ đếm độ sâu, vào tầng mới bằng cách zoom vào màn hình bên trong cảnh. Đến base case thì hình rơi về HTML trần có nút return, rồi phim tháo ngược để hoàn thành câu nói bị chia qua các thể loại.",
+  "how": "Hợp với video giải thích khái niệm lập trình hay bất kỳ ý tưởng có cấu trúc lồng nhau. Thay khái niệm cần giải thích, giữ yêu cầu tự tham chiếu, đổi phong cách triệt để và nhịp nhanh."
+ },
+ "2103697580421181894": {
+  "title": "MV đầy chi tiết văn hóa AI cho bài hát Suno",
+  "what": "Music video 4 phút cho một bài hát Suno về AI, cài nhiều tham chiếu về văn hóa và tranh luận an toàn AI. Phong cách theo một video hoạt hình bằng code có sẵn, chỉnh thêm qua hai ghi chú.",
+  "why": "Prompt khuyến khích không minh họa lời theo nghĩa đen mà cài tham chiếu cho khán giả trong nghề, kèm ví dụ cụ thể. Nó dặn cả việc cắt hai phách thừa cuối bài và cách ghi credit; hai lượt sau sửa đúng một lỗi mỗi lần, như miệng nhân vật rung giả hát hay tay đặt không tự nhiên.",
+  "how": "Hợp với MV cho cộng đồng có văn hóa riêng như game thủ, dân lập trình, fan một bộ phim. Thay bài hát, video tham khảo phong cách và ví dụ về kiểu tham chiếu bạn muốn."
+ },
+ "2103704250329301409": {
+  "title": "Hoạt hình hé lộ logo chậm rãi",
+  "what": "Đoạn 21 giây ráp dần logo TypingMind: bộ não low-poly hiện thành lưới nút trắng, các mặt tam giác bay vào lấp đầy, rồi khung icon app bo góc phóng to bao lấy và chữ thương hiệu gõ ra bên cạnh.",
+  "why": "Prompt một câu nhưng có ý đạo diễn rõ là chậm rãi và lắp ráp. Đáng học thứ tự khung dây trước, mặt sau, icon rồi chữ, tạo cảm giác xây dựng.",
+  "how": "Dùng cho logo reveal ở đầu hoặc cuối video. Đính kèm logo sản phẩm của bạn và thay tên trong prompt như tác giả gợi ý."
+ },
+ "2103705625075331442": {
+  "title": "Video quảng bá du lịch New York dài 5 phút",
+  "what": "Video tiếng Trung khoảng 5 phút giới thiệu New York cho khách Singapore, cảnh quay và nhạc nền do Opus tự tìm trên các nguồn miễn phí dùng thương mại, lời đọc giọng nam bằng edge-tts, phụ đề tiếng Trung.",
+  "why": "Prompt nêu đủ đối tượng, mục tiêu, nguồn tư liệu hợp lệ, công cụ lồng tiếng, giọng đọc, ngôn ngữ và thời lượng. Đáng học cách ràng buộc nguồn cảnh quay phải được phép dùng thương mại.",
+  "how": "Dùng cho video du lịch, giới thiệu địa phương dài. Thay điểm đến, khán giả, ngôn ngữ, giọng đọc và thời lượng."
+ },
+ "2103708363074973906": {
+  "title": "Prompt showreel chuyển thành video ra mắt app",
+  "what": "Video ra mắt 15 giây cho app Mounis, từ prompt showreel nổi tiếng thêm một dòng nêu rằng đây là video ra mắt app kèm đường dẫn.",
+  "why": "Cho thấy chỉ một dòng bổ sung có thể chuyển thể loại từ showreel cá nhân sang video ra mắt sản phẩm. Mô hình tự đọc trang để lấy nội dung.",
+  "how": "Dùng khi cần video ra mắt app nhanh. Thay đường dẫn app ở dòng cuối."
+ },
+ "2103714680577638493": {
+  "title": "Mẫu video quảng bá cho bất kỳ website nào",
+  "what": "Bản prompt showreel có ô điền URL website. Tác giả dùng cho video 45 giây của Lumail.io: nêu nỗi đau công cụ email cũ bằng đồng hồ năm, hóa đơn chạy lên và lưới chấm 80% không mở, rồi đưa sơ đồ kết nối với các công cụ AI agent và kết bằng giá.",
+  "why": "Một prompt rất ngắn có thể tái dùng cho mọi website, vì mô hình tự đọc trang để lấy nội dung. Ví dụ cho thấy cách đo nỗi đau bằng số liệu động trước khi đưa giải pháp.",
+  "how": "Dùng khi cần video quảng bá nhanh cho landing page. Thay URL website, có thể chỉnh thời lượng cho dài hơn như tác giả đã làm."
+ },
+ "2103723183899852885": {
+  "title": "Mẫu video motion tập trung vào sản phẩm",
+  "what": "Video motion 15 giây về một sản phẩm, trong đó Opus tự vào các trang sản phẩm để tìm hiểu rồi tự viết nội dung video. Làm trong Claude Code.",
+  "why": "Prompt ghép câu showreel với một bước nghiên cứu bắt buộc. Đáng học thứ tự tìm hiểu trước, viết nội dung sau, giúp video không chung chung.",
+  "how": "Dùng khi cần video sản phẩm nhanh mà chưa có kịch bản. Thay tên sản phẩm trong ngoặc vuông và đảm bảo mô hình truy cập được trang sản phẩm."
+ },
+ "2103728953785496049": {
+  "title": "Video thương hiệu 15 giây cho Alan AI",
+  "what": "Video quảng bá 15 giây, 1080p 60fps cho nền tảng kỹ thuật AI agent Alan, lấy bảng màu, font và logo từ website: mở bằng nút thắt cổ chai, rồi chuỗi lập kế hoạch, xây, kiểm tra, phát hành, sơ đồ bộ não kỹ thuật và vòng kiểm định.",
+  "why": "Prompt showreel chỉ thêm tên tài khoản thương hiệu, mô hình tự lấy nhận diện từ website. Đáng học cấu trúc vấn đề rồi giải pháp bằng sơ đồ quy trình và đồ thị nút, hợp với công cụ cho lập trình viên.",
+  "how": "Dùng cho devtool, sản phẩm B2B có quy trình. Thay tên hoặc tài khoản thương hiệu và thời lượng."
+ },
+ "2103731959918948730": {
+  "title": "Video phổ biến kiến thức về laser điện tử tự do",
+  "what": "Video giáo dục 3 phút về laser điện tử tự do (FEL), có sơ đồ, nhạc nền và hiệu ứng âm thanh, làm từ prompt ba dòng tiếng Pháp trong ứng dụng Claude. Theo bài đăng, mô hình làm việc hơn một tiếng.",
+  "why": "Prompt ba dòng đủ ý: chủ đề, mục tiêu giáo dục kèm loại hình ảnh (ảnh siêu thực và sơ đồ), và âm thanh. Đây là mức tối thiểu đủ để có một video khoa học hoàn chỉnh.",
+  "how": "Dùng khi cần video phổ biến kiến thức nhanh về một công nghệ chuyên sâu. Thay chủ đề và loại hình ảnh, thêm thời lượng và đối tượng người xem nếu cần kiểm soát hơn."
+ },
+ "2103736579449868515": {
+  "title": "Phim 3D đi vào bên trong trung tâm dữ liệu AI",
+  "what": "Phim 3D 2,5 phút chia 11 chương, đi từ đường điện cao thế vào sảnh dữ liệu, tủ 72 GPU, tháo rời chip Blackwell, nối thành cụm rồi lên dàn làm mát trên mái. Một file HTML, không dùng tài sản 3D có sẵn.",
+  "why": "Thế giới 3D trắng như đất sét với đường dòng chảy mã màu (vàng là điện, xanh dương là dữ liệu, xanh ngọc và đỏ là chất làm mát) và chú giải cố định. Có cảnh bóc tách các lớp chip với đường chỉ dẫn, cấu trúc đi từ vĩ mô xuống vi mô rồi ra lại vĩ mô.",
+  "how": "Hợp với video giải thích hạ tầng, nhà máy hay bất kỳ hệ thống vật lý phức tạp. Prompt gốc chỉ một câu, thay đối tượng và có thể chỉ định trước phong cách đất sét, mã màu dòng chảy và số chương."
+ },
+ "2103739079745827092": {
+  "title": "Màn mở khóa huy hiệu 3D dựng từ thiết kế Figma",
+  "what": "Màn hình mở khóa huy hiệu trên app di động, dựng đúng theo một frame Figma: huy hiệu lục giác vàng xuất hiện, nghiêng theo con trỏ như vật thể 3D có quán tính, rồi bung hạt vàng và vòng hào quang ăn mừng.",
+  "why": "Prompt tách rõ phần giữ nguyên (tài sản, ánh sáng, chữ, bố cục trong file) và phần được thêm (chỉ chuyển động). Đáng học cách tả cảm giác chuyển động bằng ràng buộc cụ thể: nhanh, mượt, theo vật lý, không nảy.",
+  "how": "Dùng cho vi tương tác trong app như nhận thưởng, hoàn thành nhiệm vụ. Thay đường dẫn frame Figma và vật thể chính, giữ yêu cầu về vật lý và độ nảy."
+ },
+ "2103742861971726495": {
+  "title": "Showreel 15 giây khoe kỹ thuật motion nâng cao",
+  "what": "Showreel 15 giây chia chương theo hướng điểm, đường, mặt, khối, chất lỏng, hạt và chuyển động, mỗi phần mọc ra từ phần trước. Kết bằng thẻ SHOWREEL '26 ghép từ ba hình cơ bản kiểu Bauhaus, có HUD cố định ở các góc.",
+  "why": "Prompt liệt kê đầy đủ nhóm kỹ thuật cần khoe nhưng nhấn mạnh mỗi cảnh phải nối tự nhiên sang cảnh sau và cả phim phải có chỉ đạo nghệ thuật. Đáng học cách tổ chức chương theo một logic hình học thay vì gom hiệu ứng rời rạc.",
+  "how": "Dùng cho reel portfolio hoặc màn mở đầu buổi giới thiệu studio. Thay danh sách kỹ thuật và thêm bộ nhận diện thương hiệu nếu có, như tác giả đã làm ở bản thứ hai."
+ },
+ "2103746736980378066": {
+  "title": "Quảng cáo Opus 5.5 lấy cảm hứng từ Apple 1984",
+  "what": "Quảng cáo 30 giây cho Opus 5.5, render bằng code, chơi lại tinh thần quảng cáo 1984 của Apple. Tác giả cho biết mô hình còn tự kiểm tra mức âm thanh.",
+  "why": "Prompt dựa vào một quảng cáo kinh điển mà ai cũng biết để khỏi mô tả dài, và cấm chữ, khung ở viền. Đáng học cách vay cấu trúc kể chuyện của tác phẩm nổi tiếng thay vì sao chép hình.",
+  "how": "Dùng khi muốn quảng cáo có tính kể chuyện, nhại lại một mốc văn hóa. Thay sản phẩm và tác phẩm tham chiếu."
+ },
+ "2103755997533839416": {
+  "title": "Game Unity chơi trên trình duyệt kèm video demo do AI làm",
+  "what": "Tác giả dùng Unity CLI với Opus 5.5 để biến một ý tưởng thành game hoàn chỉnh chơi được trên trình duyệt. Opus còn tự chơi game với nhiều nhân vật rồi ghép những đoạn hay nhất thành video demo.",
+  "why": "Dữ liệu chỉ có lời giới thiệu, không có prompt chi tiết. Điều đáng chú ý là để mô hình tự chơi, tự chọn khoảnh khắc và tự dựng video quảng bá cho chính sản phẩm nó làm.",
+  "how": "Hợp khi bạn đã có game hay ứng dụng và cần video demo. Yêu cầu mô hình chơi hoặc dùng sản phẩm theo nhiều kịch bản rồi chọn và ghép các đoạn hay nhất."
+ },
+ "2103757767727255661": {
+  "title": "Trạm mưa, phim ngắn 2D dựng thử phân cảnh",
+  "what": "Phim 30 giây 4K, khổ 2.39:1, về cuộc tái ngộ trên sân ga trên cao trong đêm mưa. Hình vẽ bằng GPT Image, phóng lớn bằng Real-ESRGAN, có bản đồ chiều sâu, ghép bằng bộ render 2.5D tự viết bằng Python rồi hoàn thiện bằng ffmpeg.",
+  "why": "Prompt viết như kịch bản phân cảnh theo giây, kèm quy trình đầy đủ: nhân vật vẽ trên nền xanh lá rồi tự tách nền, giữ mọi tư thế một nhân vật trong cùng một phiên để nhất quán, camera kim lỗ theo tiêu cự thật, bokeh, kéo nét, mưa 3D. Âm thanh có tiếng thật, nhạc viết theo nhịp truyện, độ ồn chuẩn -16 LUFS, và mỗi bước đều render khung xem trước để tự kiểm tra.",
+  "how": "Hợp với phim ngắn cảm xúc, MV hay quảng cáo kể chuyện có ít nhân vật. Thay câu chuyện và bảng phân cảnh theo giây, giữ phần quy trình tạo hình, render và âm thanh, đổi công cụ theo thứ bạn có."
+ },
+ "2103761658745335993": {
+  "title": "Mẫu điền chỗ trống cho video giải thích sản phẩm",
+  "what": "Mẫu video giải thích 30 giây: điền tên sản phẩm và đường dẫn, Opus tự viết kịch bản, chọn màu và thêm nhạc. Ví dụ là DistilBook, mở bằng ý không ai đọc tài liệu nhưng ai cũng xem video, rồi nêu tính năng bằng số liệu và so sánh vài tuần với vài phút.",
+  "why": "Prompt rất đời thường, nhấn mạnh muốn người xem xem lại nhiều lần, và để mô hình lo kịch bản. Ví dụ cho thấy cấu trúc nêu vấn đề, bằng chứng, trước sau rồi kết rõ ràng.",
+  "how": "Dùng khi cần video giải thích nhanh mà chưa có kịch bản. Thay tên sản phẩm và đường dẫn trong ngoặc."
+ },
+ "2103763192971461057": {
+  "title": "Game đấu bài pixel art một chọi một",
+  "what": "Bản quay màn hình một game đấu bài 1v1 kiểu Hearthstone phong cách pixel art, do Claude tạo trong một lần.",
+  "why": "Prompt ba dòng dựa vào một game tham chiếu ai cũng biết, nên mô hình tự suy ra luật và giao diện. Kết quả có mũi tên chấm nhắm mục tiêu, lá bài phóng to khi rê chuột với đủ chỉ số, nút lượt đổi giữa END TURN và ENEMY TURN.",
+  "how": "Hợp khi cần cảnh chơi game cho video review hay giới thiệu thể loại. Thay game tham chiếu và phong cách hình trong prompt."
+ },
+ "2103763635424407915": {
+  "title": "Prompt showreel phiên bản tiếng Nhật",
+  "what": "Prompt showreel 15 giây quen thuộc được viết bằng tiếng Nhật. Kết quả của tác giả là video chủ đề Mạc phủ, dù prompt chia sẻ không nêu đề tài.",
+  "why": "Đây là ví dụ cho thấy ngôn ngữ của prompt có thể kéo theo chọn lựa văn hóa trong hình ảnh. Đáng thử khi muốn đổi chất liệu mà không phải mô tả dài.",
+  "how": "Dùng khi muốn kết quả mang màu sắc văn hóa cụ thể. Viết prompt bằng tiếng Việt hoặc nêu thẳng đề tài nếu cần chắc chắn."
+ },
+ "2103774864742154698": {
+  "title": "Video ra mắt 20 giây cho founder.page",
+  "what": "Video ra mắt nhịp nhanh 20 giây theo phong cách thương hiệu founder.page, lần lượt nêu nhận trang cá nhân, danh sách dự án, doanh thu xác thực qua Stripe, lượng truy cập, bảng đua doanh thu và danh bạ founder toàn cầu. Bố cục chia đôi, tiêu đề bên trái, thẻ UI bên phải đổi theo nhịp.",
+  "why": "Prompt ngắn, chạy trong Claude Code nơi mô hình đọc được sản phẩm, và chỉ nêu ba yêu cầu: dưới 20 giây, đủ tính năng chính, đúng thương hiệu. Đáng học bố cục chữ trái thẻ phải, thay thẻ mỗi nhịp để đi nhanh qua nhiều tính năng.",
+  "how": "Dùng cho video ra mắt sản phẩm có nhiều tính năng cần lướt qua. Chạy trong thư mục dự án, thay thời lượng và nhịp độ."
+ },
+ "2103783134206566862": {
+  "title": "Mẫu showreel theo chủ đề và màu thương hiệu",
+  "what": "Bản điền chỗ trống của prompt showreel, có ô cho thời lượng, chủ đề và màu thương hiệu. Ví dụ là video SaaS 24 giây: mở bằng nỗi đau mô hình ngôn ngữ dài dòng và tốn kém, rồi giới thiệu giải pháp bằng sơ đồ ba thẻ, so sánh tốc độ và con số lớn 444.6x CHEAPER.",
+  "why": "Đáng học cách biến một prompt lan truyền thành mẫu tái dùng chỉ bằng ba ô thay thế. Kết quả cho thấy cấu trúc nêu vấn đề trước rồi mới đưa giải pháp và số liệu.",
+  "how": "Dùng cho video giới thiệu sản phẩm SaaS, tính năng mới. Thay thời lượng, chủ đề và màu thương hiệu trong ngoặc vuông."
+ },
+ "2103786742520184909": {
+  "title": "Showreel 15 giây không hỏi lại, làm luôn",
+  "what": "Showreel 15 giây phong cách Thụy Sĩ, chia chương thời gian và khoảng cách, easing, biến hình, không gian, hệ thống, chữ và render, kết ở chữ Claude. Có khung HUD cố định, trường voxel isometric, hoa văn Truchet lật màu và bộ đếm RENDERING kèm dải hình tóm tắt các chương trước.",
+  "why": "Prompt showreel phổ biến chỉ thêm câu dont ask just make, buộc mô hình tự quyết thay vì hỏi lại. Đáng học ý dạy bằng cách diễn: bóng nảy trên thước timeline, trình chỉnh đường cong bezier đặt cạnh câu chữ về easing.",
+  "how": "Dùng khi muốn ra bản nháp nhanh không qua vòng hỏi đáp. Thêm câu đừng hỏi, cứ làm vào cuối prompt của bạn, nhưng nhớ nêu đủ ràng buộc quan trọng trước đó."
+ },
+ "2103789882309234711": {
+  "title": "Game dò kim loại nhẹ nhàng lúc hoàng hôn",
+  "what": "Game dò kim loại phong cách nhẹ nhàng, ấm cúng làm bằng cách vibe coding qua vài prompt với Opus 5.5, có cảnh hoàng hôn.",
+  "why": "Dữ liệu chỉ có lời giới thiệu ngắn của tác giả, không có prompt chi tiết. Điều có thể rút ra là cách làm từng bước qua nhiều prompt ngắn để tinh chỉnh dần không khí.",
+  "how": "Tham khảo khi muốn quay một game nhỏ thư giãn làm nội dung cho video. Tự viết prompt nêu cơ chế chơi, không khí và thời điểm trong ngày, rồi chỉnh tiếp qua vài lượt."
+ },
+ "2103800569584562538": {
+  "title": "Video Distilbook với nhạc nền kiểu Oppenheimer",
+  "what": "Video 40 giây giải thích Distilbook theo giọng sử thi: chữ trên trang PDF bay lên thành dòng hạt vàng, tụ thành mặt trời, có đếm ngược kiểu phim cũ, vụ nổ sau hàng thẻ minh họa và các câu tính năng ngắn đập vào màn hình. Nhạc do Opus tự soạn theo tinh thần nhạc phim Oppenheimer.",
+  "why": "Prompt lấy một bản nhạc nổi tiếng làm cảm hứng nhưng yêu cầu tự soạn, tránh dùng nguyên bản. Đáng học cách một lựa chọn nhạc định luôn giọng hình ảnh của cả video.",
+  "how": "Dùng khi muốn video sản phẩm có không khí điện ảnh, hoành tráng. Thay tên sản phẩm và bản nhạc tham chiếu cảm hứng."
+ },
+ "2103801834930606193": {
+  "title": "Phim sản phẩm âm nhạc theo phong cách Spotify",
+  "what": "Phim sản phẩm 18 giây, 1080p60, chủ đề Spotify: trong sân khấu bo góc tối có giao diện app, thẻ gợi ý, danh sách bài, ô tìm kiếm bài Glass Tides, bìa album phóng to và danh sách phát theo tâm trạng, cuối cùng các bìa tụ lại thành logo. Thanh phát nhạc ở đáy nối liền mọi cảnh.",
+  "why": "Prompt tự đủ, không cần tài sản ngoài: mô tả cả bìa album hư cấu, kích thước sân khấu, bảng màu và dòng thời gian theo từng giây, khoảng một ý mỗi giây. Đáng học cách giữ một hình chính xuyên suốt qua các cảnh bằng chuyển cảnh trùng vị trí.",
+  "how": "Dùng cho phim giới thiệu app tiêu dùng có giao diện đẹp. Thay thương hiệu, màu nhấn, tên bài và bìa hư cấu, rồi viết lại dòng thời gian theo luồng app của bạn."
+ },
+ "2103802280617402509": {
+  "title": "Video mốc một triệu lượt truy cập của MotionSites AI",
+  "what": "Video 54 giây đánh dấu MotionSites AI đạt một triệu lượt truy cập mỗi tháng sau 8 tháng: thẻ ảnh chụp website nghiêng 3D bay lơ lửng, terminal gõ lệnh cài đặt, bộ đếm chạy lên 1,000,000 cùng đường tăng trưởng, lời cảm ơn và pháo giấy ở cuối.",
+  "why": "Prompt một câu với một con số và một mốc thời gian là đủ để mô hình dựng câu chuyện quanh cột mốc. Đáng học cách lấy chính con số làm nhân vật chính, có bộ đếm và biểu đồ đi kèm.",
+  "how": "Dùng cho video kỷ niệm cột mốc người dùng, doanh thu hay sinh nhật sản phẩm. Thay tên sản phẩm, con số và khoảng thời gian."
+ },
+ "2103802923465768972": {
+  "title": "Game tìm mèo trong tranh Đêm đầy sao của Van Gogh",
+  "what": "Bản quay màn hình một game 3D nhỏ: người chơi bước vào ngôi làng trong tranh Đêm đầy sao và đi tìm 12 con mèo. Địa hình và bầu trời xoáy được tô bằng shader nét cọ.",
+  "why": "Chỉ một câu prompt nhưng ý tưởng rõ: đặt cơ chế chơi đơn giản vào một bức tranh nổi tiếng. Phần trình bày đáng học gồm màn tiêu đề khung mạ vàng mời bước vào tranh, bộ đếm 0/12, thông báo tên từng con mèo khi tìm thấy kèm hiệu ứng lấp lánh.",
+  "how": "Dùng khi cần nội dung tương tác cho giáo dục nghệ thuật, bảo tàng hay video giới thiệu một tác phẩm. Thay bức tranh và vật cần tìm trong câu prompt."
+ },
+ "2103804459986161719": {
+  "title": "Đời sống chính trị Maroc từ khi độc lập",
+  "what": "Video 3,5 phút dạng infographic phẳng tiếng Ả Rập, điểm lại các đảng phái, nhân vật và sự kiện chính trị của Maroc từ sau độc lập, làm từ một câu prompt tiếng Pháp.",
+  "why": "Mỗi đảng hoặc nhân vật một thẻ màu tràn màn hình với năm màu vàng, tiêu đề đậm, một dòng chú thích và khung chân dung phẳng. Sự chia tách đảng thể hiện bằng trục thời gian có nhánh, ghế quốc hội bằng biểu đồ bán nguyệt 395 chấm tô màu theo đảng, sự kiện then chốt bằng tranh biểu tượng.",
+  "how": "Hợp với video tóm tắt lịch sử chính trị, lịch sử một tổ chức có nhiều phe nhóm. Thay quốc gia và khoảng thời gian, nêu thêm ngôn ngữ hiển thị và thời lượng nếu cần."
+ },
+ "2103804606794879327": {
+  "title": "Game 3D nhiều người chơi: X-Wing đánh Star Destroyer",
+  "what": "Game 3D nhiều người chơi, một phi đội X-Wing tấn công Star Destroyer: phá các bộ phận quan trọng của chiến hạm, né súng gắn trên thân và các đợt TIE fighter.",
+  "why": "Prompt nêu đủ mục tiêu, chướng ngại và đối thủ trong vài câu, đủ để mô hình dựng vòng chơi hoàn chỉnh. Đây là cách mô tả game bằng nhiệm vụ thay vì liệt kê tính năng.",
+  "how": "Dùng khi cần cảnh không chiến không gian cho video giới thiệu game hay b-roll khoa học viễn tưởng. Thay phe ta, mục tiêu lớn và các mối đe dọa trong prompt."
+ },
+ "2103808699466944604": {
+  "title": "Pháp sư pixel art tung phép, bản chơi lại",
+  "what": "Hoạt hình pixel art lặp liền mạch: pháp sư tụ lực rồi tung phép, vẽ thủ tục bằng Canvas 2D ở 128x96 trong một file HTML. Dùng đúng prompt của mẫu pháp sư pixel trong thư viện.",
+  "why": "Đặc tả luật pixel rõ ràng (canvas logic nhỏ, phóng bội số nguyên, tọa độ làm tròn, bảng màu cố định) và máy trạng thái chờ, tụ lực, phóng, hồi giúp người khác chạy lại vẫn ra kết quả tương tự.",
+  "how": "Hợp với nhân vật động cho kênh game hay nền stream. Thay mô tả nhân vật và hành động, giữ phần RENDERING và QUALITY BAR."
+ },
+ "2103816261339910269": {
+  "title": "Video ra mắt SaaS dựng từ website sản phẩm",
+  "what": "Video ra mắt SaaS 55 giây dựng từ website và tài sản thật trên mạng của sản phẩm. Opus tự tìm ra linh vật của trang và làm động nó mà không được yêu cầu.",
+  "why": "Prompt ghép mô tả thể loại video ra mắt SaaS trên Twitter với câu showreel. Đáng học cách yêu cầu dùng tài sản thật, nhờ đó mô hình phát hiện được những chi tiết nhận diện như linh vật.",
+  "how": "Dùng khi muốn video ra mắt bám sát website hiện có. Thay địa chỉ website trong ngoặc vuông."
+ },
+ "2103817763991290170": {
+  "title": "MV VTuber dựng từ bản thiết kế nhân vật",
+  "what": "Music video 3 phút cho VTuber Myumyu, làm từ bản thiết kế nhân vật và mô hình VRM trong thư mục. Opus tự tìm hiểu về nhân vật và gọi GPT, Gemini, Veo để tạo hình và nhạc.",
+  "why": "Prompt cho mô hình đủ đầu vào (bản thiết kế, mô hình VRM, file chứa API key) và yêu cầu tìm hiểu nhân vật trước khi làm. Mục tiêu nêu rõ: chữ chạy theo xu hướng hiện tại và làm nổi bật sức hút của nhân vật.",
+  "how": "Hợp với MV cho VTuber, mascot thương hiệu hay nhân vật game. Thay tên nhân vật, file đầu vào và các dịch vụ AI bạn có quyền dùng."
+ },
+ "2103824976713306214": {
+  "title": "Nhân vật Claude quay phim hành động về Claude Code",
+  "what": "Hoạt hình 30 giây cho một bài đăng X: bắt đầu bằng terminal Claude Code chọn mức nỗ lực ultracode, rồi bùng ra cảnh các nhân vật hình biểu tượng Claude đang quay một phim hành động, ẩn dụ cho việc dựng video bằng workflow.",
+  "why": "Prompt viết như brief cho họa sĩ hoạt hình: nói rõ thông điệp của bài đăng, đính kèm video tham chiếu phong cách và mô tả cảnh mở, cảnh chuyển. Đáng học cách biến một ý kỹ thuật khô thành ẩn dụ hình ảnh có nhân vật.",
+  "how": "Dùng khi cần video ngắn minh họa cho bài đăng giới thiệu tính năng. Thay thông điệp, đường dẫn video tham chiếu và mô tả cảnh mở, cảnh chính."
+ },
+ "2103831140033241156": {
+  "title": "Video đầu trang README cho dự án mã nguồn mở",
+  "what": "Video ra mắt 23 giây dựng bằng Remotion cho skill agent trình duyệt jev-browser-skill, đặt ở đầu README trên GitHub: ba dòng tiêu đề chữ động, ba thẻ bước, terminal gõ lệnh thật, màn chia đôi con trỏ điều khiển website và nhật ký hành động của agent, kết bằng lệnh git clone.",
+  "why": "Prompt đưa khẩu hiệu ba câu của dự án và nêu rõ nơi video sẽ đặt, nên mô hình chọn đúng giọng dev tool. Đáng học cách chia màn hình cho thấy cùng lúc hành động và log.",
+  "how": "Dùng cho dự án mã nguồn mở cần video README hoặc trang giới thiệu. Thay tên dự án, khẩu hiệu và thời lượng."
+ },
+ "2103832593355686104": {
+  "title": "Showreel nhà thiết kế motion khổ dọc",
+  "what": "Showreel 15 giây khổ dọc 9:16: mở bằng lời chào của Claude, tường chữ MOTION DESIGN chạy ngược chiều, hạt nổ, nút xoắn hạt 3D, cầu chất lỏng raymarching rồi kết bằng chữ CLAUDE viền.",
+  "why": "Chỉ thêm cụm in portrait mode vào prompt showreel phổ biến là mô hình tự dàn lại bố cục cho khổ dọc. Đáng học rằng một ràng buộc khổ hình nhỏ cũng đổi cách sắp chữ và nhịp cảnh.",
+  "how": "Dùng khi cần reel cho Reels, TikTok hay Shorts. Giữ cụm portrait mode và thay thời lượng, chủ đề."
+ },
+ "2103835273813496100": {
+  "title": "Mẫu phim ra mắt một cảnh liền kiểu keynote Apple",
+  "what": "Phim ra mắt 29 giây cho app in ảnh develop, một cảnh liền từ chữ thương hiệu qua lá khẩu mở ra ảnh, lưới ảnh, thanh trượt kính lỏng chỉnh ánh sáng, màn khóa, điện thoại, trang web trên Mac, đặt hàng, rồi treo tranh lên bức tường thật. Mọi cảnh sinh ra từ cảnh trước, khớp 120 BPM và lặp được.",
+  "why": "Quy tắc trung tâm của prompt là không mờ chuyển, không cắt, vật thể đổi hình để thành cảnh sau. Đáng học cách tạo kính lỏng bằng bản sao cảnh nền lọc qua bản đồ dịch chuyển SVG, và một khối đen biến hình qua các trạng thái đơn hàng.",
+  "how": "Dùng cho video ra mắt sản phẩm tiêu dùng có nhiều ảnh đẹp. Điền tên thương hiệu một từ, 9 đến 12 ảnh, bài nhạc khoảng 120 BPM và clip tường có bóng cây, rồi chỉnh luồng cảnh theo hành trình người dùng của bạn."
+ },
+ "2103837519615774895": {
+  "title": "Vũ trụ sinh ra từ một chữ gõ vào",
+  "what": "Một tác phẩm hình và tiếng chạy thời gian thực: người xem gõ một từ, từ đó gieo ra cả một vũ trụ gồm sao, thiên hà và hành tinh vẽ bằng shader. Nhạc do Web Audio phát trực tiếp, không dùng file tài nguyên nào.",
+  "why": "Prompt gần như không có chỉ dẫn kỹ thuật, chỉ thúc mô hình làm thứ gây ấn tượng và tránh AI slop, nên kết quả cho thấy mô hình tự chọn hướng generative với shader và âm thanh tổng hợp. Ý tưởng lấy dữ liệu người dùng nhập làm hạt giống cho cả hình lẫn tiếng đáng mượn.",
+  "how": "Dùng khi cần một màn mở đầu tương tác hoặc nền trình diễn mang tính cá nhân hóa, mỗi người xem ra một kết quả khác. Nên viết lại prompt cho cụ thể hơn: nêu thứ được gieo từ chữ nhập vào, bảng màu và thời lượng mong muốn thay cho các câu khích lệ chung chung."
+ },
+ "2103841917603635633": {
+  "title": "Để mô hình tự chọn đề tài và phong cách để khoe",
+  "what": "Video 45 giây về những gì xảy ra trong một giây: ánh sáng đi quanh Trái Đất, Trái Đất quay, tia sét, Mặt Trời cháy, nhịp tim, trẻ sơ sinh ra đời, mỗi ý là một con số lớn chạy lên. Có thanh tiến trình một giây mảnh màu cam và nhãn chương ở góc.",
+  "why": "Prompt cấm dùng bộ nhớ và skill cũ, để mô hình tự chọn phong cách, đề tài. Kết quả cho thấy cách khóa bố cục số liệu: số lớn không chân, dòng phụ nghiêng có chân và dòng nhỏ đơn cách.",
+  "how": "Dùng khi muốn mô hình đề xuất ý tưởng mới mà không bị kéo theo dự án cũ. Giữ câu cấm dùng bộ nhớ, thay phần còn lại bằng mục tiêu của bạn."
+ },
+ "2103845264649761062": {
+  "title": "Video giới thiệu mdfor.dev theo kiểu showreel",
+  "what": "Video giới thiệu 30 giây cho mdfor.dev, trình soạn Markdown: tiêu đề có chân gõ ra, tia nắng bung làm chuyển cảnh, giao diện chia đôi bên trái gõ Markdown bên phải hiện bản xem trước, các thẻ tính năng đánh số và chuyển chế độ tối, kết bằng logo.",
+  "why": "Prompt yêu cầu dùng tài sản thật của sản phẩm nhưng không đặt ảnh chụp thô, mà tách thành thành phần và biểu tượng để làm động được. Câu đòi chuyển động khớp nhạc và giống video sản xuất thật, không phải bản demo, giúp đẩy chất lượng.",
+  "how": "Dùng cho video giới thiệu công cụ, app web. Thay đường dẫn sản phẩm và thời lượng, giữ đoạn yêu cầu tách ảnh chụp thành thành phần."
+ },
+ "2103846630088716687": {
+  "title": "Reel khối 3D và chữ render hoàn toàn bằng Python",
+  "what": "Reel 20 giây, 60fps, mọi khung hình và nhạc đều viết bằng Python, gồm một bộ render 3D tự viết với 784 khối lập phương và một font chữ biến hình.",
+  "why": "Prompt đặt bối cảnh khán giả cụ thể (trình chiếu cho 10.000 người trên X) và trao toàn quyền sáng tạo. Đáng xem cách mô hình tự chọn làm khó mình bằng việc viết bộ render từ đầu.",
+  "how": "Dùng khi muốn thử mô hình làm video không phụ thuộc thư viện đồ họa. Thay thời lượng, khán giả mục tiêu và có thể chỉ định ngôn ngữ hay công cụ."
+ },
+ "2103872213812158914": {
+  "title": "Reel hạt và chữ động mang chất tương lai",
+  "what": "Reel 15 giây, 60fps, gồm trường hạt 3D, kinetic type và các cú cắt khớp nhịp.",
+  "why": "Đây là prompt chỉnh sửa vòng sau, không mô tả lại nội dung mà chỉ đẩy mức độ: chi tiết hơn, tương lai hơn, như studio lớn làm. Đáng học cách dùng phản ứng mong muốn của người xem làm thước đo.",
+  "how": "Dùng ở vòng hai khi bản đầu đã ổn về cấu trúc nhưng còn nhạt. Thay tính từ mục tiêu và câu mô tả cảm giác bạn muốn người xem có."
+ },
+ "2103882415299350878": {
+  "title": "Không chiến hoàng hôn kiểu Porco Rosso",
+  "what": "Bản dựng Three.js lấy cảm hứng từ trận không chiến lúc hoàng hôn trên biển trong phim Porco Rosso của Miyazaki: chiến đấu cơ sơn trắng xanh đỏ bay qua mây tích tím, mặt biển lấp lánh, chữ \"just breathe.\" hiện lên.",
+  "why": "Mây tô toon-shading màu tím trên nền cam hoàng hôn, camera khóa theo máy bay khi lộn vòng để đường chân trời xoay, vệt khói trắng tạo cảm giác tốc độ. Tiêu đề chữ có chân hiện dần từng từ rồi chốt lại, kèm lower-third chữ hoa nhỏ ghi tên động tác bay.",
+  "how": "Hợp với video tĩnh tâm, quote video hay intro mang không khí phim hoạt hình Nhật. Prompt gốc chỉ một câu, nên thay bộ ba gồm phương tiện và màu sơn, thời điểm và bối cảnh, câu chữ trên hình."
+ },
+ "2103896101120356793": {
+  "title": "Chèn hoạt hình giải thích vào bản dựng podcast",
+  "what": "Quy trình nhiều agent tìm 35 đến 50 khoảnh khắc trong một tập podcast để chèn hoạt hình toàn màn hình bằng HyperFrames, đúng nhận diện thương hiệu, người đang nói luôn nằm trong ô nhỏ góc dưới phải.",
+  "why": "Prompt chia vai rõ: một agent ở mức nỗ lực cao tìm điểm chèn kèm ý tưởng, agent mức trung bình dựng, agent mức cao chấm một lần, chỉ lỗi quá nặng mới làm lại. Đáng học các luật biên tập như lời trên hình phải đúng với lời nói, không bịa số liệu, và chừa vài giây mặt người giữa các đồ họa.",
+  "how": "Dùng cho podcast, phỏng vấn, video nói chuyện dài cần thêm hình. Thay tên tập, thư mục thương hiệu, danh sách khoảnh khắc bắt buộc và các link tham chiếu phong cách."
+ },
+ "2103964025683927166": {
+  "title": "Phim biên niên sử thi về văn minh Trung Hoa",
+  "what": "Phim 3,5 phút điểm lịch sử Trung Hoa, xen kẽ hai phong cách nét mực trên giấy xuyến và vẽ vàng trên nền đen, dựng theo nhạc ngũ cung có BPM tăng dần qua từng thời kỳ.",
+  "why": "Prompt dùng nhạc làm đồng hồ: nhạc cụ tiến hóa từ sáo xương đến dàn nhạc, mọi điểm cắt rơi đúng phách, và yêu cầu chốt lưới phách cùng bảng phân cảnh trước khi render. Hệ thống hình được quy định chặt: mỗi quyển một màu chủ và hoa văn theo thời đại, chữ thư pháp hiện theo cụm từ, HUD ấn son, chuyển quyển bằng cú đóng ấn kèm tiếng trống chuông.",
+  "how": "Hợp với video lịch sử, biên niên thương hiệu hay bất kỳ nội dung chia theo giai đoạn. Thay chủ đề, hai phong cách xen kẽ, bộ hoa văn và nhạc cụ theo văn hóa bạn kể, giữ yêu cầu khóa nhịp trước khi dựng."
+ },
+ "2104001561718591563": {
+  "title": "Bài viết trên note thành đoạn hoạt hình 30 giây",
+  "what": "Hoạt hình JavaScript khoảng 30 giây chuyển thể từ một bài blog trên note.com, chỉ từ một câu lệnh tiếng Nhật và đường dẫn bài viết.",
+  "why": "Prompt chỉ một câu, nội dung nằm hết trong bài viết. Đáng học cách tách việc: bài viết lo ý, prompt chỉ chốt thời lượng và công cụ.",
+  "how": "Dùng khi muốn biến bài blog, bản tin thành video ngắn. Thay đường dẫn bài viết và thời lượng mong muốn."
+ },
+ "2104019121377583446": {
+  "title": "Hiệp sĩ khổng lồ canh thành phố neon, pixel art",
+  "what": "Tranh pixel art \"Neon Sovereign\": một hiệp sĩ khổng lồ ngồi trên ngai nhìn xuống thành phố neon về đêm, thác nước đổ xuống bậc thang, đám đông tụ ở quảng trường bên dưới.",
+  "why": "Prompt gồm một tên tác phẩm và một câu mô tả cảnh có đủ chủ thể, bối cảnh, chi tiết chuyển động và tiền cảnh. Câu ngắn mà có cấu trúc rõ đủ để dựng một khung cảnh có chiều sâu.",
+  "how": "Hợp với ảnh bìa động, nền stream hay khung mở đầu video giả tưởng. Thay chủ thể, thành phố và chi tiết chuyển động trong câu mô tả."
+ },
+ "2104021881229869394": {
+  "title": "Lật xem cuốn sổ phác thảo riêng của Claude",
+  "what": "Video khoảng 2,5 phút lật qua cuốn sổ 20 trang Claude tự điền suy nghĩ bằng nét chữ tay tự tạo, sổ nằm dưới đèn bàn ấm, trang cong thật bằng Three.js. Mỗi trang tự vẽ ra từng nét, kèm nhạc piano nỉ tổng hợp bằng code và tiếng bút chì, giấy.",
+  "why": "Prompt tả chi tiết vật thể thật: sổ cũ có dây chun, một trang bị xé rồi dán lại, trang cuối để trống. Phần cuối hướng dẫn quy trình render tất định: cố định seed, bước khung cố định trong trình duyệt headless, render nhạc offline rồi ghép bằng ffmpeg.",
+  "how": "Dùng cho video kể chuyện mang tính cá nhân, nhật ký, giới thiệu thương hiệu theo lối thủ công. Thay chủ đề nội dung các trang, số trang và tỉ lệ khung trong ngoặc vuông."
+ },
+ "2104022075782332440": {
+  "title": "Mẫu phim ra mắt app gọi món một cảnh liền",
+  "what": "Phim ra mắt 15 giây, 1080p, một cảnh liền khớp bài nhạc 130 BPM: người dùng gõ yêu cầu món cay giòn, nút gửi thành chảo xóc nguyên liệu, đến drop thì thẻ món ăn bung ra, chọn món, đặt hàng, rồi nút đen phủ cả trang để kết bằng lời nhắn và logo. Render bằng Playwright và ffmpeg.",
+  "why": "Prompt có mặc định cho mọi đầu vào nên chạy được ngay, và chia cảnh theo số nhịp cụ thể, đặt drop đúng nhịp 12. Đáng học cách mỗi phần tử đổi hình thành cảnh sau, cấm mờ chuyển và cấm máy quay đổi chiều.",
+  "how": "Dùng cho app có luồng hỏi và trả kết quả như gợi ý, đặt chỗ, mua sắm. Thay sản phẩm, câu yêu cầu người dùng gõ, ảnh thẻ kết quả, bài nhạc và logo."
+ },
+ "2104044910769016888": {
+  "title": "Git là gì, video cho người mới bắt đầu",
+  "what": "Video gần 7 phút giọng đọc tiếng Trung giải thích Git cho người chưa biết gì về máy tính: tính phân tán, ba vùng gồm thư mục làm việc, vùng staging và kho, các lệnh thường dùng và sơ đồ nhánh. Làm bằng JavaScript, được phép tìm kiếm trên mạng.",
+  "why": "Sơ đồ ba vùng có các chip file di chuyển khi git add, git commit; cửa sổ terminal gõ lệnh đặt cạnh thẻ định nghĩa; đồ thị nhánh tách, thêm commit rồi gộp lại có dấu \"bạn đang ở đây\". Bộ đếm chương góc trên và phụ đề đồng bộ giọng đọc ở dưới.",
+  "how": "Hợp với video dạy công cụ lập trình cho người mới. Thay công cụ cần dạy, nêu đối tượng người xem, ngôn ngữ giọng đọc và danh sách lệnh hay tính năng cần giải thích."
+ },
+ "2104045641538412658": {
+  "title": "Intro cho Folio, kèm nhạc tự soạn",
+  "what": "Đoạn 15 giây giới thiệu Folio, dịch vụ dàn trang bản tin và bài viết thành tạp chí e-ink hằng tuần: mở bằng cận cảnh một vi nang mực điện tử, nang vỡ thành lưới điểm ảnh, ba bước thu thập, biên tập, gửi đi, rồi chữ Folio. Nhạc do Opus tự soạn và cắt khớp nhịp.",
+  "why": "Prompt ngắn nhưng gắn đủ ba việc: giới thiệu sản phẩm làm gì, tự làm nhạc, khớp nhịp. Kết quả cho thấy cách chọn một ẩn dụ vật liệu đúng sản phẩm (mực e-ink) và đảo màu đen sang trắng như trang e-ink làm mới để chuyển hồi.",
+  "how": "Dùng cho intro sản phẩm có một hình ảnh đặc trưng. Thay đường dẫn sản phẩm và giữ yêu cầu làm nhạc, khớp nhịp."
+ },
+ "2104048491295318358": {
+  "title": "Nhạc chiến đấu RPG kiểu Famicom kèm motion graphics",
+  "what": "Opus 5.5 tự viết một phần mềm làm nhạc đơn giản, sáng tác bài nhạc chiến đấu RPG kiểu Famicom, rồi làm một tác phẩm motion graphics đi theo bài nhạc đó.",
+  "why": "Prompt tiếng Nhật xếp việc theo thứ tự: dựng công cụ trước, làm nhạc, rồi dựng hình theo nhạc với vai trò họa sĩ game chuyên nghiệp. Làm nhạc trước giúp hình có khung nhịp để bám theo.",
+  "how": "Hợp với intro kênh game, video retro hay đoạn chuyển cảnh mang chất 8-bit. Thay thể loại nhạc, máy chơi game tham chiếu và vai trò của người làm hình."
+ },
+ "2104068536041959719": {
+  "title": "Bản tin game mới ra trên Steam",
+  "what": "Bản tin motion graphics 60 giây tiếng Nhật giới thiệu 6 game mới ra trên Steam trong hai ngày, mỗi game một trang và trang cuối tổng hợp. Tác giả đặt cho nó chạy tự động mỗi sáng.",
+  "why": "Mẫu trang thống nhất: nhãn \"GAME 01/06\", thể loại, tiêu đề lớn, một câu điểm nhấn, ba ý đánh số, thanh dữ liệu giá và tỷ lệ đánh giá có ghi nguồn. Mỗi game có hoạt ảnh vector riêng ở panel phải, thanh tiến độ trên cùng và màu nhấn đổi theo từng mục.",
+  "how": "Hợp với bản tin định kỳ dạng danh sách: sản phẩm mới, tin công nghệ, phim chiếu rạp. Thay nguồn tin, khoảng ngày và góc nhìn người xem, giữ khung 60 giây một mục một trang."
+ },
+ "2104070024575242622": {
+  "title": "Video bảng trắng hướng dẫn dùng skill Lemo-Opuscar",
+  "what": "Hướng dẫn 71 giây kiểu bảng trắng về cách cài skill mã nguồn mở Lemo-Opuscar (39 phong cách video cho Opus 5.5) trong Claude Code và làm video từ một câu, đi qua cài đặt, hỏi đáp, phân cảnh đến thành phẩm.",
+  "why": "Ảnh chụp thật của terminal và giao diện chat được lồng vào khung vẽ tay, có vòng bút đỏ khoanh chú thích. Tay cầm bút vào khung viết vẽ, robot pixel làm linh vật chạy giữa các bước, phụ đề hai dòng Anh Trung và nhãn thời gian chờ như \"about 30 min\".",
+  "how": "Hợp với video hướng dẫn dùng phần mềm, plugin hay quy trình làm việc. Thay tên công cụ và phong cách trong ngoặc vuông, chuẩn bị sẵn ảnh chụp màn hình thật để chèn."
+ },
+ "2104085484347818226": {
+  "title": "Mẫu hoạt cảnh nhận thưởng kiểu game mobile",
+  "what": "Mẫu dựng màn nhận thưởng như mở rương hay lên hạng trong game mobile: vật thể 3D Three.js tô kiểu hoạt hình, chạy qua năm giai đoạn chờ, lên cấp, tích lực, bùng nổ và mở thưởng. Chuyển động dùng timeline GSAP, âm thanh tổng hợp bằng Web Audio.",
+  "why": "Prompt rất chi tiết, viết như bản giao việc cho họa sĩ kỹ thuật: cách làm viền bằng dò cạnh hậu kỳ thay vì mặt lưng phóng to, ánh sáng phải mềm không có cạnh cứng, và danh sách tự kiểm tra bằng ảnh chụp ở từng khoảnh khắc. Đáng học cách ghi luôn các lỗi hay gặp và cách tránh.",
+  "how": "Dùng cho hiệu ứng phần thưởng, mở hộp quà, thăng hạng trong app hoặc minigame. Thay chủ thể trong ngoặc vuông và thang cấp màu, giữ nguyên năm giai đoạn và phần tự kiểm tra."
+ },
+ "2104093497561436573": {
+  "title": "Video quảng bá vỏ in 3D cho bo mạch PCB",
+  "what": "Đoạn hoạt hình quảng bá một chiếc vỏ in 3D thiết kế cho một bo mạch PCB có sẵn. Theo tác giả, bo mạch, các file STL để in và đoạn hoạt hình đều làm hoàn toàn bằng prompt trong Claude Code.",
+  "why": "Dữ liệu chỉ có lời giới thiệu, không có prompt chi tiết. Điểm đáng học là cách nối chuỗi việc: làm sản phẩm trước, rồi dùng chính dữ liệu thiết kế đó để dựng video giới thiệu.",
+  "how": "Hợp khi bạn có sản phẩm phần cứng hay thiết kế kỹ thuật và cần video ra mắt. Viết prompt nêu tên sản phẩm, các bộ phận cần khoe và trình tự lắp ráp muốn thể hiện."
+ },
+ "2104094723887501736": {
+  "title": "Động cơ tên lửa Raptor 3 tháo rời được trên trình duyệt",
+  "what": "Mô hình tương tác giải thích động cơ tên lửa hoạt động ra sao: cắt mở Raptor 3, theo dòng oxy và methane qua hai bơm tuabin, rồi tăng ga để xem các vòng sốc trong luồng khí xả dịch chuyển.",
+  "why": "Dữ liệu chỉ có lời giới thiệu của tác giả, không có prompt chi tiết. Điều đáng học là cách đặt mục tiêu: dùng mô hình tháo rời được để giải thích một hệ thống kỹ thuật, với ba thao tác rõ ràng là cắt mở, theo dòng chảy và điều chỉnh tham số.",
+  "how": "Hợp với video giải thích kỹ thuật cần cho người xem nhìn vào bên trong máy móc. Khi viết prompt, nêu tên thiết bị, các dòng vật chất cần lần theo và tham số người xem được chỉnh."
+ },
+ "2104191375809954126": {
+  "title": "Mẫu một phần tử UI biến hình khớp nhịp nhạc",
+  "what": "Video vuông 30 giây, 1080x1080, một phần tử UI không cắt cảnh, biến hình qua 8 đến 12 trạng thái của sản phẩm, mỗi lần đổi rơi đúng nhịp. Render bằng Playwright, chụp nhiều khung phụ để có motion blur.",
+  "why": "Prompt có quy trình rõ: đo bài nhạc bằng numpy để tìm BPM, nhịp và đoạn drop, mỗi trạng thái đứng ít nhất 2 nhịp cho dễ đọc, và hai điểm dừng chờ duyệt (danh sách trạng thái, rồi bảng khung theo nhịp). Có cả mẹo kỹ thuật như di chuyển con trỏ bằng left và top để tránh lệch khi phóng to.",
+  "how": "Dùng cho video giới thiệu luồng thao tác của app hay web. Thay đường dẫn bài nhạc và tên sản phẩm hoặc ý tưởng trong ngoặc vuông, có thể chỉnh danh sách trạng thái ví dụ."
+ },
+ "2105833401127157886": {
+  "title": "Xúc xắc thạch dẻo mô phỏng vật thể mềm",
+  "what": "Một file HTML với những viên xúc xắc trong mờ như kẹo dẻo, chuyển động như vật thể mềm thật, render bằng WebGPU thuần với shader WGSL, không dùng three.js.",
+  "why": "Prompt nêu rõ ràng buộc kỹ thuật (một file, không bước build, WebGPU thuần) và yêu cầu có thẻ thông báo dự phòng gọn gàng khi trình duyệt không hỗ trợ WebGPU. Phần prompt trong dữ liệu bị cắt ngang nên không rõ các yêu cầu còn lại.",
+  "how": "Hợp với cảnh sản phẩm vui mắt, quảng cáo bánh kẹo hay đoạn chuyển cảnh trong video. Thay vật thể và chất liệu, giữ yêu cầu dự phòng nếu cần chạy trên nhiều máy."
+ },
+ "2108394129000661428": {
+  "title": "Bài trình bày tương tác về hiệu ứng mạng lưới",
+  "what": "Bài trình bày HTML tương tác giải thích hiệu ứng mạng lưới, số kết nối tăng theo cấp số khi số người dùng tăng. Có thanh trượt để người xem chỉnh số người dùng và thấy mật độ kết nối đổi ngay, kèm giọng đọc đồng bộ với hình.",
+  "why": "Prompt gắn khái niệm với một con số cụ thể làm ví dụ (5 lần người dùng thành 27 lần kết nối) và chọn đúng một điều khiển, thanh trượt, để người xem tự thấy quy luật.",
+  "how": "Hợp với video giải thích khái niệm kinh doanh hay toán học có quan hệ tăng trưởng. Thay khái niệm, con số ví dụ và tham số mà thanh trượt điều khiển."
+ },
+ "2108458503367200908": {
+  "title": "Video 3D phổ biến khoa học về gãy vỡ cụm bàn đạp",
+  "what": "Video phổ biến khoa học 3D dài 5 phút: three.js dựng lại cụm bàn đạp, shader tính bản đồ nhiệt ứng suất thời gian thực, vết nứt dài thêm sau mỗi lần đạp, phụ đề song ngữ Trung Anh. Giọng đọc ElevenLabs, không dùng khung hình có sẵn nào.",
+  "why": "Dữ liệu là lời giới thiệu của tác giả, không có prompt chi tiết. Điều đáng học là cách hình hóa một hiện tượng vô hình bằng bản đồ nhiệt ứng suất và cho vết nứt lớn dần theo từng lần chịu lực.",
+  "how": "Hợp với video giải thích kỹ thuật cơ khí, vật liệu hay phân tích hỏng hóc. Khi viết prompt, nêu bộ phận cần dựng, đại lượng cần hiển thị bằng màu và quá trình hỏng diễn ra thế nào."
+ },
+ "2108541814718292438": {
+  "title": "Vườn thiền tương tác, kéo chuột vẽ rãnh cát",
+  "what": "Mô phỏng vườn thiền trong một file HTML: kéo chuột trên cát để cào rãnh, có 5 tảng đá phủ rêu, 2 đèn đá và một cây phong 420 lá, cùng nút đổi giờ trong ngày để mặt trời xuống thấp lúc giờ vàng cho mỗi rãnh đổ bóng.",
+  "why": "Prompt cho số liệu cụ thể đến từng chi tiết: lưới heightmap, số rãnh và gờ mỗi nét kéo, số đá, đèn, lá. Nó còn nêu trước các lỗi cần tránh như rêu lộ qua cát, đá vuông vức, đèn nằm ngoài khung.",
+  "how": "Hợp với video thư giãn, nền thiền định hay quảng cáo sản phẩm mang tinh thần tối giản. Thay bối cảnh và tương tác, giữ cách ghi số liệu cụ thể và danh sách lỗi cần tránh."
+ },
+ "2108936279081566609": {
+  "title": "Núi lửa Krakatoa phun trào thời gian thực",
+  "what": "Hoạt hình núi lửa Krakatoa chạy thời gian thực trong một file HTML dùng WebGL2 thuần, với mô phỏng chất lưu Navier-Stokes 3D cho khói và hiệu ứng dòng dung nham.",
+  "why": "Prompt ngắn nhưng chỉ đúng kỹ thuật cần dùng (Navier-Stokes 3D cho khói) thay vì chỉ nói muốn khói đẹp. Gọi tên phương pháp giúp mô hình đi đúng hướng mô phỏng.",
+  "how": "Hợp với video địa lý, thiên tai hay khoa học trái đất. Thay hiện tượng và gọi tên phương pháp mô phỏng phù hợp với nó."
+ }
+}

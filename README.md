@@ -61,6 +61,25 @@ Không chạy khi con trỏ đang ở ô nhập liệu.
 | Cmd/Ctrl+Z | Hoàn tác |
 | Cmd/Ctrl+Shift+Z | Làm lại (nút "Làm lại" luôn bật; không còn gì để làm lại thì hiện thông báo) |
 
+## Thư viện mẫu
+
+Tab Thư viện mẫu có bốn mục, tìm được bằng tiếng Việt có dấu hay không dấu, hoặc bằng tiếng Anh:
+
+- **Video mẫu:** khoảng 1.250 video làm bằng Claude Opus 5.5, gộp từ sáu danh sách công khai trên GitHub. 200 video tuyển chọn có giải thích tiếng Việt: video làm gì, điều đáng học, cách dùng cho dự án. Video còn lại có tên tiếng Việt và prompt gốc. Lọc được theo thể loại hoặc chỉ xem mẫu tuyển chọn.
+- **Cảnh mẫu:** các kỹ thuật dựng cảnh hay gặp (chữ động, HUD, biến hình, khớp beat…), kèm gợi ý để dán vào prompt và video ví dụ, cùng các hướng cảnh của plugin opus-video.
+- **Phong cách:** 12 công thức phong cách có bản dịch, cùng các phong cách của plugin opus-video.
+- **Prompt mẫu:** khung prompt video chuyên nghiệp để điền, các prompt được lưu nhiều nhất kèm phân tích cấu trúc, và bộ công cụ đạo diễn (quy trình, cách góp ý, kiểm tra trước khi render).
+
+Không cần mở dự án vẫn xem và chép prompt được. Khi đã mở dự án, "Dùng cho dự án" gửi mẫu cho đạo diễn kèm phần giải thích và đoạn trích prompt.
+
+Ảnh bìa không nằm trong repo. Tải một lần về `~/.cache/motion-studio/library/thumbs` (khoảng 25 MB, đổi chỗ bằng `MOTION_STUDIO_THUMBS`):
+
+```bash
+node scripts/library-thumbs.mjs
+```
+
+Dữ liệu nằm trong `library/library.json`, dựng bằng `scripts/build-library.mjs` từ các repo ở commit cố định. Nguồn, giấy phép và cách dựng lại ghi trong [library/SOURCES.md](library/SOURCES.md). Phần tiếng Việt nằm trong `library/vi/`.
+
 ## Bộ lớp dựng
 
 Nút "Xuất bộ lớp dựng" trong tab Xuất bản xuất dự án thành các lớp để dựng tiếp trong Concat, CapCut, DaVinci hay Premiere. Chạy tay bằng lệnh:
@@ -85,6 +104,7 @@ HyperFrames không render riêng một đoạn, nên lệnh render cả video m�
 | `OPUS_VIDEO_HOME` | Thư mục plugin opus-video, khi không nằm ở `~/.claude/skills/opus-video` |
 | `OPUS_STUDIO_ROOT` | Thư mục chứa các dự án |
 | `OPUS_STUDIO_STATE` | File trạng thái (mặc định `~/.config/opus-video/studio.json`, chmod 600) |
+| `MOTION_STUDIO_THUMBS` | Thư mục ảnh bìa của thư viện mẫu (mặc định `~/.cache/motion-studio/library/thumbs`) |
 
 ## Tương thích
 

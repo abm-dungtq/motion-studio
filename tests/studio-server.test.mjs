@@ -214,6 +214,18 @@ test("bundle: bad ratio, missing reframe and a folder without project.json are r
   assert.equal((await http("GET", "/api/jobs?name=demo")).json.length, 0);
 });
 
+test("library: every section answers without a query, a bad kind is 400, thumbnails only by numeric id", async () => {
+  for (const kind of ["videos", "scenes", "styles", "prompts"]) {
+    const r = await http("GET", `/api/library?kind=${kind}`);
+    assert.equal(r.status, 200, r.text);
+    assert.ok(Array.isArray(r.json.items) && typeof r.json.total === "number", kind);
+  }
+  assert.ok((await http("GET", "/api/library?kind=scenes&limit=100")).json.items.some((s) => s.source === "opus-video"));
+  assert.equal((await http("GET", "/api/library?kind=cases")).status, 400);
+  assert.ok([403, 404].includes((await http("GET", "/library/thumb/..%2Fpackage.json")).status));
+  assert.equal((await http("GET", "/library/thumb/0")).status, 404);
+});
+
 test("GET /api/agent reports claude, runner, last job and ffmpeg; no claude on PATH is found: false", async () => {
   const keys = ["claude", "runner", "last_job", "ffprobe", "ffmpeg"];
   const prevPath = process.env.PATH;

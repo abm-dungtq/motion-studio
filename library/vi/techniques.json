@@ -1,0 +1,381 @@
+{
+ "animated-chart": {
+  "name": "Biểu đồ tự vẽ",
+  "what": "Biểu đồ đường, cột hay vòng tròn tự vẽ ra theo thời gian, điểm nổi bật được chú thích bằng nhãn hoặc màu riêng. Mỗi biểu đồ đi kèm một câu giải thích ngắn với con số chính được tô màu.",
+  "when": "Dùng khi cần chứng minh một luận điểm bằng dữ liệu trong video giải thích hoặc giới thiệu sản phẩm.",
+  "prompt_hint": "chart draws itself, one highlighted bar or point gets a callout, key number in the brand colour",
+  "tags": [
+   "data-viz",
+   "growth-chart"
+  ]
+ },
+ "beat-sync": {
+  "name": "Khớp hình theo beat",
+  "what": "Mọi lần cắt, va chạm, đổi màu đều rơi đúng nhịp nhạc, có video còn cắt sớm hai khung trước beat để mắt cảm thấy trúng nhịp. Nhạc và hình chạy chung một lưới thời gian.",
+  "when": "Dùng cho mọi video có nhạc nền rõ nhịp, nhất là promo ngắn và showreel.",
+  "prompt_hint": "hard cuts land on bar boundaries of a fixed BPM grid, every shot enters already moving",
+  "tags": [
+   "beat-sync",
+   "bpm-sync",
+   "music-sync",
+   "sound-sync"
+  ]
+ },
+ "before-after": {
+  "name": "Trước và sau",
+  "what": "Hai trạng thái đặt cạnh nhau hoặc chồng lên nhau, một thanh quét dọc hay thanh trượt lướt qua biến bản cũ xám xịt thành bản mới, thường kèm chữ cũ bị gạch đi. Kết quả của sản phẩm hiện ra rõ ràng.",
+  "when": "Dùng khi giá trị sản phẩm nằm ở sự thay đổi, ví dụ chỉnh ảnh, tối ưu, tiết kiệm thời gian.",
+  "prompt_hint": "before/after card swept by a vertical light bar that turns the grey BEFORE into the polished AFTER",
+  "tags": [
+   "before-after"
+  ]
+ },
+ "bento-grid": {
+  "name": "Lưới bento",
+  "what": "Màn hình chia thành nhiều ô bo góc to nhỏ khác nhau, mỗi ô chứa một tính năng, một biểu đồ nhỏ hay một con số, các ô lần lượt bật vào. Người xem thấy toàn cảnh sản phẩm trong một khung.",
+  "when": "Dùng để tóm tắt nhiều tính năng cùng lúc, thường đặt gần cuối video giới thiệu sản phẩm.",
+  "prompt_hint": "bento grid of feature cards popping in one by one, each tile animating its own mini chart or stat",
+  "tags": [
+   "bento-grid"
+  ]
+ },
+ "bouncing-ball": {
+  "name": "Bóng nảy co giãn",
+  "what": "Một quả bóng nảy trên đường nền, bẹp lại khi chạm đất và dài ra khi bay, để lại vệt bóng mờ thể hiện khoảng cách giữa các khung. Đây là bài học kinh điển về nguyên lý chuyển động.",
+  "when": "Dùng khi giải thích nguyên lý animation hoặc mở đầu showreel của người làm motion.",
+  "prompt_hint": "bouncing ball with squash and stretch and an onion-skin ghost trail showing spacing",
+  "tags": [
+   "bouncing-ball",
+   "squash-stretch"
+  ]
+ },
+ "browser-mockup": {
+  "name": "Khung trình duyệt mô phỏng",
+  "what": "Trang web thật được đặt trong một khung trình duyệt mô phỏng, thanh địa chỉ có thể gõ tên miền, con trỏ bấm nút và thông báo nhỏ bật lên. Người xem hiểu ngay đây là sản phẩm chạy trên web.",
+  "when": "Dùng khi giới thiệu website, portfolio hoặc công cụ trực tuyến.",
+  "prompt_hint": "browser mockup of the real website with the cursor clicking the CTA and a toast confirming the action",
+  "tags": [
+   "browser-mockup",
+   "browser-frame"
+  ]
+ },
+ "counter": {
+  "name": "Số đếm chạy",
+  "what": "Một con số lớn chạy lên theo kiểu đồng hồ cơ, các chữ số lăn có nhòe chuyển động rồi dừng ở giá trị cuối, thường kèm đường tăng trưởng vẽ phía sau hoặc nhãn trạng thái. Có biến thể chữ số xáo trộn ngẫu nhiên trước khi chốt.",
+  "when": "Dùng khi muốn nhấn một số liệu ấn tượng như số người dùng, doanh thu hay tốc độ.",
+  "prompt_hint": "odometer counter rolling digits with blur up to the final number while a growth line draws behind it",
+  "tags": [
+   "counter",
+   "count-up",
+   "stat-counters",
+   "stat-callout"
+  ]
+ },
+ "cursor-driven-ui": {
+  "name": "Con trỏ dẫn dắt giao diện",
+  "what": "Một con trỏ chuột trượt vào, phóng to khi rê qua, co lại khi bấm, và mỗi cú bấm hay kéo đều làm giao diện đổi trạng thái thật. Video kết thường bằng cảnh con trỏ bấm nút kêu gọi hành động.",
+  "when": "Dùng khi demo một luồng thao tác trong sản phẩm web hoặc phần mềm.",
+  "prompt_hint": "cursor glides in, grows on hover, shrinks on press, and every click drives a real UI state change",
+  "tags": [
+   "cursor-driven",
+   "cursor",
+   "cta-click"
+  ]
+ },
+ "dot-matrix": {
+  "name": "Hình dựng từ ma trận chấm",
+  "what": "Biểu tượng, quả địa cầu, thanh tiến trình hay con số đều được vẽ bằng các chấm rời, chấm có thể lật đặc rỗng để biểu thị tỷ lệ hoặc rơi xuống xếp thành cột. Cả video dùng chấm làm ngôn ngữ hình ảnh chung.",
+  "when": "Dùng khi muốn trực quan hóa tỷ lệ phần trăm hoặc tạo bản sắc thị giác nhất quán cho thương hiệu công nghệ.",
+  "prompt_hint": "dot-matrix motif as the single visual language, dots flip filled or hollow to show a percentage",
+  "tags": [
+   "dot-matrix",
+   "dot-grid"
+  ]
+ },
+ "easing-curve-demo": {
+  "name": "Trình diễn đường cong easing",
+  "what": "Đường cong cubic-bezier được vẽ ra cùng tay nắm, một chấm chạy theo nó, hoặc vài quả bóng đua song song mỗi quả một kiểu easing. Có thể kèm thanh thời gian dưới đáy với điểm keyframe hình thoi.",
+  "when": "Dùng trong video dạy motion hoặc showreel muốn chứng minh sự chăm chút về nhịp.",
+  "prompt_hint": "cubic-bezier easing curve drawn with handles, six balls racing side by side with linear, ease-in-out, expo, back, elastic and bounce",
+  "tags": [
+   "easing-demo",
+   "easing-curve",
+   "motion-principles",
+   "timeline-scrubber"
+  ]
+ },
+ "end-card": {
+  "name": "Thẻ kết",
+  "what": "Khung cuối gom logo, câu khẩu hiệu, đường dẫn trong viên bo tròn và một nút kêu gọi hành động, đôi khi có con trỏ bấm vào nút. Mọi thứ đứng yên đủ lâu để người xem ghi nhớ.",
+  "when": "Dùng ở giây cuối của mọi video quảng bá cần người xem làm một việc cụ thể.",
+  "prompt_hint": "end card with logo, tagline and URL pill, cursor clicks the single CTA button",
+  "tags": [
+   "end-card",
+   "cta-end-card",
+   "cta"
+  ]
+ },
+ "flow-field": {
+  "name": "Trường dòng chảy",
+  "what": "Những vệt hạt hoặc đoạn thẳng ngắn chảy theo một trường vector, uốn thành dải lụa hoặc xếp hàng để thành chữ. Chuyển động mềm, hữu cơ, khó làm bằng keyframe tay.",
+  "when": "Dùng để biểu diễn dữ liệu khối lượng lớn hoặc làm nền sống động cho cảnh trừu tượng.",
+  "prompt_hint": "flow-field particle streaks forming a morphing ribbon, short line segments aligning to spell a word",
+  "tags": [
+   "flow-field"
+  ]
+ },
+ "glitch-rgb-split": {
+  "name": "Glitch và tách kênh RGB",
+  "what": "Chữ hoặc hình bị tách thành ba lớp đỏ, lục, lam lệch nhau, giật cục vài khung, có thể kèm nháy đảo màu nền hoặc đường quét ngang. Hiệu ứng tạo cảm giác lỗi tín hiệu, căng thẳng.",
+  "when": "Dùng cho cú dập chữ ở cao trào, chuyển cảnh gắt hoặc video mang chất hype, công nghệ.",
+  "prompt_hint": "RGB channel-split glitch slam on a giant word with an inverted background flash",
+  "tags": [
+   "glitch",
+   "rgb-split",
+   "chromatic-aberration"
+  ]
+ },
+ "halftone": {
+  "name": "Lưới chấm halftone",
+  "what": "Một lưới chấm đều nhau mà kích thước hoặc màu chấm thay đổi như in báo, có sóng lan qua lưới hoặc chấm phản ứng theo một vật đang di chuyển. Hình ảnh và con số cũng có thể dựng lại bằng chấm.",
+  "when": "Dùng làm nền có nhịp, cảnh chuyển hoặc để tạo chất in ấn, đồ họa báo chí.",
+  "prompt_hint": "halftone dot grid with a red wave propagating through it, dot sizes responding to a moving object",
+  "tags": [
+   "halftone"
+  ]
+ },
+ "hud-frame": {
+  "name": "Khung HUD",
+  "what": "Một lớp giao diện cố định phủ lên mọi cảnh: góc ngoặc vuông, timecode chữ monospace, chỉ số BPM, bộ đếm nhịp kiểu BAR n/8 và nhãn chương. Khung này nối các cảnh rời rạc thành một tổng thể có kỷ luật.",
+  "when": "Dùng cho showreel, video kỹ thuật hoặc video nhiều cảnh khác phong cách cần một sợi chỉ chung.",
+  "prompt_hint": "persistent HUD chrome: corner brackets, monospace timecode, BPM readout and a BAR n/8 beat counter on every scene",
+  "tags": [
+   "hud-frame",
+   "hud-chrome",
+   "hud",
+   "hud-overlay",
+   "bpm-hud"
+  ]
+ },
+ "isometric": {
+  "name": "Không gian isometric",
+  "what": "Cảnh nhìn từ góc chéo cố định không phối cảnh, khối lập phương nhô lên thành cột hoặc lan thành sóng, phòng ốc được lấp dần đồ vật. Thông tin số liệu biến thành kiến trúc thu nhỏ.",
+  "when": "Dùng khi muốn biến số lượng thành khối vật thể dễ đếm hoặc minh họa một không gian sản phẩm.",
+  "prompt_hint": "isometric tile grid where cubes extrude upward to represent the count, voxel wave rising and falling",
+  "tags": [
+   "isometric"
+  ]
+ },
+ "kinetic-type": {
+  "name": "Chữ chuyển động (kinetic type)",
+  "what": "Những từ cỡ rất lớn trượt, bật, kéo giãn hoặc dập vào khung hình, thường kèm bản chữ viền rỗng lặp lại phía sau làm nền. Chữ gánh luôn vai trò hình ảnh chứ không chỉ là phụ đề.",
+  "when": "Dùng khi thông điệp ngắn và mạnh, cần người xem đọc được ngay cả khi tắt tiếng.",
+  "prompt_hint": "giant condensed words slam in on the beat, outlined ghost copies stacked behind the solid word",
+  "tags": [
+   "kinetic-type",
+   "kinetic-typography"
+  ]
+ },
+ "liquid-glass": {
+  "name": "Kính lỏng",
+  "what": "Bảng điều khiển hoặc thanh nhập liệu làm bằng kính mờ, viền có dải khúc xạ, ánh bóng và bóng nâng nhẹ trên nền màu pastel. Thanh trượt bằng kính có thể đổi trực tiếp hình phía sau.",
+  "when": "Dùng cho video sản phẩm muốn thẩm mỹ kiểu Apple mới, giao diện mềm và sang.",
+  "prompt_hint": "liquid-glass panel: blurred backdrop, edge refraction band, sheen, rim and lift shadow over a pastel aura",
+  "tags": [
+   "liquid-glass"
+  ]
+ },
+ "logo-reveal": {
+  "name": "Hé lộ logo",
+  "what": "Logo được dựng dần ngay trên màn hình: khung lưới vẽ trước rồi mặt phẳng bay vào lấp đầy, hoặc hạt và vòng xoáy thu về thành biểu tượng, sau đó tên thương hiệu gõ ra bên cạnh.",
+  "when": "Dùng ở cảnh mở hoặc cảnh kết của video thương hiệu, brand sting vài giây.",
+  "prompt_hint": "wireframe nodes draw the logo outline, facets fly in with motion blur, wordmark types out beside the icon",
+  "tags": [
+   "logo-reveal"
+  ]
+ },
+ "mascot": {
+  "name": "Linh vật dẫn chuyện",
+  "what": "Một nhân vật nhỏ của thương hiệu chạy qua các cảnh, đổi biểu cảm theo nội dung và nối các bước với nhau. Nhân vật làm video thân thiện hơn và dễ nhớ hơn.",
+  "when": "Dùng cho video thương hiệu tiêu dùng, hướng dẫn hoặc chương trình giới thiệu bạn bè cần giọng vui vẻ.",
+  "prompt_hint": "brand mascot that reacts to each beat and runs between steps to stitch the scenes together",
+  "tags": [
+   "mascot"
+  ]
+ },
+ "match-cut": {
+  "name": "Match cut và phần tử xuyên cảnh",
+  "what": "Một vật thể giữ nguyên vị trí và hình dáng để nối hai cảnh, ví dụ chấm tròn trong chữ phóng to thành cả khung hình hoặc ảnh bìa đi từ kết quả tìm kiếm sang trang chi tiết. Cảnh đổi mà mắt người xem không bị ngắt.",
+  "when": "Dùng khi muốn chuyển cảnh liền mạch thay cho cắt cứng hoặc hiệu ứng chuyển cảnh có sẵn.",
+  "prompt_hint": "a single coral dot is the continuity carrier between scenes, match-position transition instead of a cut",
+  "tags": [
+   "match-cut",
+   "shared-element-transition"
+  ]
+ },
+ "metaballs": {
+  "name": "Khối lỏng metaball",
+  "what": "Những khối tròn mềm dính vào nhau, tách ra, chảy giọt như chất lỏng, đôi khi có vòng đường đồng mức hoặc bề mặt crôm phản chiếu. Chuyển động trông hữu cơ và dẻo.",
+  "when": "Dùng cho chương về chất lỏng, sự hòa trộn hoặc để nối các nhãn tích hợp bằng xúc tu mềm.",
+  "prompt_hint": "gooey metaball blobs merging and splitting with contour rings",
+  "tags": [
+   "metaballs",
+   "metaball"
+  ]
+ },
+ "motion-blur": {
+  "name": "Nhòe chuyển động",
+  "what": "Vật thể di chuyển nhanh để lại vệt nhòe theo hướng chạy hoặc chuỗi bản sao mờ dần phía sau, có video ghép nhiều khung phụ thành một khung để có nhòe thật. Chuyển động nhờ đó trông nặng và có lực.",
+  "when": "Dùng khi có cú lia nhanh, chữ bay vào mạnh hoặc chuyển cảnh kiểu whip.",
+  "prompt_hint": "directional motion blur with ghosted echo copies trailing fast moves",
+  "tags": [
+   "motion-blur"
+  ]
+ },
+ "node-graph": {
+  "name": "Sơ đồ nút và kết nối",
+  "what": "Logo hoặc một nút trung tâm tỏa đường nối phát sáng tới các nút xung quanh như dịch vụ, công cụ, mô hình, hoặc các thẻ quy trình sáng lên lần lượt dọc một đường nối. Cấu trúc hệ thống được thấy bằng mắt.",
+  "when": "Dùng khi giải thích kiến trúc, luồng xử lý hoặc khoe danh sách tích hợp.",
+  "prompt_hint": "hub-and-spoke diagram: logo at the centre with curved glowing connectors to integration chips",
+  "tags": [
+   "node-graph",
+   "network-graph",
+   "integrations-hub",
+   "architecture-diagram"
+  ]
+ },
+ "numbered-chapters": {
+  "name": "Chương đánh số",
+  "what": "Mỗi tính năng hoặc ý chính là một chương có số thứ tự và nhãn nhỏ ở góc, đi kèm tiêu đề hai dòng với dòng sau đổi màu nhấn. Cấu trúc lặp lại giúp người xem biết mình đang ở đâu.",
+  "when": "Dùng cho video giới thiệu nhiều tính năng hoặc bài giải thích dài nhiều bước.",
+  "prompt_hint": "numbered chapter header pinned top-left, two-line headline with the second line in the accent colour",
+  "tags": [
+   "numbered-chapters",
+   "chaptered",
+   "chapter-labels",
+   "feature-chapters"
+  ]
+ },
+ "one-word-per-beat": {
+  "name": "Mỗi beat một từ",
+  "what": "Mỗi nhịp nhạc chỉ hiện đúng một từ thật to, có thể kèm dấu chấm màu hoặc tách màu RGB, rồi cắt sang từ kế tiếp. Câu thoại được chặt thành chuỗi từ dồn dập.",
+  "when": "Dùng cho đoạn hook đầu video hoặc cao trào cần nhịp nhanh và dễ nhớ.",
+  "prompt_hint": "one giant word per beat with a coloured full stop, hard cut to the next word",
+  "tags": [
+   "one-word-per-beat"
+  ]
+ },
+ "particles-to-form": {
+  "name": "Hạt tụ thành chữ hoặc hình",
+  "what": "Hàng nghìn hạt sáng bay tán loạn rồi tụ lại thành một từ, một logo hoặc một khối cầu, sau đó có thể tan ra để thành hình kế tiếp. Hiệu ứng cho cảm giác thứ gì đó đang được sinh ra.",
+  "when": "Dùng khi cần một khoảnh khắc ra đời, chẳng hạn hiện tên thương hiệu hoặc chuyển giữa hai chương.",
+  "prompt_hint": "particle cloud coalescing into the word, then scattering and re-forming into a point-cloud sphere",
+  "tags": [
+   "particles",
+   "particle-sphere"
+  ]
+ },
+ "phone-mockup": {
+  "name": "Khung điện thoại mô phỏng",
+  "what": "Giao diện app chạy bên trong một chiếc điện thoại mô phỏng, thường nghiêng nhẹ, có đường dẫn chú thích chỉ vào từng vùng hoặc một thẻ nội dung bật ra khỏi màn hình. Người xem hình dung ngay sản phẩm trên tay mình.",
+  "when": "Dùng cho video giới thiệu app di động hoặc tính năng mới trên điện thoại.",
+  "prompt_hint": "tilted phone mockup with live UI and callout lines labelling each UI block",
+  "tags": [
+   "phone-mockup",
+   "device-mockup",
+   "mobile-app"
+  ]
+ },
+ "problem-first-hook": {
+  "name": "Mở bằng vấn đề",
+  "what": "Video mở bằng nỗi đau của người xem, nói bằng giọng của họ trên nền tối, với con số hoặc hình ảnh cụ thể hóa sự bế tắc, rồi mới chuyển sang sản phẩm như lời giải. Thường có cú đổi từ ngữ để lật vấn đề thành giải pháp.",
+  "when": "Dùng cho quảng cáo và video ra mắt cần giữ người xem trong vài giây đầu.",
+  "prompt_hint": "problem-first cold open in the viewer's voice on black, then a word swap flips the problem into the solution",
+  "tags": [
+   "problem-first",
+   "problem-solution",
+   "problem-then-solution"
+  ]
+ },
+ "raymarching": {
+  "name": "Raymarching và shader",
+  "what": "Khối 3D được tính trực tiếp trong shader như quả cầu crôm óng ánh, khối fractal hay đường hầm vô tận, không cần mô hình dựng sẵn. Bề mặt có phản chiếu, khúc xạ và màu cầu vồng mỏng.",
+  "when": "Dùng cho showreel muốn khoe kỹ thuật WebGL hoặc cảnh trừu tượng cao trào.",
+  "prompt_hint": "raymarched iridescent chrome blob with thin-film rainbow reflections in front of a ring of kinetic type",
+  "tags": [
+   "raymarching",
+   "shader"
+  ]
+ },
+ "screenshot-wall": {
+  "name": "Tường ảnh chụp nghiêng 3D",
+  "what": "Hàng loạt ảnh chụp màn hình hoặc sản phẩm được xếp thành bức tường nghiêng trong không gian 3D, máy quay lướt qua bên dưới một tiêu đề lớn. Cảnh gợi cảm giác quy mô và số lượng.",
+  "when": "Dùng khi muốn khoe nhiều kết quả, nhiều mẫu hoặc chốt lại toàn bộ sản phẩm trước logo.",
+  "prompt_hint": "camera glides over an infinite 3D-tilted wall of product screenshots under a centred two-line headline",
+  "tags": [
+   "screenshot-wall",
+   "3d-tilt"
+  ]
+ },
+ "seamless-loop": {
+  "name": "Vòng lặp liền mạch",
+  "what": "Khung hình cuối trùng khít khung hình đầu nên clip chạy lặp mãi mà không thấy điểm nối. Cả câu chuyện được thiết kế để quay về đúng trạng thái ban đầu.",
+  "when": "Dùng cho clip mạng xã hội tự phát lặp, ảnh động trên website hoặc màn hình trưng bày.",
+  "prompt_hint": "last frame equals first frame for a seamless loop",
+  "tags": [
+   "seamless-loop",
+   "loopable",
+   "loop"
+  ]
+ },
+ "shape-morph": {
+  "name": "Biến hình khối",
+  "what": "Một hình cơ bản biến liên tục từ tròn sang tam giác, sao hay squircle, thường kèm đường dựng hình, tay nắm bezier hoặc khung chọn kiểu After Effects hiện thông số xoay. Người xem thấy được cả kết quả lẫn cách nó được dựng.",
+  "when": "Dùng khi muốn khoe tay nghề motion hoặc làm cảnh chuyển giữa hai ý mà không cần cắt.",
+  "prompt_hint": "circle to triangle to star morph inside a rotating transform box with ROT and SHAPE readouts",
+  "tags": [
+   "shape-morph"
+  ]
+ },
+ "synced-subtitles": {
+  "name": "Phụ đề khớp giọng đọc",
+  "what": "Dải phụ đề hoặc viên chú thích ở cạnh dưới hiện đúng theo từng câu, từng từ của lời đọc, từ đang đọc được tô sáng như karaoke. Có thể kèm tên người nói nhỏ phía trên dòng thoại.",
+  "when": "Dùng cho video có giọng đọc, đặc biệt khi người xem thường xem không bật tiếng.",
+  "prompt_hint": "TTS-synced subtitle bar along the bottom with karaoke-style word highlight",
+  "tags": [
+   "subtitles",
+   "caption-pill"
+  ]
+ },
+ "terminal-typing": {
+  "name": "Terminal và code gõ dần",
+  "what": "Một cửa sổ terminal hoặc trình soạn code hiện lệnh được gõ từng ký tự với con trỏ khối nhấp nháy, rồi từng dòng kết quả hiện ra. Có thể chia đôi màn hình, code bên trái chạy kết quả thật bên phải.",
+  "when": "Dùng cho sản phẩm dành cho lập trình viên hoặc cảnh mở đầu kiểu khởi động hệ thống.",
+  "prompt_hint": "terminal window typing the command with a blinking block cursor, output lines appear one by one",
+  "tags": [
+   "terminal",
+   "terminal-ui",
+   "code-editor"
+  ]
+ },
+ "ui-morph-loop": {
+  "name": "Một khối biến qua các trạng thái giao diện",
+  "what": "Một phần tử duy nhất không bao giờ bị cắt, chỉ đổi kích thước, bo góc và màu để lần lượt thành nút bấm, vòng tải, dấu tích, trình phát nhạc, thanh trượt. Nội dung bên trong đổi qua một nhịp làm mờ ngắn.",
+  "when": "Dùng để giới thiệu sản phẩm phần mềm theo kiểu tinh gọn, nhất là clip vuông chạy lặp trên mạng xã hội.",
+  "prompt_hint": "one persistent element morphs size, radius and colour through UI states, content swapped via a short blur, never cut",
+  "tags": [
+   "ui-morph",
+   "single-shape",
+   "loopable"
+  ]
+ },
+ "whiteboard-write-on": {
+  "name": "Viết tay trên bảng trắng",
+  "what": "Một cây bút dạ đi theo đường nét và viết ra tiêu đề, sơ đồ, công thức ngay trên khung hình, mỗi đoạn là một bảng mới với tiêu đề, hình minh họa rồi kết luận. Bảng cuối gom mọi ý thành danh sách đánh số.",
+  "when": "Dùng cho video dạy học hoặc hướng dẫn từng bước cần cảm giác đang giảng trực tiếp.",
+  "prompt_hint": "marker follows the stroke path writing the title, diagram and formula live, one new board per section",
+  "tags": [
+   "whiteboard"
+  ]
+ }
+}

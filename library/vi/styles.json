@@ -1,0 +1,74 @@
+{
+ "cartoon": {
+  "name": "Hoạt hình phẳng",
+  "what": "Hình khối tròn trịa, viền đậm màu tối, tô phẳng với một tông đổ bóng, nhân vật mắt to và co giãn mạnh mỗi lần chuyển động. Màu tươi, nền đơn giản xếp lớp.",
+  "when": "Hợp với video kể chuyện ngắn, quảng cáo app tiêu dùng, công thức nấu ăn hoặc nội dung cho khán giả trẻ.",
+  "recipe_vi": "Phong cách: hoạt hình 2D phẳng. Hình khối tròn trịa, đậm, viền tối dày, tô phẳng kèm một tông đổ bóng, co giãn (squash-and-stretch) trong mọi chuyển động, mắt to giàu biểu cảm. Bảng màu tươi, bão hòa cao; nền đơn giản xếp lớp."
+ },
+ "cinematic3d": {
+  "name": "3D điện ảnh",
+  "what": "Cảnh 3D dựng bằng Three.js hoặc WebGL với vật liệu chân thực, một nguồn sáng chính đổ bóng mềm, xóa phông và máy quay trượt hoặc quay vòng chậm. Có hạt phim nhẹ và chỉnh màu như phim chiếu rạp.",
+  "when": "Hợp với brand sting, showreel cao cấp, logo reveal hoặc video cần cảm giác sang và có chiều sâu.",
+  "recipe_vi": "Phong cách: 3D điện ảnh bằng Three.js/WebGL. Vật liệu PBR (physically based), một đèn chính mạnh với bóng mềm, độ sâu trường ảnh (depth of field), máy quay dolly hoặc orbit chậm, hạt phim nhẹ và chỉnh màu. 24 fps, có thể thêm viền letterbox 2.39:1."
+ },
+ "collage": {
+  "name": "Cắt dán, giấy và tranh cát",
+  "what": "Khung hình ghép từ những mảnh cắt phẳng như giấy, ảnh vụn, bìa cứng, có mép rách, bóng đổ mềm và vân giấy thấy rõ. Chuyển động giật nhẹ theo kiểu stop-motion, màu ấm và hơi bạc.",
+  "when": "Hợp với music video, video kể lịch sử dài nhiều năm hoặc trang giới thiệu thương hiệu muốn chất thủ công, hoài niệm.",
+  "recipe_vi": "Phong cách: cắt dán thủ công. Dựng mọi khung hình từ các mảnh cắt phẳng (giấy, mẩu ảnh, bìa) có mép rách, bóng đổ mềm và vân giấy thấy rõ; các mảnh di chuyển theo bước stop-motion, cứ hai khung đổi một lần (12 fps). Màu ấm, hơi bạc."
+ },
+ "explainer": {
+  "name": "Giải thích và trực quan hóa dữ liệu",
+  "what": "Mỗi cảnh một ý, dựng dần từng bước: trục tọa độ vẽ ra, số chạy lên, mũi tên chỉ vào, nhãn hiện cạnh đúng thứ nó gọi tên. Nền trắng ngà hoặc tối, một màu nổi bật cho điều quan trọng nhất.",
+  "when": "Hợp với bài giảng, video phổ biến kiến thức, kể lịch sử bằng số liệu hoặc giải thích một khái niệm kỹ thuật.",
+  "recipe_vi": "Phong cách: video giải thích. Mỗi cảnh một ý, dựng từng bước: trục vẽ ra, giá trị đếm lên, mũi tên chỉ vào, nhãn hiện dần cạnh thứ nó gọi tên. Nền trắng ngà hoặc tối gọn gàng, một màu nhấn cho điều quan trọng."
+ },
+ "generative": {
+  "name": "Nghệ thuật tạo sinh và neon",
+  "what": "Mọi thứ trên màn hình được sinh bằng thuật toán: hạt, trường dòng chảy, shader hoặc họa tiết hình học lặp, chạy theo thời gian và theo nhạc. Nền tối với neon hoặc bảng 3 đến 4 màu đậm.",
+  "when": "Hợp với video ý niệm, visual cho nhạc, trailer giàu năng lượng hoặc màn trình diễn ánh sáng không cần kể chuyện tuyến tính.",
+  "recipe_vi": "Phong cách: nghệ thuật tạo sinh. Mọi thứ đều sinh theo thủ tục: hạt, flow field, shader hoặc họa tiết hình học lát gạch, điều khiển bởi thời gian và âm thanh. Nền tối với neon hoặc bảng 3 đến 4 màu đậm; chuyển động khóa theo beat."
+ },
+ "handdrawn": {
+  "name": "Vẽ tay, phác thảo và truyện tranh",
+  "what": "Mọi hình đều là nét bút chì hoặc mực run run trên nền giấy ngà, nét được vẽ lại liên tục nên khung hình lúc nào cũng hơi rung như hoạt hình vẽ tay. Màu tiết chế, chỉ có mực đen và một màu nhấn.",
+  "when": "Hợp với video giải thích kiểu bảng trắng, kể chuyện lịch sử hoặc giới thiệu sản phẩm cần cảm giác gần gũi, thủ công.",
+  "recipe_vi": "Phong cách: vẽ tay. Mọi hình được vẽ bằng nét bút chì hoặc mực run run trên nền giấy trắng ngà, cứ vài khung lại vẽ lại một chút (line boil). Bảng màu hạn chế: mực đen cộng một màu nhấn. Không gradient, không 3D, không giao diện bóng bẩy. Chỉ dùng chữ viết tay cho nhãn khi thật cần."
+ },
+ "lowpoly": {
+  "name": "Low-poly và voxel",
+  "what": "Vật thể làm từ các mặt phẳng góc cạnh hoặc khối lập phương, nhìn từ góc isometric hay ba phần tư trên cao. Màu pastel với một màu nhấn đậm, vật thể nảy vào khung hình với độ vượt nhẹ.",
+  "when": "Hợp với showreel vui mắt, video cảm ơn cộng đồng, minh họa số liệu sản phẩm hoặc demo kiểu demoscene.",
+  "recipe_vi": "Phong cách: low-poly / voxel. Hình khối nhiều mặt tô phẳng (hoặc khối lập phương), máy quay isometric hoặc ba phần tư từ trên cao, bảng màu pastel với một màu nhấn bão hòa, ambient occlusion mềm, vật thể nảy và bật vào khung hình có overshoot."
+ },
+ "photoreal": {
+  "name": "Hình thật và cảnh quay thật",
+  "what": "Dùng footage hoặc ảnh thật người dùng đưa vào, hoặc gọi mô hình video tạo cảnh mới, cắt theo beat và đồng bộ một tông màu cho mọi cảnh. Chữ tiết chế, motion graphics ở mức tối thiểu.",
+  "when": "Hợp với video du lịch, showreel từ cảnh quay có sẵn, quảng cáo sản phẩm vật lý hoặc music video cần chất liệu thật.",
+  "recipe_vi": "Phong cách: dựng hình thật. Dùng footage hoặc ảnh thật được cung cấp (hoặc gọi mô hình video để tạo cảnh mới), cắt theo beat, thêm chữ một cách tiết chế, chỉnh màu cho mọi cảnh về cùng một tông và giữ motion graphics ở mức tối thiểu."
+ },
+ "pixel": {
+  "name": "Pixel art",
+  "what": "Cảnh được vẽ ở độ phân giải rất thấp rồi phóng to giữ nguyên ô vuông, bảng màu cố định vài chục màu như game 8-bit và 16-bit. Nhân vật chuyển động bằng vài khung lặp, nền nhiều lớp trôi parallax.",
+  "when": "Hợp với video vui, nội dung game, crypto hoặc chủ đề hoài niệm dành cho khán giả quen văn hóa game.",
+  "recipe_vi": "Phong cách: pixel art. Dựng cảnh ở 320×180 với bảng màu cố định 16 đến 32 màu rồi phóng to bằng nearest-neighbour (không làm mượt, không khử răng cưa). Sprite chuyển động theo chu kỳ 2 đến 4 khung; nền nhiều lớp parallax; âm thanh chiptune."
+ },
+ "productui": {
+  "name": "Phim giới thiệu sản phẩm phần mềm",
+  "what": "Dựng lại các màn hình thật của sản phẩm thành giao diện vector sắc nét, con trỏ chuột đi qua một luồng thao tác và bấm từng bước. Chuyển động spring mượt, bóng đổ mềm trên nền sáng, mỗi beat một tiêu đề.",
+  "when": "Hợp với video ra mắt SaaS, app di động, giới thiệu tính năng mới hoặc video kiểu keynote Apple.",
+  "recipe_vi": "Phong cách: phim ra mắt sản phẩm. Dựng lại các trạng thái giao diện thật của sản phẩm thành màn hình vector sắc nét, một con trỏ di chuyển và bấm qua một luồng thao tác, easing kiểu spring mượt, bóng đổ mềm trên nền sáng, mỗi beat một tiêu đề, kết bằng logo lockup."
+ },
+ "retro": {
+  "name": "Hoài cổ, terminal và phim cũ",
+  "what": "Một là phim đen trắng cũ với hạt, khung hình rung, ánh sáng chập chờn và viền tối. Hai là màn hình CRT phốt pho xanh lá hoặc hổ phách có đường quét, ASCII art và chữ gõ ra kèm con trỏ nhấp nháy.",
+  "when": "Hợp với video tái hiện lịch sử, nội dung cho dân lập trình, music video điện tử hoặc khi cần không khí hoài niệm.",
+  "recipe_vi": "Phong cách: retro. Hoặc phim đơn sắc (hạt phim, gate weave, nhấp nháy, viền tối, 18 fps), hoặc màn hình terminal CRT (phốt pho xanh lá hoặc hổ phách, đường quét scanline, ASCII art, chữ gõ ra kèm con trỏ nhấp nháy). Không dùng gradient hiện đại."
+ },
+ "typography": {
+  "name": "Kinetic type",
+  "what": "Chữ là nhân vật chính: một hai kiểu chữ đậm, từ cỡ rất lớn bật, kéo giãn, che mặt nạ và quét qua màn hình đúng beat. Lưới chặt, 2 đến 3 màu với một màu nhấn chói, cắt cảnh liên tục.",
+  "when": "Hợp với video ra mắt, social promo, bumper thương hiệu hoặc phần credit mở đầu khi thông điệp nằm ở câu chữ.",
+  "recipe_vi": "Phong cách: kinetic typography. Một hoặc hai kiểu chữ đậm, những từ cỡ lớn bật, kéo giãn, che mặt nạ và quét theo beat; lưới chặt chẽ; 2 đến 3 màu với một màu nhấn chói; cắt cứng mỗi 0,5 đến 1 giây; không dùng ảnh stock."
+ }
+}
