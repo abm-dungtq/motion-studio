@@ -1,0 +1,56 @@
+/* Motion Studio design tokens. The only place colours are defined: components
+   use these through Tailwind classes (bg-panel, text-muted-foreground, ...) and
+   canvases read them with getComputedStyle. Dark theme only. */
+:root {
+  --ms-bg: #111216;
+  --ms-panel: #17181d;
+  --ms-panel-2: #1e2026;
+  --ms-border: #2a2d35;
+  --ms-text: #e6e8ee;
+  --ms-muted: #9097a3;
+  --ms-accent: #3b82f6;
+  --ms-accent-text: #ffffff;
+  --ms-warn: #e5b62b;
+  --ms-danger: #ef4444;
+  --ms-ok: #22c55e;
+  --ms-stage: #000000;
+  --ms-playhead: #ff4d4f;
+
+  --ms-track-shot: #2d4a8a;
+  --ms-track-broll: #6b5523;
+  --ms-track-voice: #22704a;
+  --ms-track-music: #7b2a52;
+  --ms-track-sfx: #4b2f8f;
+
+  /* Timeline decorator bands (same values as the old timeline's DECO). */
+  --ms-deco-info: rgba(80, 130, 230, 0.22);
+  --ms-deco-warn: rgba(230, 160, 40, 0.28);
+  --ms-deco-bad: rgba(220, 70, 60, 0.26);
+  --ms-deco-ok: rgba(60, 170, 100, 0.24);
+
+  --ms-radius: 6px;
+
+  /* shadcn/ui variables, mapped onto the tokens above. */
+  --background: var(--ms-bg);
+  --foreground: var(--ms-text);
+  --card: var(--ms-panel);
+  --card-foreground: var(--ms-text);
+  --popover: var(--ms-panel);
+  --popover-foreground: var(--ms-text);
+  --primary: var(--ms-accent);
+  --primary-foreground: var(--ms-accent-text);
+  --secondary: var(--ms-panel-2);
+  --secondary-foreground: var(--ms-text);
+  --muted: var(--ms-panel-2);
+  --muted-foreground: var(--ms-muted);
+  --accent: var(--ms-panel-2);
+  --accent-foreground: var(--ms-text);
+  --destructive: var(--ms-danger);
+  --destructive-foreground: var(--ms-accent-text);
+  --border: var(--ms-border);
+  --input: var(--ms-border);
+  --ring: var(--ms-accent);
+  --radius: var(--ms-radius);
+
+  color-scheme: dark;
+}

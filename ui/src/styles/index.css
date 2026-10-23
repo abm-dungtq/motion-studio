@@ -1,0 +1,68 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Studio tokens. Background, text, muted text, border and accent use the
+     shadcn names below (bg-background, text-foreground, text-muted-foreground,
+     border-border, bg-primary). */
+  --color-panel: var(--ms-panel);
+  --color-panel-2: var(--ms-panel-2);
+  --color-warn: var(--ms-warn);
+  --color-danger: var(--ms-danger);
+  --color-ok: var(--ms-ok);
+  --color-stage: var(--ms-stage);
+  --color-playhead: var(--ms-playhead);
+  --color-track-shot: var(--ms-track-shot);
+  --color-track-broll: var(--ms-track-broll);
+  --color-track-voice: var(--ms-track-voice);
+  --color-track-music: var(--ms-track-music);
+  --color-track-sfx: var(--ms-track-sfx);
+  --color-deco-info: var(--ms-deco-info);
+  --color-deco-warn: var(--ms-deco-warn);
+  --color-deco-bad: var(--ms-deco-bad);
+  --color-deco-ok: var(--ms-deco-ok);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--ms-bg);
+    color: var(--ms-text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+}
