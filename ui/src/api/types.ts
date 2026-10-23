@@ -129,6 +129,6 @@ export interface SuggestResponse {
 // POST /api/suggest/choose (routes/suggest.mjs): one of three outcomes.
 export interface SuggestMode { saved: boolean; reason: string | null }
 export type SuggestChooseResult =
-  | { outcome: "chosen"; direction: string; pick: number; style: string | null; answered?: string | null; next?: unknown; initialized?: boolean; mode: SuggestMode }
+  | { outcome: "chosen"; direction: string; pick: number; style: string | null; requested_style?: string; answered?: string | null; next?: unknown; initialized?: boolean; mode: SuggestMode }
   | { outcome: "not_in_pitch"; picks: SuggestPick[]; mode: SuggestMode }
   | { outcome: "queued"; request?: unknown; runner?: unknown; job?: unknown; mode: SuggestMode };

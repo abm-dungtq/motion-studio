@@ -70,7 +70,10 @@ function chooseNotice(d: SuggestChooseResult): Notice {
     const text = d.initialized
       ? `Đã tạo pitch với hướng ${d.direction} đứng đầu và chọn hướng này. BRIEF.md đã được cập nhật.`
       : `Đã chọn hướng ${d.direction} với style ${d.style ?? "mặc định của hướng"}. BRIEF.md đã được cập nhật.`;
-    return { kind: "ok", text, extra, picks: null };
+    const kept = d.requested_style
+      ? `Bạn chọn style ${d.requested_style}, nhưng lệnh chọn hướng của plugin giữ style ${d.style ?? "mặc định"} trong BRIEF.md.`
+      : null;
+    return { kind: "ok", text, extra: [kept, extra].filter(Boolean).join(" ") || null, picks: null };
   }
   if (d.outcome === "not_in_pitch") {
     return { kind: "ok", text: "Pitch hiện có không gồm hướng này. Chọn một trong các hướng đã có trong pitch bên dưới.", extra, picks: d.picks ?? [] };

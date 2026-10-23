@@ -272,6 +272,21 @@ describe("with the provider as it is today", () => {
     assert.ok(!lines(chooseLog).at(-1).includes("--style-profile"));
   });
 
+  test("choose reports the style BRIEF.md keeps when it differs from the click", async () => {
+    writePitch([{ n: 1, id: "A7" }, { n: 2, id: "A6", style_profile: "glass-keynote" }]);
+    const brief = join(dir(), "BRIEF.md");
+    const original = readFileSync(brief, "utf8");
+    writeFileSync(brief, original.replace(/^---\n/, "---\nstyle_profile: lemo-watercolor\n"));
+    try {
+      const r = await post("/api/suggest/choose", { name: "demo", direction: "A6", style: "data-editorial" });
+      assert.equal(r.json.outcome, "chosen");
+      assert.equal(r.json.style, "lemo-watercolor");
+      assert.equal(r.json.requested_style, "data-editorial");
+    } finally {
+      writeFileSync(brief, original);
+    }
+  });
+
   test("choose answers a waiting direction card", async () => {
     writePitch([{ n: 1, id: "A7" }, { n: 2, id: "A6" }]);
     process.env.FAKE_REQUESTS = JSON.stringify([{ id: "r-w", status: "waiting_user", ask: { gate: "direction", kind: "choice", options: [{ id: "1", label: "a" }, { id: "2", label: "b" }] } }]);

@@ -125,17 +125,25 @@ async function choose(c) {
   const extra = b.style ? P.suggest.styleArgs.map((a) => a.replaceAll("{style}", b.style)) : [];
   const waiting = (P.requests.list(dir) ?? []).find((r) => r.status === "waiting_user" && r.ask?.gate === "direction" && r.ask?.kind === "choice"
     && (r.ask.options ?? []).some((o) => o.id === String(row.n)));
-  const chosen = { direction: b.direction, pick: row.n, style: b.style ?? row.style_profile };
+  const requested = b.style ?? row.style_profile;
+  // The plugin's choose has the last word on style_profile (a lemo_style in the brief keeps its own
+  // style, for one), so report what BRIEF.md says after the write, and the requested style when it differs.
+  const result = (rest) => {
+    let written = null;
+    try { written = frontmatterOf(readFileSync(join(dir, "BRIEF.md"), "utf8")).style_profile || null; } catch { /* no brief */ }
+    const style = written ?? requested;
+    return done("chosen", { direction: b.direction, pick: row.n, style, ...(requested && style !== requested ? { requested_style: requested } : {}), ...rest });
+  };
 
   if (waiting) {
     const r = await answerCard(dir, { id: waiting.id, value: String(row.n) }, { extra });
     if (r.status !== 200) return c.send(r.status, r.body);
     startIdle(P, b.name, dir);
-    return done("chosen", { ...chosen, answered: waiting.id, next: r.body.next, initialized, mode });
+    return result({ answered: waiting.id, next: r.body.next, initialized, mode });
   }
   const r = await writeDirection(dir, row.n, { extra });
   if (r.code !== 0) return c.send(422, { error: `Lệnh chọn hướng lỗi (exit ${r.code})`, stderr: tail(r) });
-  return done("chosen", { ...chosen, answered: null, next: null, initialized, mode });
+  return result({ answered: null, next: null, initialized, mode });
 }
 
 export const ROUTES = [
