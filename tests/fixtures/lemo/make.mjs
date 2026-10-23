@@ -18,6 +18,7 @@ export function makeLibrary(dir = mkdtempSync(join(tmpdir(), "lemo-lib-"))) {
     mkdirSync(join(dir, "styles", s, "demo"), { recursive: true });
     writeFileSync(join(dir, "styles", s, "demo", "main.js"), "console.log('demo');\n");
   }
+  mkdirSync(join(dir, "docs", "frames"), { recursive: true });
   writeFileSync(join(dir, "docs", "frames", "watercolor.jpg"), JPEG);
   writeFileSync(join(dir, "docs", "frames", "ukiyoe.jpg"), JPEG);
   writeFileSync(join(dir, "docs", "frames", "ink-wash.jpg"), "not a jpeg");
