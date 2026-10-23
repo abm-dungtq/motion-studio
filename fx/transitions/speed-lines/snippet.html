@@ -1,0 +1,8 @@
+<!-- speed-lines: chép canvas này vào trong #root, trên shot cần nhấn (z-index cao). -->
+<canvas id="ms-speed-lines" width="1920" height="1080" aria-hidden="true"
+        style="position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; z-index: 55; pointer-events: none"></canvas>
+<script>
+  // Sau khi đã có tl và đã nạp fx/transitions/speed-lines/snippet.js.
+  MotionFx["speed-lines"].attach(tl, { canvas: document.getElementById("ms-speed-lines") },
+    { at: 3.2, duration: 0.6, fps: 30, hold: 2, count: 90, cx: 0.5, cy: 0.5, color: "#ffffff", seed: 3 });
+</script>

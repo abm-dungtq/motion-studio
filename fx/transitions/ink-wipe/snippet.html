@@ -1,0 +1,32 @@
+<!-- ink-wipe: chép lớp SVG này vào trong #root, trên mọi shot (z-index cao). Màu mực đặt ở fill. -->
+<svg id="ms-ink" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true"
+     style="position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; z-index: 60; pointer-events: none">
+  <defs>
+    <filter id="ms-ink-rough" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="3" seed="11" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="80" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+    <mask id="ms-ink-holes" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080">
+      <rect width="1920" height="1080" fill="#fff" />
+      <g id="ms-ink-hole-group" filter="url(#ms-ink-rough)" fill="#000"></g>
+    </mask>
+  </defs>
+  <g id="ms-ink-blob-group" filter="url(#ms-ink-rough)" fill="#0b0b0f"></g>
+  <rect id="ms-ink-cover" width="1920" height="1080" fill="#0b0b0f" mask="url(#ms-ink-holes)" style="visibility: hidden" />
+</svg>
+<script>
+  // Sau khi đã có tl và đã nạp fx/transitions/ink-wipe/snippet.js. from/to là hai shot hai bên.
+  (function () {
+    var fx = window.MotionFx["ink-wipe"], opts = { at: 8.0, duration: 0.9, blobs: 7, ox: 0.5, oy: 0.5, rough: 80, seed: 11 };
+    var NS = "http://www.w3.org/2000/svg", blobs = [], holes = [];
+    for (var i = 0; i < opts.blobs; i++) {
+      var b = document.createElementNS(NS, "circle"); document.getElementById("ms-ink-blob-group").appendChild(b); blobs.push(b);
+      var h = document.createElementNS(NS, "circle"); document.getElementById("ms-ink-hole-group").appendChild(h); holes.push(h);
+    }
+    fx.attach(tl, {
+      overlay: document.getElementById("ms-ink"), blobs: blobs, holes: holes, cover: document.getElementById("ms-ink-cover"),
+      noise: document.querySelector("#ms-ink-rough feTurbulence"), disp: document.querySelector("#ms-ink-rough feDisplacementMap"),
+      from: document.getElementById("s5"), to: document.getElementById("s6"),
+    }, opts);
+  })();
+</script>

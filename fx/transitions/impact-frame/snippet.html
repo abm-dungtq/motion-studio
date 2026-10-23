@@ -1,0 +1,18 @@
+<!-- impact-frame: chép khối này vào trong #root, ngay sau phần tử sân khấu (#stage) của cảnh.
+     Lớp tia nằm ngoài #stage để không bị đảo màu theo. -->
+<div id="ms-impact-card" style="position: absolute; inset: 0; background: #fff; visibility: hidden; z-index: 40; pointer-events: none"></div>
+<svg id="ms-impact-lines" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true"
+     style="position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; z-index: 50; pointer-events: none">
+  <g fill="#000"></g>
+</svg>
+<script>
+  // Sau khi đã có tl và đã nạp fx/transitions/impact-frame/snippet.js:
+  (function () {
+    var fx = window.MotionFx["impact-frame"];
+    var opts = { at: 4.2, fps: 30, frames: 2, mode: "invert", count: 44, cx: 0.5, cy: 0.5, seed: 7 };
+    var g = document.querySelector("#ms-impact-lines g"), polys = [];
+    for (var i = 0; i < opts.count; i++) { var p = document.createElementNS("http://www.w3.org/2000/svg", "polygon"); g.appendChild(p); polys.push(p); }
+    // mode "silhouette": target là lớp nhân vật (bóng đen), card là nền trắng phía sau nó.
+    fx.attach(tl, { target: document.getElementById("stage"), card: null, overlay: document.getElementById("ms-impact-lines"), polys: polys }, opts);
+  })();
+</script>

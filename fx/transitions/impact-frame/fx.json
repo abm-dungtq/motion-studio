@@ -1,0 +1,19 @@
+{
+  "id": "impact-frame",
+  "name_vi": "Khung va chạm anime",
+  "kind": "css",
+  "description_vi": "Hai đến ba khung âm bản hoặc bóng đen trên nền trắng ngay điểm cắt, kèm tia tốc độ tỏa từ tâm đòn. Dùng cho cú chém, cú đấm, va chạm.",
+  "duration": 0.1,
+  "energy": ["don-dap"],
+  "pair_seam": "beat-cut",
+  "params": {
+    "frames": { "type": "integer", "default": 2, "min": 1, "max": 3, "label_vi": "Số khung va chạm" },
+    "mode": { "type": "string", "default": "invert", "enum": ["invert", "silhouette"], "label_vi": "Kiểu: âm bản hoặc bóng đen" },
+    "lines": { "type": "boolean", "default": true, "label_vi": "Tia tốc độ" },
+    "count": { "type": "integer", "default": 44, "min": 12, "max": 120, "label_vi": "Số tia" },
+    "cx": { "type": "number", "default": 0.5, "min": 0, "max": 1, "label_vi": "Tâm đòn, ngang (0–1)" },
+    "cy": { "type": "number", "default": 0.5, "min": 0, "max": 1, "label_vi": "Tâm đòn, dọc (0–1)" },
+    "seed": { "type": "integer", "default": 7, "min": 1, "max": 99999, "label_vi": "Hạt ngẫu nhiên" }
+  },
+  "source": "Studio. Kiểu âm bản và bóng đen theo dự án zoro-vs-mihawk; PRNG mulberry32 (public domain)."
+}
