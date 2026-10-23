@@ -14,6 +14,15 @@ Bản tích hợp `feat/react-ui` sau khi tám PR vùng (#11–#18) và PR xoá 
   - cả tám khe có nội dung.
 - Parity: `node ui/scripts/fill-parity.mjs plans/261023-1018-react-ui-rewrite` in `có 442/442, không 0`. Lệnh không in `THIẾU` hay `TRÙNG`.
 
+## fps trên bản tích hợp
+
+`node ui/scripts/perf-playhead.mjs --base http://127.0.0.1:4410 --name perf-60 --runs 3 --min 50` thoát 0 và in `ok`. Đã chạy hai lần:
+
+```text
+fps=58.7 runs=58.5,58.7,58.8
+fps=58.6 runs=58.9,58.6,58.5
+```
+
 ## Thử liên vùng trên 4410
 
 Server: `ui/scripts/smoke-server.mjs`. Gốc thử `/tmp/ms-react-root-4410` dựng lại bằng `make-test-root.mjs`. Trình duyệt là Chrome (`playwright-core`), cửa sổ 1440×900. Script thử nằm ở `/tmp/ms-react-walk-4410/walk.mjs`, kết quả thô ở `results.json` cùng thư mục.
