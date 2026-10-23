@@ -147,7 +147,7 @@ Ranked    = { directions: string[3], styles: string[≤3], mode }   // id theo t
      1. có `project.json` trong `dir` và `fm.direction` → `timeline`, lý do `` BRIEF đã có `direction` và dự án đã có project.json. ``
      2. `fm.mode` thuộc `{ "tu-dau": "dao-dien", "video-co-san": "tu-nhac", "theo-nhac": "tu-nhac", "mau-nhanh": "nhanh" }` → giá trị tương ứng, lý do `` Trường `mode: <v>` của BRIEF. ``
      3. `/nhanh/i.test(fm.creative_override ?? "")` → `nhanh`, lý do `` Trường `creative_override` ghi cách làm nhanh. ``
-     4. còn lại → `dao-dien`, lý do `BRIEF không có trường nào chỉ cách làm khác, nên dùng cách mặc định.`
+     4. còn lại → `dao-dien`, lý do ``BRIEF không có `mode` hay `creative_override` chỉ cách làm khác, nên dùng cách mặc định.``
   8. `workflowFor(mode, fm, dir, P, source, reason)`:
      - `m = P.suggest.modes[mode]`, `steps = [...m.steps]`, `skip = []`;
      - có `fm.direction` thì đưa `pitch` và `choose` ra khỏi `steps`, mỗi cái vào `skip` với lý do `` BRIEF đã có `direction: <v>`. ``;
@@ -214,7 +214,7 @@ Ranked    = { directions: string[3], styles: string[≤3], mode }   // id theo t
      2. Phần tất định:
         - `picks = await detDirections(...)`;
         - `det.directions` = `picks.map((p) => ({ id: p.id, label: p.ten_vi, score: null, confidence: null, fields, reason, source: "det" }))`, với `fields = fieldsOf(fm, candidate, p.why)`;
-        - `reason` là `` `${p.why.join("; ")} (trường ${fields.join(", ")}).` `` khi có `fields`, không thì `` `Hướng tất định cho tầng ${p.tier}; không trường nào của BRIEF khớp trực tiếp.` ``;
+        - `reason` là `` `${p.why.join("; ")} (trường ${fields.join(", ")}).` `` khi có `fields`, không thì ``` `Hướng tất định cho tầng ${p.tier}; BRIEF chưa có `category`, `energy` hay `topic` nào khớp hướng này.` ```;
         - `det.styles` = `detStyles` cho cả 3 id, mỗi mục `score: null`, `reason` `` `Hướng ${dirs} gợi ý style này${energyFit ? `, hợp \`energy: ${fm.energy}\`` : ""}.` ``;
         - `det.workflow` = `workflowFor(detMode(...).mode, …, "det", lý do của detMode)`.
      3. `key = readKey({ env, keyVar: P.jev?.keyVar, envFile: P.jev?.envFile })`.
@@ -292,6 +292,10 @@ Ranked    = { directions: string[3], styles: string[≤3], mode }   // id theo t
   1. `git -C /Volumes/2/Motion-Studio add lib/suggest.mjs tests/suggest.test.mjs tests/fixtures/suggest/directions.json`
   2. `git -C /Volumes/2/Motion-Studio commit -m "feat(suggest): rank directions, styles and workflow with a deterministic fallback"`
 - **Verify:** `git -C /Volumes/2/Motion-Studio status --porcelain | wc -l` in `0`.
+
+## Ghi chú thực thi (2026-10-23)
+
+- Hai câu dự phòng ban đầu (lý do hướng tất định khi không trường nào khớp, và luật chế độ cuối cùng) không nêu trường BRIEF nào, nên test "every reason names a BRIEF field or the script" trượt với fixture cố định. Theo tư vấn của kongming, hai câu đã đổi để nêu đúng các trường đã kiểm; test giữ nguyên.
 
 ## Rủi ro và rollback
 
