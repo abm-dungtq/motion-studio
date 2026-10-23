@@ -1,4 +1,49 @@
-# Phase 5: tích hợp, thử liên vùng, fps, ảnh
+# Giao diện React cho Motion Studio, bố cục kiểu NLE
+
+PR này thay giao diện JavaScript thuần trong `public/` bằng giao diện React + TypeScript + Tailwind + shadcn/ui (Vite) ở `ui/`, theme tối kiểu NLE. API server không đổi. `public/` bị xoá trong cùng PR.
+
+## Tóm tắt
+
+- Bố cục mới:
+  - thanh trên có chọn dự án, Dự án mới, chip agent, phiên bản, hoàn tác và làm lại, cùng menu **Xuất bản**;
+  - rail icon chia nhóm: Chất liệu, Phong cách, Anime, Chuyển cảnh & hiệu ứng | Lời & giọng, Nhạc & âm thanh | Thư viện mẫu;
+  - cột phải có hai tab, Đạo diễn và Shot. Bấm shot là cột phải tự sang tab Shot;
+  - panel trái và cột phải thu gọn và kéo giãn được, cỡ được giữ sau khi tải lại;
+  - sân khấu nền đen.
+- Tab mới "Chuyển cảnh & hiệu ứng" (`fx`): gồm thư viện chuyển cảnh và mục Sửa clip, trước đây nằm trong inspector và tab Footage.
+- Bảng đối chiếu tính năng: **442/442** dòng "có" khi thử trực tiếp. Không còn dòng nào "không".
+- Timeline viết lại bằng React, giữ logic cũ chuyển sang `.ts`. Kéo playhead trên dự án 60 shot đạt **58,7 fps** (ngưỡng 50).
+- Extension viết theo API mới (`registerTab`, `registerSection`, `registerInspectorSection`, `registerAgentRows`, `registerTimelineDecorator`). Hướng dẫn ở `docs/extensions.md`.
+- Giao diện được build lúc `npm run setup`. Lúc `start`, nó được build lại nếu mã nguồn mới hơn bản build. Bản build không được commit.
+
+## Breaking
+
+- Cần **Node.js 22.18** trở lên, vì server chạy thẳng file `.ts` và Vite 8 đòi bản này.
+- File `public/ext-*.js` không còn được nạp. `GET /api/extensions` vẫn còn và luôn trả `{ scripts: [], styles: [] }`. Extension giao diện giờ là thư mục `ui/src/ext/<tên>/index.ts`.
+- Lần cài đầu cần mạng để `npm ci` trong `ui/`.
+
+## Clone sạch, `setup`, `start`
+
+- `git clone --branch feat/react-ui … /tmp/ms-clean-clone`, rồi `npm run setup </dev/null` → `exit 0`. Output gồm "giao diện: cài thư viện…", "build lần đầu…", "build xong trong 1.5 s". Có `ui/dist/index.html`.
+- `touch ui/src/main.tsx`, rồi `start` (4317 đang có Studio của người dùng nên lệnh dừng ở bước kiểm cổng) → "giao diện: build lại (nguồn mới hơn bản build)…", "build xong trong 0.4 s", `exit 3`. Bản build mới hơn nguồn. `git status --porcelain` rỗng.
+- Smoke server của bản clone trên 4410: trang chủ có `content="smoke-4410"` và có link `/assets/`. Đã dừng server, 4410 trống.
+
+## Khác với kế hoạch
+
+- Tám PR vùng và PR xoá `public/` được squash-merge thay vì merge commit. GitHub tự thêm dòng `Co-authored-by: DungTQ` vào các commit squash; đó là tài khoản của người dùng.
+- `routes/extensions.mjs`: ngoài comment, còn bỏ đường mặc định `../public/` của `listExtensions`. Route trả kết quả như trước.
+- Ảnh 2560 lưu JPEG chất lượng 60 để tổng ảnh dưới 8 MB.
+- `ui/vite.config.ts` tắt `fsModuleCache` của vitest. Cache này giữ bản cũ của `import.meta.glob`, nên thư mục panel hay extension mới không được thấy.
+
+## Hoàn tác
+
+- Trước khi merge: đóng PR, `main` không đổi.
+- Sau khi merge: `git revert -m 1 <sha merge>` trên `main` (hoặc revert commit squash), rồi khởi động lại Studio. Bản cũ không cần build.
+- Dữ liệu người dùng không đổi dạng: cùng API, cùng khoá `localStorage` `studio.tab`, cùng cache IndexedDB.
+
+---
+
+## Chi tiết kiểm tra
 
 Bản tích hợp `feat/react-ui` sau khi tám PR vùng (#11–#18) và PR xoá `public/` (#19) đã squash-merge.
 
