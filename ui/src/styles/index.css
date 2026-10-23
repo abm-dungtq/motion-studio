@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* tw-animate-css (https://github.com/Wombosvideo/tw-animate-css, MIT): the animate-in/out,
+   fade-* and zoom-* classes the shadcn Dialog, DropdownMenu and Tooltip use. */
+@import "tw-animate-css";
 @import "./tokens.css";
 
 @custom-variant dark (&:is(.dark *));
