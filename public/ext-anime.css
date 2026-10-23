@@ -6,7 +6,7 @@
 .anime .row.wrap { flex-wrap: wrap; }
 .anime-head { justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .anime-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--sunk, #eef1f5); border: 1px solid var(--line, #d3d9e2); font-size: 12px; color: var(--muted, #5b6676); }
-.anime-tag.warn { background: #fff4d6; border-color: #e3b341; color: #6b4a00; }
+.anime-tag.warn { display: block; margin: 0; border-radius: var(--radius-sm, 6px); background: #fff4d6; border-color: #e3b341; color: #6b4a00; }
 
 .anime-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: start; }
 .anime-col { display: flex; flex-direction: column; gap: 6px; padding: 6px; border-radius: var(--radius, 8px); background: var(--sunk, #eef1f5); min-width: 0; }
