@@ -24,7 +24,12 @@ test("loadProvider returns the contract Studio uses and caches it", async () => 
   for (const k of ["enqueue", "list", "next", "finish", "cancelRequest", "ask", "answer", "expireWaiting"]) assert.equal(typeof p.requests[k], "function", k);
   assert.equal(p.director.mcpTools.length, 7);
   assert.ok(p.director.mcpTools.every((t) => t.startsWith(p.director.toolPrefix)));
-  for (const [k, f] of Object.entries(p.commands)) assert.match(f, /^\/.+\.mjs$/, k);
+  // A command is a script path, or (STUDIO_API 4) a { file, args } object that runs one.
+  for (const [k, c] of Object.entries(p.commands)) {
+    if (typeof c === "string") { assert.match(c, /^\/.+\.mjs$/, k); continue; }
+    assert.match(c?.file, /^\/.+\.mjs$/, k);
+    assert.ok(Array.isArray(c.args) && c.args.every((a) => typeof a === "string"), `${k}: args is a list of strings`);
+  }
   const env = p.director.childEnv({ id: "r-1" }, { KEEP: "1" });
   assert.equal(env.KEEP, "1");
   assert.ok(Object.values(env).includes("r-1") && Object.values(env).includes("cli"), "the MCP server learns the request and the runner");
