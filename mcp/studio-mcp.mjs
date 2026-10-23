@@ -67,7 +67,12 @@ export async function studioHandler({ root, profile = "external", request = null
   return createHandler({
     serverInfo: { name: SERVER_NAME, title: "Motion Studio", version: VERSION },
     instructions: "Tool của Motion Studio cho các dự án video trong thư mục gốc. Đọc trước khi sửa: project_summary hoặc project_get lấy version, rồi project_patch với base là version đó. Thao tác media ghi biên nhận trong .opus/receipts/ của dự án.",
-    listTools: () => tools.map(({ name, title, description, inputSchema }) => ({ name, title, description, inputSchema })),
+    // Annotations (MCP 2025-03-26+) tell a client which tools only read; some auto-approve those.
+    // An edit of project.json is undoable (project_undo), so no tool is marked destructive.
+    listTools: () => tools.map(({ name, title, description, inputSchema, mutates }) => ({
+      name, title, description, inputSchema,
+      annotations: { title, readOnlyHint: !mutates, destructiveHint: false, openWorldHint: false },
+    })),
     hasTool: (name) => names.has(name),
     async callTool(name, args) {
       const r = await callTool(name, args, env, dir ? { dir } : {});

@@ -1,7 +1,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
@@ -10,7 +10,7 @@ import { createServer } from "../server.mjs";
 import { loadProvider } from "../lib/provider.mjs";
 import { callTool, toolEnv } from "../lib/tools.mjs";
 import { actorFor } from "../mcp/studio-mcp.mjs";
-import { mcpConfig } from "../routes/mcp.mjs";
+import { mcpConfig, stableNode } from "../routes/mcp.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
 const SERVER = fileURLToPath(new URL("../mcp/studio-mcp.mjs", import.meta.url));
@@ -108,4 +108,8 @@ test("receipt routes: list, one receipt, a check on demand; the MCP config route
   assert.match(m.json.codex_toml, /^\[mcp_servers\.motion-studio\]\ncommand = ".+"\nargs = \[".+studio-mcp\.mjs", "--profile", "external"/);
   assert.match(m.json.agy, /^agy mcp add motion-studio -- /);
   assert.equal(mcpConfig({ root: "/a b", node: "/n" }).claude.endsWith("--root '/a b'"), true, "paths with spaces are quoted");
+  const link = join(root, "node-link");
+  symlinkSync(process.execPath, link);
+  assert.equal(stableNode(process.execPath, [join(root, "none"), link]), link, "a stable link to the same node is preferred");
+  assert.equal(stableNode("/nope/node", [link]), "/nope/node");
 });

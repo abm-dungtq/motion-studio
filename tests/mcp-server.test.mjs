@@ -70,7 +70,10 @@ test("initialize answers the protocol version and the tools capability; tools/li
     assert.equal(init.result.serverInfo.name, "motion-studio");
     assert.equal((await c.call("initialize", { protocolVersion: "1999-01-01" })).result.protocolVersion, LATEST, "an unknown version gets the latest");
     c.note("notifications/initialized");
-    const names = (await c.call("tools/list", {})).result.tools.map((t) => t.name);
+    const tools = (await c.call("tools/list", {})).result.tools;
+    const names = tools.map((t) => t.name);
+    assert.equal(tools.find((t) => t.name === "project_get").annotations.readOnlyHint, true);
+    assert.equal(tools.find((t) => t.name === "project_patch").annotations.readOnlyHint, false);
     for (const t of ["project_get", "project_summary", "project_patch", "receipts_list", "receipt_get", "media_check"]) assert.ok(names.includes(t), t);
     const list = await c.call("tools/call", { name: "receipts_list", arguments: { project: "demo" } });
     assert.equal(list.result.isError, false);
