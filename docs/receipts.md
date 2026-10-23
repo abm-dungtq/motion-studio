@@ -12,7 +12,7 @@ Biên nhận nằm ở `<dự án>/.opus/receipts/<yyyymmdd>/<op>-<id>.json`. Đ
 
 ## Xem trên giao diện
 
-- **Tab Xuất bản → Biên nhận:** 20 biên nhận mới nhất, gồm verdict, op, actor, giờ và file ra. Bấm một dòng để xem từng kiểm (✓ đạt, ✗ trượt, ! cảnh báo) và JSON đầy đủ. "Làm mới" đọc lại ngay.
+- **Menu Xuất bản trên thanh trên → Cổng & tệp đã xuất… → Biên nhận:** 20 biên nhận mới nhất, gồm verdict, op, actor, giờ và file ra. Bấm một dòng để xem từng kiểm (✓ đạt, ✗ trượt, ! cảnh báo) và JSON đầy đủ. "Làm mới" đọc lại ngay.
 - **Inspector của shot:** biên nhận có file ra nằm trong `assets` của shot đó.
 
 ## Verdict

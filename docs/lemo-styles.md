@@ -1,6 +1,6 @@
-# Phong cách code (lemo-opuscar)
+# Phong cách (lemo-opuscar)
 
-Tab **Phong cách code** mở thư viện 59 phong cách phim dựng bằng code của [lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar), cùng các phong cách riêng của bạn. Mỗi phong cách có ảnh khung, tên tiếng Việt, nhóm, công dụng, phim mẫu và `STYLE.md` (prompt phong cách 11 mục). Bạn áp một phong cách cho cả dự án hoặc cho một shot.
+Tab **Phong cách** trên rail trái mở thư viện 59 phong cách phim dựng bằng code của [lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar), cùng các phong cách riêng của bạn. Mỗi phong cách có ảnh khung, tên tiếng Việt, nhóm, công dụng, phim mẫu và `STYLE.md` (prompt phong cách 11 mục). Bạn áp một phong cách cho cả dự án hoặc cho một shot.
 
 Studio không có bộ render thứ hai. Mọi phong cách đều dựng bằng chính composition HyperFrames của dự án, nên player, timeline, cổng viet-pro và bản xuất vẫn chạy như cũ.
 

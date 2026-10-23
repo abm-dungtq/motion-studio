@@ -4,7 +4,7 @@ Studio hiểu footage có sẵn trên máy để tìm và gợi ý B-roll cho sh
 
 ## Dùng thế nào
 
-- **Tab Footage & chất liệu, mục "Tìm trong footage".** Gõ từ khoá, có dấu hay không đều được: "biển" và "bien" ra cùng kết quả. Lọc theo cỡ cảnh nếu cần. Kéo một kết quả lên timeline: dữ liệu kéo là `text/x-ms-media` `{ rel: null, kind: "video", path, sha256, start, end }`.
+- **Tab Chất liệu, mục "Tìm trong footage".** Gõ từ khoá, có dấu hay không đều được: "biển" và "bien" ra cùng kết quả. Lọc theo cỡ cảnh nếu cần. Kéo một kết quả lên timeline: dữ liệu kéo là `text/x-ms-media` `{ rel: null, kind: "video", path, sha256, start, end }`.
 - **Mục "Phân tích footage".**
   - Trước khi chạy, mục này cho biết số file, số file chưa phân tích, số shot chưa có chú thích và số lượt đọc ảnh sẽ tốn.
   - "Phân tích offline" không tốn lượt nào.
