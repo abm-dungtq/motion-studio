@@ -1,15 +1,16 @@
-// routes/extensions.mjs — GET /api/extensions: the UI extensions of public/, for public/ext.js.
-// An extension is public/ext-<name>.js (it exports register(studio)) and/or public/ext-<name>.css;
-// only names that server.mjs serves as static files are listed. Works without a provider.
+// routes/extensions.mjs — GET /api/extensions. The UI extensions now live in ui/src/ext/<name>/ and
+// are built into ui/dist with the rest of the page, so on a normal install this route always answers
+// { scripts: [], styles: [] } (the old static folder is gone). It stays so the API does not change.
+// Works without a provider.
 import { readdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { PUBLIC_FILE } from "../lib/routes.mjs";
 
-const PUBLIC = fileURLToPath(new URL("../public/", import.meta.url));
 const EXT = /^ext-[a-z-]+\.(js|css)$/;
 
-// { scripts: ["/ext-a.js", …], styles: ["/ext-a.css", …] }, sorted by name.
-export function listExtensions(dir = PUBLIC) {
+// { scripts: ["/ext-a.js", …], styles: ["/ext-a.css", …] } of the folder dir, sorted by name;
+// empty without a folder, which is what the route asks for.
+export function listExtensions(dir) {
+  if (!dir) return { scripts: [], styles: [] };
   let files;
   try { files = readdirSync(dir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name); } catch { files = []; }
   const ok = files.filter((f) => EXT.test(f) && PUBLIC_FILE.test(`/${f}`)).sort();

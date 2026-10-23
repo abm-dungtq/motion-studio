@@ -1,11 +1,11 @@
 # Cắm thêm tính năng vào Studio
 
-Studio có sẵn các chỗ cắm dưới đây. Một tính năng mới thường chỉ cần thêm file mới vào đúng thư mục, không phải sửa `server.mjs` hay `public/app.js`. Mỗi mục có một ví dụ chạy được: chép nguyên file vào đúng chỗ, khởi động lại Studio là thấy.
+Studio có sẵn các chỗ cắm dưới đây. Một tính năng mới thường chỉ cần thêm file mới vào đúng thư mục, không phải sửa `server.mjs` hay khung giao diện trong `ui/src/shell/`. Mỗi mục có một ví dụ chạy được: chép nguyên file vào đúng chỗ, khởi động lại Studio là thấy.
 
 | Chỗ cắm | Thư mục | Hợp đồng nằm ở |
 |---|---|---|
 | Route HTTP | `routes/*.mjs` | `lib/routes.mjs` |
-| Giao diện (tab, mục, inspector, popover agent, timeline, icon) | `public/ext-*.js`, `public/ext-*.css` | `public/ext.js`, `public/panels.js`, `public/inspector.js`, `public/agent.js`, `public/timeline.js`, `public/icons.js` |
+| Giao diện (tab trên rail, mục trong tab, inspector, hộp agent, dấu trên timeline) | `ui/src/ext/<tên>/index.ts` | `ui/src/ext/registry.ts`, `ui/src/ext/load.ts`, `ui/src/slots.ts` |
 | Tool (cho đạo diễn và MCP client) | `lib/tools/*.mjs` | `lib/tools.mjs` |
 | Kiểm chất lượng đầu ra | `lib/quality/*.mjs` | `lib/quality.mjs` |
 | Biên nhận đầu ra | gọi `writeReceipt` | `lib/receipts.mjs` |
@@ -47,55 +47,93 @@ Test có thể truyền danh sách route riêng: `createServer({ root, token, ro
 
 ## Giao diện
 
-`GET /api/extensions` liệt kê `public/ext-*.js` và `public/ext-*.css` (tên chữ thường, gạch nối). `public/ext.js` gắn từng file CSS, `import()` từng file JS rồi gọi `register(studio)`. Một extension lỗi chỉ hiện một toast ghi tên file; các extension khác vẫn chạy.
+Giao diện viết bằng React + TypeScript trong `ui/src/`. Mỗi tính năng giao diện là một thư mục `ui/src/ext/<tên>/` có file `index.ts` export `register(studio)`. Không có file đăng ký chung: lúc build, `ui/src/ext/load.ts` tìm mọi `ui/src/panels/*/index.ts` rồi mọi `ui/src/ext/*/index.ts` (mỗi nhóm theo tên thư mục) và gọi `register(studio)`. Thư mục nào thiếu `register` hoặc ném lỗi thì bị bỏ qua, Studio hiện một toast "Extension lỗi, đã bỏ qua: <thư mục>: <lỗi>", các phần khác vẫn chạy.
 
-```js
-// public/ext-hello.js
-export function register(studio) {
-  const { ctx, h } = studio;
+Extension được build vào `ui/dist` cùng phần còn lại của trang. `start` build lại khi nguồn trong `ui/src` mới hơn bản build, nên thêm thư mục rồi khởi động lại Studio là thấy. Muốn build ngay thì chạy `npm --prefix ui run build`. Route `GET /api/extensions` vẫn còn để API không đổi, nhưng nay luôn trả `{ "scripts": [], "styles": [] }`: file `ext-*.js` đặt ngoài `ui/src` không còn được nạp.
 
-  // Icon: một chuỗi path SVG 24×24, hoặc danh sách [tag, attrs].
-  studio.icon("hello", "M4 12h16M12 4v16");
+Component đặt trong file `.tsx` riêng, vì loader chỉ tìm `index.ts`:
 
-  // Tab sau sáu tab có sẵn. view(helpers) trả một node hoặc một danh sách node.
-  // Alt+1…9 chọn tab theo thứ tự; ?tab=hello mở thẳng tab này.
-  studio.addTab({
-    id: "hello", label: "Chào", lead: "Ví dụ extension", icon: "hello",
-    badge: () => ctx.state.jobs.length,
-    view: ({ h, empty, needManifest }) => (ctx.state.m ? h("p", {}, `Dự án: ${ctx.state.name}`) : needManifest()),
-  });
+```tsx
+// ui/src/ext/hello/Hello.tsx
+import { useProject } from "@/api/queries.ts";
+import type { AgentRowProps, InspectorSectionProps } from "@/ext/registry.ts";
+import { useStudio } from "@/store/studio.ts";
 
-  // Mục ở cuối một tab có sẵn (director, media (tab Footage), lines, music, library, export) hoặc tab mở rộng.
-  studio.addSection("media", { id: "hello-note", order: 50, view: ({ h }) => h("p", { class: "note" }, "Mục thêm vào tab Footage") });
+export function HelloTab() {
+  const name = useStudio((s) => s.name);
+  const { data: m } = useProject(name);
+  if (!name) return <p className="text-sm text-muted-foreground">Chọn một dự án trước.</p>;
+  return <p className="text-sm">Dự án {name}: {m?.shots.length ?? 0} shot</p>;
+}
 
-  // Mục ở cuối inspector khi chọn shot, line, music hoặc event.
-  studio.addInspectorSection({ kinds: ["shot"], view: (pick, m) => h("p", { class: "muted" }, `Shot ${pick.id}`) });
+export function HelloNote() {
+  return <p className="text-xs text-muted-foreground">Mục thêm vào tab Chất liệu</p>;
+}
 
-  // Dòng trong popover của chip agent. reload() vẽ lại popover.
-  studio.addAgentRows((data, { reload, h }) => [h("p", { class: "muted" }, "Dòng thêm vào popover")], { width: "520px" });
+export function HelloShot({ pick }: InspectorSectionProps) {
+  return <p className="text-xs text-muted-foreground">Shot {pick.id}</p>;
+}
+
+export function HelloAgentRow({ data, reload }: AgentRowProps) {
+  return <button type="button" className="text-xs" onClick={reload}>{data ? "Tải lại" : "Đang đọc…"}</button>;
+}
+```
+
+```ts
+// ui/src/ext/hello/index.ts
+import { Hand } from "lucide-react";
+import type { Studio } from "@/ext/registry.ts";
+import { HelloAgentRow, HelloNote, HelloShot, HelloTab } from "./Hello.tsx";
+
+export function register(studio: Studio): void {
+  // Tab trên rail trái. group: assets, audio, library hoặc extra (mặc định); order trong nhóm.
+  // Alt+1…9 chọn tab theo thứ tự trên rail; ?tab=hello mở thẳng tab này.
+  studio.registerTab({ id: "hello", label: "Chào", icon: Hand, group: "extra", lead: "Ví dụ extension", component: HelloTab });
+
+  // Mục ở cuối một tab (id của tab), của tab Đạo diễn ("director") hoặc của hộp xuất ("export").
+  studio.registerSection("media", { id: "hello-note", order: 50, component: HelloNote });
+
+  // Mục trong tab Shot của cột phải khi chọn một khối trên timeline.
+  studio.registerInspectorSection({ id: "hello-shot", kinds: ["shot"], component: HelloShot });
+
+  // Dòng trong hộp agent (bấm chip agent). width đặt bề rộng hộp, ví dụ "520px".
+  studio.registerAgentRows({ component: HelloAgentRow });
 
   // Dấu chỉ để xem trên timeline: dải từ t đến until, hoặc vạch mảnh tại t.
-  studio.addTimelineDecorator((m, state) => [{ t: 1, until: 2.5, lane: "voice", label: "đoạn cần xem", kind: "warn" }]);
+  studio.registerTimelineDecorator(() => [{ t: 1, until: 2.5, lane: "voice", label: "đoạn cần xem", kind: "warn" }]);
 
   studio.toast("Extension hello đã chạy");
 }
 ```
 
-- `studio = { ctx, h, toast, addTab, addSection, addInspectorSection, addAgentRows, addTimelineDecorator, icon }`.
-- `ctx.api(path)` gọi GET và trả JSON, lỗi thì ném. `ctx.send(path, body)` gọi POST có token và trả `{ status, ...json }`. `ctx.state` giữ dự án đang mở (`name`, `m` là manifest, `pick` là mục đang chọn, `jobs`). `ctx.on("project", fn)` báo khi đổi dự án.
-- Helper của view tab và mục: `{ h, empty, needManifest, loading, fail, select, render }`. View ném lỗi thì chỉ phần đó hiện lỗi, panel vẫn chạy.
-- `lane` của timeline là `shot`, `voice`, `music` hoặc `sfx`. Dấu chỉ để xem, không sửa `project.json`.
-- `app.css` là của Studio. Extension dùng file `public/ext-<tên>.css` riêng hoặc style inline.
+- `studio = { registerTab, registerSection, registerInspectorSection, registerAgentRows, registerTimelineDecorator, actions, api, send, toast, useStudio, bus }`. Kiểu nằm ở `ui/src/ext/registry.ts`.
+- `registerTab({ id, label, icon, group?, order?, lead?, component, badge? })`: `id` khớp `^[a-z][a-z0-9-]{1,30}$`, không trùng tab khác, và không được là `ai` hay `output` (hai id này nay mở tab Đạo diễn và hộp xuất). `icon` là một component icon, thường lấy từ `lucide-react`. `badge()` trả số hiện trên nút rail (0 thì ẩn); hàm chạy lúc nút rail render nên dùng được hook, miễn là gọi cùng các hook ở mọi lần render. Thứ tự trên rail: nhóm `assets`, `audio`, `library`, `extra`, rồi `order` (mặc định 100), rồi thứ tự đăng ký.
+- `registerSection(hostId, { id, order?, component })`: `hostId` là id một tab, `"director"` hay `"export"`. Các mục xếp theo `order` (mặc định 100). Mục có sẵn của tab Đạo diễn là `chat` (`order: 10`); của hộp xuất là `gates`, `jobs`, `files` (10, 20, 30); tab Chất liệu có `broll-search` (40).
+- `registerInspectorSection({ id?, kinds?, order?, component })`. `kinds` là các loại khối: `shot`, `line`, `music`, `event`, `beat`, `word` (mặc định `["shot"]`). `component` nhận `{ pick, m }`: `pick` là `{ kind, id }` của khối đang chọn, `m` là manifest hoặc `null`. Phần lõi của inspector đăng ký với `order: 0`, extension mặc định `100`; với shot, các mục có sẵn là B-roll (30), chuyển cảnh (40), phong cách (50), biên nhận (60).
+- `registerAgentRows({ component, width? })`: `component` nhận `{ data, error, reload }`, với `data` là kết quả `GET /api/agent` (chưa có thì `undefined`). Dòng của `ui/src/panels/` đứng trước dòng của `ui/src/ext/`.
+- `registerTimelineDecorator((m, { name, sel, pick }) => DecoBand[])`: mỗi dải là `{ t, until?, lane, label, kind }`, `lane` là `shot`, `voice`, `music` hoặc `sfx`, `kind` là `info`, `warn`, `bad` hoặc `ok`. Dấu chỉ để xem, không sửa `project.json`. Hàm ném lỗi thì bị bỏ qua.
+- Dữ liệu: `useStudio` (Zustand) giữ trạng thái giao diện (`name`, `pick`, `sel`, `leftTab`, …). Playhead `t` đổi mỗi khung khi đang phát, nên đọc bằng `useStudio.getState().t` hoặc `useStudio.subscribe`, không đọc bằng selector trong lúc render. Dữ liệu server lấy qua các hook trong `ui/src/api/queries.ts` (`useProject`, `useJobs`, `useRequests`, `useGates`, …). `api(path)` gọi GET và trả JSON, lỗi thì ném; `send(path, body)` gọi POST có token và trả `{ status, ...json }`; `actions` là các thao tác có sẵn (mở dự án, hoàn tác, xuất…).
+- Mỗi tab, mục và mục inspector nằm trong một error boundary riêng. Component ném lỗi thì chỉ phần đó hiện lỗi; ở inspector, phần đó hiện "Mục mở rộng lỗi: <lỗi>". Đổi dự án hoặc đổi khối đang chọn thì phần đó được thử lại.
+- Màu: chỉ dùng token trong `ui/src/styles/tokens.css`, qua class Tailwind (`bg-panel`, `text-muted-foreground`, `border-border`, `text-warn`, …). Canvas đọc token bằng `getComputedStyle`. Không viết mã màu thô (`#…`, `rgb()`, `hsl()`, `oklch()`) và không dùng bảng màu dựng sẵn của Tailwind (`bg-blue-500`, `text-white`…): `ui/src/styles/tokens.test.ts` chặn cả hai. Dòng thật sự cần ngoại lệ thì ghi chú `token-exempt: <lý do>` trên chính dòng đó. Extension không có file CSS riêng.
+
+### Thẻ cổng của đạo diễn
+
+Khi đạo diễn hỏi người dùng (`studio_ask`), tab Đạo diễn hiện một thẻ cổng (`ui/src/panels/director/GateCard.tsx`): chọn hướng, duyệt animatic hay ảnh, hoặc trả lời bằng chữ. Thẻ render với `key={cardKey(…)}`, nên khi khung chat vẽ lại, thẻ vẫn là cùng một node và animatic đang xem không chạy lại từ đầu. Trong lúc đang nhấn chuột hay Space trên một nút ở cột phải, khung chat giữ nguyên nội dung (`usePressGate`), rồi mới cập nhật khi nhả, để cú bấm không trượt vì nút bị thay giữa chừng. Thẻ chỉ người dùng bấm được; extension không trả lời thay. Muốn thêm nội dung vào tab Đạo diễn thì dùng `registerSection("director", …)` với `order` lớn hơn 10 để nằm dưới khung chat.
 
 ### Kéo footage
 
-Một dòng footage kéo đi với kiểu `text/x-ms-media` (hằng `MEDIA_DRAG` trong `public/panels.js`), dữ liệu là JSON `{ rel, kind, path }`: `rel` là đường trong dự án (có thể null), `kind` là loại media, `path` là đường tuyệt đối. Kèm `text/plain` là `rel` hoặc `path`.
+Một dòng footage kéo đi với kiểu `text/x-ms-media` (hằng `MEDIA_DRAG` trong `ui/src/core/dnd.ts`), dữ liệu là JSON `{ rel, kind, path }`: `rel` là đường trong dự án (có thể null), `kind` là loại media, `path` là đường tuyệt đối. Một kết quả "Tìm trong footage" gửi thêm `sha256`, `start` và `end`. Kèm `text/plain` là `rel` hoặc `path`. Dùng các hàm của cùng file thay vì tự đọc `dataTransfer`:
 
-```js
-import { MEDIA_DRAG } from "/panels.js";
-el.addEventListener("dragover", (e) => { if (e.dataTransfer.types.includes(MEDIA_DRAG)) e.preventDefault(); });
-el.addEventListener("drop", (e) => { const media = JSON.parse(e.dataTransfer.getData(MEDIA_DRAG)); /* media.rel, media.kind */ });
+```tsx
+import { hasMediaDrag, readMediaDrag } from "@/core/dnd.ts";
+
+<div
+  onDragOver={(e) => { if (hasMediaDrag(e)) e.preventDefault(); }}
+  onDrop={(e) => { const media = readMediaDrag(e); if (media) { /* media.rel, media.kind, media.path */ } }}
+/>
 ```
+
+`setMediaDrag(e, item)` đặt dữ liệu lên sự kiện `dragstart`. `readMediaDrag` trả `null` khi không có dữ liệu hoặc JSON hỏng.
 
 ## Tool
 

@@ -1,0 +1,16 @@
+[
+  {"id": "tab-media", "path": "/?name=thuy-mau-demo&tab=media", "ready": "body:has([data-to]) [data-slot=left] section, body:has([data-to]) [data-slot=left] .empty, body:has([data-to]) [data-slot=left] [role=status]"},
+  {"id": "tab-styles-code", "path": "/?name=thuy-mau-demo&tab=styles-code", "ready": "body:has([data-to]) [data-slot=left] section, body:has([data-to]) [data-slot=left] .empty, body:has([data-to]) [data-slot=left] [role=status]"},
+  {"id": "tab-anime", "path": "/?name=thuy-mau-demo&tab=anime", "ready": "body:has([data-to]) [data-slot=left] section, body:has([data-to]) [data-slot=left] .empty, body:has([data-to]) [data-slot=left] [role=status]"},
+  {"id": "tab-fx", "path": "/?name=thuy-mau-demo&tab=fx", "ready": "body:has([data-to]) [data-slot=left] section, body:has([data-to]) [data-slot=left] .empty, body:has([data-to]) [data-slot=left] [role=status]"},
+  {"id": "tab-voice", "path": "/?name=thuy-mau-demo&tab=voice", "ready": "body:has([data-to]) [data-slot=left] section, body:has([data-to]) [data-slot=left] .empty, body:has([data-to]) [data-slot=left] [role=status], body:has([data-to]) [data-slot=left] textarea"},
+  {"id": "tab-music", "path": "/?name=thuy-mau-demo&tab=music", "ready": "body:has([data-to]) [data-slot=left] section, body:has([data-to]) [data-slot=left] .empty, body:has([data-to]) [data-slot=left] [role=status]"},
+  {"id": "tab-library", "path": "/?name=thuy-mau-demo&tab=library", "ready": "body:has([data-to]) [data-slot=left] section, body:has([data-to]) [data-slot=left] .empty, body:has([data-to]) [data-slot=left] [role=status], body:has([data-to]) [data-slot=left] [data-lib-card]"},
+  {"id": "director", "path": "/?name=thuy-mau-demo&tab=ai", "ready": "body:has([data-to]) [data-slot='right.director'] section"},
+  {"id": "export", "path": "/?name=thuy-mau-demo&tab=output", "ready": "body:has([data-to]) [data-slot=export] section"},
+  {"id": "new-project", "path": "/?name=thuy-mau-demo&tab=media", "ready": "body:has([data-to]) [data-slot=timeline] [data-kind=shot]", "steps": [{"click": "header button:has-text('Dự án mới')"}]},
+  {"id": "agent", "path": "/?name=thuy-mau-demo&tab=media", "ready": "body:has([data-to]) [data-slot=timeline] [data-kind=shot]", "steps": [{"click": "[data-agent-chip]"}]},
+  {"id": "inspector-shot", "path": "/?name=thuy-mau-demo&tab=media", "ready": "body:has([data-to]) [data-slot=timeline] [data-kind=shot]", "steps": [{"click": "[data-slot=timeline] [data-kind=shot]"}]},
+  {"id": "readonly", "path": "/?name=abm-intro&tab=media", "ready": "[data-slot=left] section, [data-slot=left] .empty, [data-slot=left] [role=status]"},
+  {"id": "gate-card", "path": "/?name=thuy-mau-demo&tab=ai", "ready": "body:has([data-to]) [data-slot='right.director'] [data-gate]"}
+]

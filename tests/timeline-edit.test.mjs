@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { beatTimes, eventStart, keyAction, musicDragOps, nextSfxId, shotAt, snap, snapTargets, splitOps } from "../public/timeline-edit.js";
+import { beatTimes, eventStart, keyAction, musicDragOps, nextSfxId, shotAt, snap, snapTargets, splitOps } from "../ui/src/core/timeline-edit.ts";
 
 const two = {
   shots: [{ id: "s1", name: "Mở", start: 0, end: 4 }, { id: "s2", name: "", start: 4, end: 8 }],

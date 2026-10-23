@@ -8,7 +8,7 @@ Studio chỉ nghe `127.0.0.1:4317`. Mọi thay đổi timeline đi qua cổng l�
 
 ## Cần có
 
-- Node.js 20 trở lên. Không có dependency npm, không có bước build.
+- Node.js 22.18 trở lên. Server không có dependency npm. Giao diện nằm trong `ui/` và được build bằng Vite khi chạy `npm run setup`; `start` build lại khi nguồn mới hơn bản build. Lần cài đầu cần mạng để tải các gói của `ui/`.
 - Một provider. Provider mặc định là plugin opus-video 2.3.0 trở lên (dưới 3.0), thường ở `~/.claude/skills/opus-video`. Chưa có provider thì Studio vẫn mở được trang và báo rõ thiếu gì.
 - Claude Code (`claude`) đã đăng nhập, nếu muốn giao việc cho đạo diễn AI.
 - ffmpeg và ffprobe để đọc metadata footage và xuất video.
@@ -48,12 +48,12 @@ Bốn track: Shot, Lồng tiếng, Nhạc, SFX. Kéo chuột chỉ xem trước 
 - **Cắt shot:** chọn shot, đặt playhead bên trong, bấm S. Shot mới trống, cần đạo diễn dựng cảnh; Studio đưa nút "Nhờ đạo diễn dựng shot mới".
 - **Hít** (phím N hoặc nút "Hít"): mép khối hít vào playhead, mép shot, câu, SFX, phách nhạc, đầu từ.
 - **M/S** trên nhãn track tắt tiếng hoặc solo track đó trong player. Chỉ ảnh hưởng xem trước, không đổi `project.json` hay video xuất.
-- **Chip cổng** cạnh nút Xuất video: "Cần duyệt lại animatic" hoặc "Chưa đủ cổng xuất". Tab Xuất bản liệt kê các dòng FAIL.
+- **Chip cổng** cạnh menu Xuất bản trên thanh trên: "Cần duyệt lại animatic" hoặc "Chưa đủ cổng xuất". Bấm chip mở thẻ duyệt ở tab Đạo diễn, hoặc hộp "Cổng & tệp đã xuất…" liệt kê các dòng FAIL.
 - Sóng âm trên khối giọng và nhạc, vạch phách trên thước, chấm đầu từ khi zoom lớn. Ctrl/Cmd+cuộn để zoom quanh con trỏ, "Vừa khung" để xem cả video.
 
 ### Phím tắt timeline
 
-Không chạy khi con trỏ đang ở ô nhập liệu.
+Không chạy khi con trỏ đang ở ô nhập liệu, khi đang mở hộp thoại hay menu, hoặc khi focus đang ở rail tab. Alt+1…9 chọn tab trên rail theo thứ tự.
 
 | Phím | Việc |
 |---|---|
@@ -63,13 +63,14 @@ Không chạy khi con trỏ đang ở ô nhập liệu.
 | Shift+← / Shift+→ | Lùi / tới một giây |
 | Home / End | Về đầu / cuối video |
 | S | Cắt shot đang chọn tại playhead |
-| Delete | Xoá SFX đang chọn (chỉ SFX thêm từ Studio) |
+| Delete / Backspace | Xoá SFX đang chọn (chỉ SFX thêm từ Studio) |
 | N | Bật / tắt hít |
 | R | Đổi chế độ kéo mép shot: Ripple (video dài/ngắn theo) hoặc Roll (chỉ dời điểm cắt) |
 | Shift+kéo câu thoại | Dời câu đó và các câu sau nó trong cùng shot |
+| = hoặc + / - | Phóng to / thu nhỏ timeline |
 | Shift+Z | Vừa khung |
 | Cmd/Ctrl+Z | Hoàn tác |
-| Cmd/Ctrl+Shift+Z | Làm lại (nút "Làm lại" luôn bật; không còn gì để làm lại thì hiện thông báo) |
+| Cmd/Ctrl+Shift+Z, Ctrl+Y | Làm lại (nút "Làm lại" luôn bật; không còn gì để làm lại thì hiện thông báo) |
 
 ## Thư viện mẫu
 
@@ -92,7 +93,7 @@ Dữ liệu nằm trong `library/library.json`, dựng bằng `scripts/build-lib
 
 ## Bộ lớp dựng
 
-Nút "Xuất bộ lớp dựng" trong tab Xuất bản xuất dự án thành các lớp để dựng tiếp trong Concat, CapCut, DaVinci hay Premiere. Chạy tay bằng lệnh:
+Mục "Xuất bộ lớp dựng" trong menu Xuất bản trên thanh trên xuất dự án thành các lớp để dựng tiếp trong Concat, CapCut, DaVinci hay Premiere. Chạy tay bằng lệnh:
 
 ```bash
 node bundle.mjs --project <thư mục dự án> [--ratio 9x16] [--source <mp4 đã render>] [--out <thư mục>]
@@ -131,13 +132,13 @@ Lần đầu chạy mà chưa có `~/.config/motion-studio/studio.json`, Studio 
 
 ## Tính năng mở rộng
 
-Thêm tính năng bằng cách thêm file, không sửa `server.mjs` hay `public/app.js`:
+Thêm tính năng bằng cách thêm file, không sửa `server.mjs` hay khung giao diện trong `ui/src/shell/`:
 
 - `routes/*.mjs`: route HTTP. Route của Studio luôn được thử trước; đường trùng làm Studio báo lỗi lúc khởi động.
-- `public/ext-*.js` và `public/ext-*.css`: tab, mục trong tab, mục trong inspector, dòng trong popover agent, dấu trên timeline, icon.
+- `ui/src/ext/<tên>/index.ts`: export `register(studio)` và gọi `registerTab`, `registerSection`, `registerInspectorSection`, `registerAgentRows`, `registerTimelineDecorator` để thêm tab trên rail, mục trong tab, mục trong inspector, dòng trong hộp agent, dấu trên timeline. Extension được build vào `ui/dist` cùng giao diện.
 - `lib/tools/*.mjs`: tool cho đạo diễn AI và MCP client.
 - `lib/quality/*.mjs`: kiểm chạy trên mọi file Studio tạo ra. Kết quả nằm trong biên nhận `<dự án>/.opus/receipts/`.
-- `lib/agents/cli/*.mjs`: agent CLI trên máy (claude, codex, codex-pool, agy, …) để viết chữ, đọc ảnh, sinh ảnh. Bảng trạng thái và nút "Thử khả năng" nằm trong popover của chip agent.
+- `lib/agents/cli/*.mjs`: agent CLI trên máy (claude, codex, codex-pool, agy, …) để viết chữ, đọc ảnh, sinh ảnh. Bảng trạng thái và nút "Thử khả năng" nằm trong hộp mở ra khi bấm chip agent.
 
 Ví dụ chạy được cho từng chỗ cắm: [docs/extensions.md](docs/extensions.md). Agent CLI, thứ tự thử và cách đổi: [docs/agents.md](docs/agents.md).
 

@@ -5,8 +5,9 @@
   "type": "module",
   "license": "MIT",
   "bin": { "motion-studio": "bin/motion-studio.mjs" },
+  "engines": { "node": ">=22.18" },
   "scripts": {
     "setup": "node bin/motion-studio.mjs setup",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs && npm --prefix ui test"
   }
 }

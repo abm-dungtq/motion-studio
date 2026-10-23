@@ -22,6 +22,9 @@
 // (default cli: Studio runs `claude -p` itself; mcp: an open Claude Code session takes the queue)
 // and "root". Old variable names (OPUS_STUDIO_ROOT, OPUS_STUDIO_STATE) still work, with a warning.
 // stop waits up to 10 s: running jobs (director, export) get SIGTERM, then SIGKILL after 5 s.
+// setup and start install and build ui/ when needed (lib/ui-build.mjs): setup always checks it,
+// start rebuilds when the sources are newer than ui/dist (and installs only when node_modules is
+// missing). Needs Node.js 22.18 or newer, which runs the .ts files of ui/src/core directly.
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, realpathSync, rmSync, writeFileSync, chmodSync, renameSync } from "node:fs";
 import { spawn, execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -29,6 +32,7 @@ import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { logFile, migrateState, readState as readStateFile, rootDefault, settingsOf, stateFile } from "../lib/config.mjs";
 import { legacyStateFiles, providerStatus } from "../lib/provider.mjs";
+import { ensureUi, uiState } from "../lib/ui-build.mjs";
 
 export const PORT = 4317;
 export const HOST = "127.0.0.1";
@@ -97,6 +101,10 @@ async function start(o) {
     console.error(`studio: đang chạy cho ${s.root} (pid ${s.pid}); dừng nó trước (node bin/motion-studio.mjs stop)`);
     return 3;
   }
+  if (!o.child) {
+    const ui = await ensureUi({ install: !uiState().hasDeps });
+    if (!ui.ok) { console.error(ui.message); return 1; }
+  }
   if (readState()) clearState();
   const owner = portOwner();
   if (owner) { console.error(`studio: cổng ${PORT} đang bị ${owner} giữ`); return 3; }
@@ -147,6 +155,7 @@ function help() {
 
 export async function main(argv = process.argv.slice(2)) {
   if (argv.some((a) => a === "--help" || a === "-h")) { help(); return 0; }
+  if (!process.features?.typescript) { console.error("studio: cần Node.js 22.18 trở lên (chạy được file .ts); đang chạy " + process.version); return 2; }
   migrateState(await legacyStateFiles());
   STATE = stateFile();
   LOG = logFile();
@@ -155,6 +164,8 @@ export async function main(argv = process.argv.slice(2)) {
     const { parseArgs, runSetup } = await import("../lib/setup.mjs");
     const so = parseArgs(rest);
     if (so.error) { console.error(`setup: ${so.error}`); return 2; }
+    const ui = await ensureUi({ install: true });
+    if (!ui.ok) { console.error(ui.message); return 1; }
     return runSetup(so);
   }
   const o = {};

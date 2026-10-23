@@ -1,0 +1,15 @@
+[
+  { "id": "tab-ai", "path": "/?name=thuy-mau-demo&tab=ai", "ready": "#panel[aria-labelledby=\"tab-ai\"] :is(.group, .empty, section, .chat)" },
+  { "id": "tab-media", "path": "/?name=thuy-mau-demo&tab=media", "ready": "#panel[aria-labelledby=\"tab-media\"] :is(.group, .empty, section)" },
+  { "id": "tab-voice", "path": "/?name=thuy-mau-demo&tab=voice", "ready": "#panel[aria-labelledby=\"tab-voice\"] :is(.group, .empty, section, .card)" },
+  { "id": "tab-music", "path": "/?name=thuy-mau-demo&tab=music", "ready": "#panel[aria-labelledby=\"tab-music\"] :is(.group, .empty, section)" },
+  { "id": "tab-library", "path": "/?name=thuy-mau-demo&tab=library", "ready": "#panel[aria-labelledby=\"tab-library\"] .lib-card" },
+  { "id": "tab-output", "path": "/?name=thuy-mau-demo&tab=output", "ready": "#panel[aria-labelledby=\"tab-output\"] :is(.group, .empty, section)" },
+  { "id": "tab-anime", "path": "/?name=thuy-mau-demo&tab=anime", "ready": "#panel[aria-labelledby=\"tab-anime\"] :is(.group, .empty, section)" },
+  { "id": "tab-styles-code", "path": "/?name=thuy-mau-demo&tab=styles-code", "ready": "#panel[aria-labelledby=\"tab-styles-code\"] :is(.group, .empty, section)" },
+  { "id": "new-project", "path": "/?name=thuy-mau-demo&tab=media", "ready": "#timeline .blk.shot", "steps": [{ "click": "#new-btn" }] },
+  { "id": "agent", "path": "/?name=thuy-mau-demo&tab=media", "ready": "#timeline .blk.shot", "steps": [{ "click": "#agent-chip" }] },
+  { "id": "inspector-shot", "path": "/?name=thuy-mau-demo&tab=media", "ready": "#timeline .blk.shot", "steps": [{ "click": "#timeline .blk.shot" }] },
+  { "id": "readonly", "path": "/?name=abm-intro&tab=media", "ready": "#panel[aria-labelledby=\"tab-media\"] :is(.group, .empty, section)" },
+  { "id": "gate-card", "path": "/?name=thuy-mau-demo&tab=ai", "ready": "#panel .card.gate:not(.expired)" }
+]

@@ -1,24 +1,24 @@
 # Timeline
 
-Timeline của Studio là JavaScript thuần trong `public/`, không có bước build và không dùng React. Tài liệu này ghi lại những gì đã học từ các trình dựng mã nguồn mở, vì sao Studio tự viết thay vì nhúng, bảng phím tắt đầy đủ, luồng dữ liệu và các route HTTP mà timeline dùng.
+Timeline của Studio viết bằng React, nằm trong `ui/src/timeline/`. Phép tính không cần React (kéo, hít, xếp làn, hình học của khối) nằm ở `ui/src/core/timeline-edit.ts`, `ui/src/core/timeline-geometry.ts`, `ui/src/core/timeline-lanes.ts` và các file khác trong `ui/src/core/`, nên Node chạy thẳng được trong test. Tài liệu này ghi lại những gì đã học từ các trình dựng mã nguồn mở, vì sao Studio tự viết thay vì nhúng, bảng phím tắt đầy đủ, luồng dữ liệu và các route HTTP mà timeline dùng.
 
 ## Đối chiếu với các dự án khác
 
 | Dự án | Giấy phép | Họ có | Ta có | Lấy gì |
 |---|---|---|---|---|
-| [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) `packages/studio` (commit `03ed146`) | Apache-2.0 | Timeline React/Zustand cho chính runtime ta render. Snap 8 px có thứ tự ưu tiên theo loại mốc. Waveform giảm điểm theo mức zoom. Lịch tạo thumbnail | Timeline vanilla, snap theo phách, mép shot và playhead | Thuật toán `decimatePeaks` (lấy max trong mỗi ô) cho waveform nhiều mức chi tiết (`public/waveform.js`). Không chép component |
-| [OpenCut-app/OpenCut](https://github.com/OpenCut-app/OpenCut) tag `v0.3.0` | MIT | `lib/ripple` (ripple theo hiệu số), `snap-utils.ts` (ngưỡng 10 px), `placement/overlap.ts` (đặt clip vào track đầu tiên không chồng) | Ripple ở mép phải shot, do gateway của provider làm | Ý tưởng xếp làn: track trống đầu tiên theo thứ tự bắt đầu, thành `stackLanes` (`public/timeline-edit.js`), dùng cho làn nhạc và tầng SFX. Nhánh `main` hiện tại của OpenCut là bản viết lại, chưa có timeline |
-| [omniclip/omniclip](https://github.com/omni-media/omniclip) (commit `cbe581a`) | MIT | `filmstrip.ts`: `<video>` ẩn, seek, vẽ lên canvas | Chưa có thumbnail | Cách lấy khung hình: `<video>` ẩn, seek tuần tự theo từng URL, vẽ canvas 160×90 rồi lưu JPEG (`public/thumbs.js`) |
+| [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) `packages/studio` (commit `03ed146`) | Apache-2.0 | Timeline React/Zustand cho chính runtime ta render. Snap 8 px có thứ tự ưu tiên theo loại mốc. Waveform giảm điểm theo mức zoom. Lịch tạo thumbnail | Timeline tự viết, snap theo phách, mép shot và playhead | Thuật toán `decimatePeaks` (lấy max trong mỗi ô) cho waveform nhiều mức chi tiết (`ui/src/core/waveform.ts`). Không chép component |
+| [OpenCut-app/OpenCut](https://github.com/OpenCut-app/OpenCut) tag `v0.3.0` | MIT | `lib/ripple` (ripple theo hiệu số), `snap-utils.ts` (ngưỡng 10 px), `placement/overlap.ts` (đặt clip vào track đầu tiên không chồng) | Ripple ở mép phải shot, do gateway của provider làm | Ý tưởng xếp làn: track trống đầu tiên theo thứ tự bắt đầu, thành `stackLanes` (`ui/src/core/timeline-edit.ts`), dùng cho làn nhạc và tầng SFX. Nhánh `main` hiện tại của OpenCut là bản viết lại, chưa có timeline |
+| [omniclip/omniclip](https://github.com/omni-media/omniclip) (commit `cbe581a`) | MIT | `filmstrip.ts`: `<video>` ẩn, seek, vẽ lên canvas | Chưa có thumbnail | Cách lấy khung hình: `<video>` ẩn, seek tuần tự theo từng URL, vẽ canvas 160×90 rồi lưu JPEG (`ui/src/core/thumbs.ts`) |
 | [motion-canvas/motion-canvas](https://github.com/motion-canvas/motion-canvas) (commit `7b91435`) | MIT | `TimeEvent`: mốc thời gian có tên, kéo được trên timeline, mã đọc từ file meta | Mốc phách và mốc từ chỉ đọc | Ý tưởng mốc kéo được, lưu trong file nguồn rồi dựng lại TIMING (`lib/timing-edit.mjs`). Không chép mã |
-| [Vanilagy/mediabunny](https://github.com/Vanilagy/mediabunny) | MPL-2.0 | Giải mã và mux media trong trình duyệt | | Không dùng: `<video>` và Web Audio đã đủ cho waveform và thumbnail, thêm thư viện thì phải có bước build |
+| [Vanilagy/mediabunny](https://github.com/Vanilagy/mediabunny) | MPL-2.0 | Giải mã và mux media trong trình duyệt | | Không dùng: `<video>` và Web Audio đã đủ cho waveform và thumbnail |
 
 ### Nhúng hay tự viết
 
-Tự viết. HyperFrames Studio là ứng dụng React chạy bằng server riêng. Nhúng nó (iframe hoặc web component) nghĩa là chạy thêm một server, đồng bộ hai mô hình dữ liệu và kéo React vào một trang không có bước build. Thứ ta cần là thuật toán (snap, xếp làn, giảm điểm waveform, lấy khung hình), và các thuật toán đó ngắn, chép lại được kèm ghi nguồn.
+Tự viết. HyperFrames Studio là ứng dụng React chạy bằng server riêng. Nhúng nó (iframe hoặc web component) nghĩa là chạy thêm một server và đồng bộ hai mô hình dữ liệu. Giao diện của Studio nay cũng là React, nhưng timeline vẫn tự viết vì nó đọc và sửa `project.json` qua cổng lệnh của provider, còn timeline của HyperFrames Studio giữ mô hình dữ liệu riêng. Thứ ta cần là thuật toán (snap, xếp làn, giảm điểm waveform, lấy khung hình), và các thuật toán đó ngắn, chép lại được kèm ghi nguồn.
 
 ## Phím tắt
 
-Phím tắt không chạy khi con trỏ đang ở trong ô nhập.
+Phím tắt không chạy khi con trỏ đang ở trong ô nhập, khi đang mở hộp thoại hay menu, hoặc khi focus đang ở rail tab (mũi tên trên rail chuyển tab). Tổ hợp có Alt không chạy phím timeline; Alt+1…9 chọn tab trên rail.
 
 | Phím | Việc |
 |---|---|
@@ -28,12 +28,13 @@ Phím tắt không chạy khi con trỏ đang ở trong ô nhập.
 | Shift+← / Shift+→ | Lùi / tới một giây |
 | Home / End | Về đầu / cuối video |
 | S | Cắt shot đang chọn tại playhead |
-| Delete | Xoá SFX đang chọn (chỉ SFX thêm từ Studio) |
+| Delete / Backspace | Xoá SFX đang chọn (chỉ SFX thêm từ Studio) |
 | N | Bật / tắt hít |
 | R | Đổi chế độ kéo mép shot: Ripple hoặc Roll |
+| = hoặc + / - | Phóng to / thu nhỏ timeline |
 | Shift+Z | Vừa khung |
 | Cmd/Ctrl+Z | Hoàn tác |
-| Cmd/Ctrl+Shift+Z | Làm lại |
+| Cmd/Ctrl+Shift+Z, Ctrl+Y | Làm lại |
 
 Thao tác chuột:
 
@@ -46,7 +47,7 @@ Thao tác chuột:
 | Shift+kéo câu thoại | Dời câu đó và các câu sau nó trong cùng shot |
 | Kéo vạch phách | Sửa `beat0` của lưới phách, dựng lại TIMING |
 | Kéo chấm từ | Sửa giờ bắt đầu của một từ trong `words.json`, dựng lại TIMING |
-| Thả footage từ khung Footage vào shot hoặc làn B-roll | Thêm file vào `assets` của shot |
+| Thả footage từ tab Chất liệu, hoặc một kết quả "Tìm trong footage", vào shot hoặc làn B-roll | Thêm file vào `assets` của shot |
 
 ## Các làn
 

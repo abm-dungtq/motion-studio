@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadProvider } from "../lib/provider.mjs";
-import { rippleLineOps, rollOps, rollRange } from "../public/timeline-edit.js";
+import { rippleLineOps, rollOps, rollRange } from "../ui/src/core/timeline-edit.ts";
 
 const r3 = (x) => Math.round(x * 1000) / 1000;
 

@@ -73,12 +73,12 @@ test("Studio core reaches the provider only through lib/provider.mjs", () => {
 test("the default provider's name appears nowhere outside its adapter", () => {
   const allowed = new Set([`lib/providers/${A.ID}.mjs`, "CHANGELOG.md", "README.md"]);
   const skipDirs = new Set([".git", ".claude", "node_modules", "plans", "tests/fixtures"]);
-  const text = new Set([".mjs", ".js", ".json", ".html", ".css", ".md", ".sh", ".txt", ""]);
+  const text = new Set([".mjs", ".js", ".ts", ".tsx", ".json", ".html", ".css", ".md", ".sh", ".txt", ""]);
   const hits = [];
   const walk = (d) => {
     for (const e of readdirSync(d)) {
       const f = join(d, e), rel = relative(ROOT, f);
-      if (skipDirs.has(rel) || e === ".DS_Store") continue;
+      if (skipDirs.has(rel) || e === "node_modules" || rel === "ui/dist" || e === ".DS_Store") continue;
       if (statSync(f).isDirectory()) { walk(f); continue; }
       if (allowed.has(rel) || !text.has(extname(e))) continue;
       readFileSync(f, "utf8").split("\n").forEach((l, i) => { if (l.toLowerCase().includes(A.ID)) hits.push(`${rel}:${i + 1}`); });
