@@ -436,6 +436,8 @@ function runKey(a) {
 // What an extension's register(studio) gets (docs/extensions.md).
 const studio = {
   ctx,
+  h,
+  toast,
   addTab: (t) => panels.addTab(t),
   addSection: (tabId, s) => panels.addSection(tabId, s),
   addInspectorSection: (s) => inspector.addSection(s),

@@ -1,12 +1,14 @@
 // ext.js — loads the UI extensions GET /api/extensions lists: a <link> per ext-*.css, then
 // import() of each ext-*.js and its register(studio). One extension that fails to load or
 // register is reported by file name in a toast; the others still load. app.js builds studio:
-// { ctx, addTab, addSection, addInspectorSection, addAgentRows, addTimelineDecorator, icon }.
+// { ctx, h, toast, addTab, addSection, addInspectorSection, addAgentRows, addTimelineDecorator, icon }.
 // See docs/extensions.md.
+import { toast } from "/dom.js";
+
 export async function loadExtensions(studio) {
   let list;
   try { list = await studio.ctx.api("/api/extensions"); } catch (e) {
-    studio.ctx.toast(`Không đọc được danh sách extension: ${e.message}`, true);
+    toast(`Không đọc được danh sách extension: ${e.message}`, true);
     return { loaded: [], failed: [] };
   }
   for (const href of list?.styles ?? []) {
@@ -27,6 +29,6 @@ export async function loadExtensions(studio) {
       failed.push(`${src.slice(1)}: ${e.message}`);
     }
   }
-  if (failed.length) studio.ctx.toast(`Extension lỗi, đã bỏ qua: ${failed.join("; ")}`, true);
+  if (failed.length) toast(`Extension lỗi, đã bỏ qua: ${failed.join("; ")}`, true);
   return { loaded, failed };
 }
