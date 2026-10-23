@@ -125,6 +125,16 @@ test("main writes shots, stems, captions and manifest from a source render", { s
 
     // Word times from the fixture's words.json: the comma does not break, the full stop ends it.
     assert.equal(readFileSync(join(out, "captions.srt"), "utf8"), "1\n00:00:02,600 --> 00:00:04,580\nBạn đưa cả mã nguồn, ảnh chụp.\n");
+
+    // The NLE timelines sit next to the layers and the manifest names them.
+    for (const f of ["timeline.fcpxml", "timeline.xml", "timeline.otio"]) assert.ok(existsSync(join(out, f)), f);
+    assert.equal(m.nle.fcpxml, "timeline.fcpxml");
+    assert.deepEqual(m.nle, { fcpxml: "timeline.fcpxml", xmeml: "timeline.xml", otio: "timeline.otio", absolute_paths: true });
+    const otio = JSON.parse(readFileSync(join(out, "timeline.otio"), "utf8"));
+    assert.deepEqual(otio.tracks.children[0].children.map((c) => c.source_range.duration.value), [75, 99, 66]);
+    assert.equal(await main(["--project", dir, "--source", source, "--out", "out-none", "--nle", "none"], { log: () => {}, err: (msg) => err.push(msg) }), 0, err.join("\n"));
+    for (const f of ["timeline.fcpxml", "timeline.xml", "timeline.otio"]) assert.equal(existsSync(join(dir, "out-none", f)), false, f);
+    assert.equal(JSON.parse(readFileSync(join(dir, "out-none", "manifest.json"), "utf8")).nle, null);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

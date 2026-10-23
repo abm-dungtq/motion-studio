@@ -2,6 +2,7 @@
 // bundle.mjs — "bộ lớp dựng": the project as layers for an NLE (Concat, CapCut, DaVinci,
 // Premiere), so the user can fine-tune the cut there.
 //   node bundle.mjs --project <dir> [--ratio 9x16] [--source <mp4>] [--out <dir>]
+//                   [--nle fcpxml,xmeml,otio | none] [--fcpxml-version 1.10 | 1.8]
 // Writes <out> (default renders/<name>-<yyyymmdd-hhmmss>[-<ratio>]-bundle/ in the project):
 //   shots/NN-<shot id>.mp4  picture only, H.264 CRF 12, cut at the shot bounds of project.json
 //                           rounded to frames (frame = round(t × fps), from the start of the
@@ -12,8 +13,12 @@
 //                           only when such tracks exist; 48 kHz stereo, full length, start at 0
 //   captions.srt            the voice lines; a line longer than CUE_MAX characters is split at
 //                           word times (assets/voice/<file>.words.json), else by character share
+//   timeline.fcpxml         FCPXML (Final Cut Pro, DaVinci Resolve), timeline.xml xmeml v5 (Premiere,
+//   timeline.xml            Resolve), timeline.otio OpenTimelineIO (lib/nle/): the shots end to end
+//   timeline.otio           on one video track, each stem on an audio track, markers for the lines
+//                           and SFX; --nle picks the formats (default all three, none for no file)
 //   manifest.json           schema motion-studio/bundle@1: shots with frames and seconds, audio
-//                           files, lines, SFX events
+//                           files, lines, SFX events, nle (the timeline files; null with --nle none)
 // The picture is one HyperFrames render of the whole composition (`npx hyperframes render
 // --quality delivery`, -c compositions/main-<ratio>.html for another ratio), or --source <mp4>
 // already rendered from it. HyperFrames renders no time range and scenes share one GSAP timeline,
@@ -24,6 +29,7 @@ import { spawnSync } from "node:child_process";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadProvider } from "./lib/provider.mjs";
+import { FCPXML_VERSIONS, FILES as NLE_FILES, FORMATS, parseFormats, writeNle } from "./lib/nle/index.mjs";
 
 export const SCHEMA = "motion-studio/bundle@1";
 export const CUE_MAX = 84; // two subtitle rows of about 42 characters
@@ -120,13 +126,13 @@ function run(cmd, args, opts = {}) {
   if (r.status !== 0) throw new Error(`${cmd} ${args[0] ?? ""} lỗi (exit ${r.status})`);
 }
 
-const usage = "dùng: node bundle.mjs --project <dir> [--ratio 9x16] [--source <mp4>] [--out <dir>]";
+const usage = "dùng: node bundle.mjs --project <dir> [--ratio 9x16] [--source <mp4>] [--out <dir>] [--nle fcpxml,xmeml,otio | none] [--fcpxml-version 1.10 | 1.8]";
 
 export async function main(argv = process.argv.slice(2), { log = console.log, err = console.error, now = new Date() } = {}) {
   const o = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (!["--project", "--ratio", "--source", "--out"].includes(a) || argv[i + 1] === undefined) { err(usage); return 2; }
+    if (!["--project", "--ratio", "--source", "--out", "--nle", "--fcpxml-version"].includes(a) || argv[i + 1] === undefined) { err(usage); return 2; }
     o[a.slice(2)] = argv[++i];
   }
   if (!o.project) { err(usage); return 2; }
@@ -134,6 +140,10 @@ export async function main(argv = process.argv.slice(2), { log = console.log, er
   if (!existsSync(join(dir, "project.json"))) { err(`không có project.json trong ${dir}`); return 2; }
   const ratio = o.ratio ?? "16x9";
   if (!RATIO.test(ratio)) { err("--ratio dạng 9x16"); return 2; }
+  let formats = FORMATS;
+  if (o.nle !== undefined) { try { formats = parseFormats(o.nle); } catch (e) { err(e.message); return 2; } }
+  const fcpxmlVersion = o["fcpxml-version"] ?? FCPXML_VERSIONS[0];
+  if (!FCPXML_VERSIONS.includes(fcpxmlVersion)) { err(`--fcpxml-version là ${FCPXML_VERSIONS.join(" hoặc ")}`); return 2; }
   let p;
   try { p = await loadProvider(); } catch (e) { err(`chưa có provider: ${e.message}${e.hint ? `\n${e.hint}` : ""}`); return 1; }
   const MIX = p.commands.mix;
@@ -217,6 +227,10 @@ export async function main(argv = process.argv.slice(2), { log = console.log, er
       events: (m.events ?? []).map((e) => ({ id: e.id, shot: e.shot, start: (m.shots.find((s) => s.id === e.shot)?.start ?? 0) + (Number(e.offset) || 0), sound: e.sound, label: e.label ?? "" })),
       note: "Chuyển cảnh nằm sẵn trong hình của các shot nó vắt qua: giữ thứ tự và độ dài shot thì liền mạch. Tiếng đặt từ giây 0 của timeline.",
     };
+
+    // 6. NLE timelines, from the manifest above; written before manifest.json so it names them.
+    if (formats.length) log(`Timeline NLE: ${formats.map((f) => NLE_FILES[f]).join(", ")}`);
+    manifest.nle = writeNle(manifest, out, formats, { now, fcpxmlVersion });
     writeFileSync(join(out, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
     log(`Xong: ${relative(dir, out)} (${shots.length} shot, ${audio.length} file tiếng${list.length ? `, ${list.length} phụ đề` : ""})`);
     return 0;
