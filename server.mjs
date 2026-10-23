@@ -45,7 +45,7 @@ import { browse, register, readMedia, BROWSE_ROOTS, AUDIO_EXT } from "./media.mj
 import { agentStatus } from "./agent.mjs";
 import { answerCard } from "./gates.mjs";
 import { query as libraryQuery, thumbFile } from "./lib/library.mjs";
-import { checkRoutes, findRoute, loadRoutes } from "./lib/routes.mjs";
+import { checkRoutes, findRoute, loadRoutes, PUBLIC_FILE } from "./lib/routes.mjs";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const PUBLIC = join(HERE, "public");
@@ -304,7 +304,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         const html = readFileSync(join(PUBLIC, "index.html"), "utf8").replace("__STUDIO_TOKEN__", token);
         return send(res, 200, html, { "content-type": TYPES[".html"] });
       }
-      if (/^\/[a-z-]+\.(js|css)$/.test(p) && existsSync(join(PUBLIC, p.slice(1)))) return serveFile(req, res, join(PUBLIC, p.slice(1)));
+      if (PUBLIC_FILE.test(p) && existsSync(join(PUBLIC, p.slice(1)))) return serveFile(req, res, join(PUBLIC, p.slice(1)));
       if (p === "/hf/runtime.js") {
         const name = q("name");
         const pd = name ? projectDir(name) : {};

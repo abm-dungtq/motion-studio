@@ -7,6 +7,8 @@
 // snapTargets) and a .snap-line shows where. Voice and music blocks carry their waveform; the
 // ruler shows beats and voice blocks word starts (view only). Ctrl/Cmd+wheel zooms around the
 // pointer. M/S on an audio track mutes or solos it in the player only (project.json untouched).
+// Extensions draw view-only marks on a lane with addDecorator(fn(m, state) → [{ t, until?, lane:
+// shot | voice | music | sfx, label, kind }]): a band from t to until, or a thin mark at t.
 import { fmt, h, px, round1 } from "/dom.js";
 import { beatTimes, eventStart, musicDragOps, snap, snapTargets, wordStarts } from "/timeline-edit.js";
 import { openMenu } from "/context-menu.js";
@@ -18,8 +20,12 @@ const CLICK = 3; // px of travel below which a press is a click, not a drag
 const round3 = (x) => Math.round(x * 1000) / 1000;
 const clampPps = (x) => Math.max(8, Math.min(400, x));
 const GROUPS = { "Lồng tiếng": "voiceover", "Nhạc": "music", "SFX": "sfx" };
+const LANES = new Set(["shot", "voice", "music", "sfx"]);
+// Band colours by kind; any other kind uses the first.
+const DECO = { info: "rgba(80, 130, 230, 0.22)", warn: "rgba(230, 160, 40, 0.28)", bad: "rgba(220, 70, 60, 0.26)", ok: "rgba(60, 170, 100, 0.24)" };
 
 export function mountTimeline(ctx, el, { zoomIn, zoomOut, zoomFit, snapBtn }) {
+  const decorators = [];
   let pps = 60, head = null, last = 0, fitted = null, total = 0, inner = null, snapOn = true, snapEl = null;
   zoomIn.addEventListener("click", () => zoomBy(1.25));
   zoomOut.addEventListener("click", () => zoomBy(1 / 1.25));
@@ -253,6 +259,29 @@ export function mountTimeline(ctx, el, { zoomIn, zoomOut, zoomFit, snapBtn }) {
     return h("div", { class: "ms" }, btn(a.mute, "M", "Tắt tiếng"), btn(a.solo, "S", "Chỉ nghe"));
   }
 
+  // Marks of every decorator, by lane. A decorator that throws is skipped (logged), not fatal.
+  function decorations(m) {
+    const by = { shot: [], voice: [], music: [], sfx: [] };
+    for (const fn of decorators) {
+      let items;
+      try { items = fn(m, ctx.state); } catch (e) { console.error("timeline decorator", e); continue; }
+      for (const d of Array.isArray(items) ? items : []) {
+        const t = Number(d?.t), until = d?.until == null ? null : Number(d.until);
+        if (!LANES.has(d?.lane) || !Number.isFinite(t) || (until !== null && !(until > t))) continue;
+        const band = until !== null;
+        by[d.lane].push(h("div", { class: `tl-deco${band ? " band" : ""}`, "data-kind": String(d.kind ?? "info"), title: String(d.label ?? ""), "aria-hidden": "true",
+          style: { position: "absolute", top: "0", bottom: "0", left: px(t * pps), width: px(band ? (until - t) * pps : 2), background: band ? (DECO[d.kind] ?? DECO.info) : "currentColor", color: "var(--muted)", pointerEvents: "none", zIndex: "0", overflow: "hidden", whiteSpace: "nowrap", fontSize: "10px", padding: band ? "0 3px" : "0" } },
+          band && (until - t) * pps > 24 ? String(d.label ?? "") : null));
+      }
+    }
+    return by;
+  }
+  function addDecorator(fn) {
+    if (typeof fn !== "function") throw new Error("addTimelineDecorator: cần một hàm");
+    decorators.push(fn);
+    render();
+  }
+
   let waves = [], words = new Map();
   const fileUrl = (rel) => `/p/${encodeURIComponent(ctx.state.name)}/${String(rel).split("/").map(encodeURIComponent).join("/")}`;
 
@@ -275,8 +304,9 @@ export function mountTimeline(ctx, el, { zoomIn, zoomOut, zoomFit, snapBtn }) {
     const gap = beats.slice(1).reduce((g, t, i) => Math.min(g, t - beats[i]), Infinity);
     if (beats.length && gap * pps >= 6) for (const t of beats) ruler.append(h("div", { class: "tl-beat", style: { left: px(t * pps) } }));
     const timeAt = (laneEl, x) => Math.max(0, Math.min(total, (x - laneEl.getBoundingClientRect().left) / pps));
-    const track = (label, blocks, menu) => {
-      const laneEl = h("div", { class: "tl-lane" }, blocks);
+    const deco = decorations(m);
+    const track = (label, blocks, menu, laneKey) => {
+      const laneEl = h("div", { class: "tl-lane" }, deco[laneKey] ?? [], blocks);
       // Empty lane space: a click seeks there, a right click opens the lane's menu.
       laneEl.addEventListener("click", (e) => { if (e.target === laneEl) ctx.seek(timeAt(laneEl, e.clientX)); });
       if (menu) laneEl.addEventListener("contextmenu", (e) => {
@@ -293,10 +323,10 @@ export function mountTimeline(ctx, el, { zoomIn, zoomOut, zoomFit, snapBtn }) {
     head = h("div", { class: "playhead", style: { left: px(LABEL + last * pps) } }, knob);
     inner = h("div", { class: `tl-inner${ctx.editable ? "" : " readonly"}`, style: { width: px(LABEL + lane) } },
       ruler,
-      track("Shot", m.shots.map(shotBlock)),
-      track("Lồng tiếng", m.lines.map(voiceBlock)),
-      track("Nhạc", m.music.map(musicBlock)),
-      track("SFX", (m.events ?? []).map(eventBlock), (t) => ctx.editable ? [{ label: "Thêm SFX tại đây…", run: () => ctx.addSfx(t) }] : []),
+      track("Shot", m.shots.map(shotBlock), null, "shot"),
+      track("Lồng tiếng", m.lines.map(voiceBlock), null, "voice"),
+      track("Nhạc", m.music.map(musicBlock), null, "music"),
+      track("SFX", (m.events ?? []).map(eventBlock), (t) => ctx.editable ? [{ label: "Thêm SFX tại đây…", run: () => ctx.addSfx(t) }] : [], "sfx"),
       head);
     const sx = el.scrollLeft;
     el.replaceChildren(inner);
@@ -310,5 +340,5 @@ export function mountTimeline(ctx, el, { zoomIn, zoomOut, zoomFit, snapBtn }) {
   ctx.on("manifest", render);
   ctx.on("select", render);
   ctx.on("timing", render);
-  return { render, zoomBy, fit, toggleSnap };
+  return { render, zoomBy, fit, toggleSnap, addDecorator };
 }

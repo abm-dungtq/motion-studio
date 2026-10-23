@@ -4,6 +4,7 @@
 // inspector ({ kind: shot | line | music | event, id }); ctx.state.sel stays the shot it belongs to.
 // ctx.state.audio is the player's mute/solo rule per audio group; ctx.state.gates the last
 // GET /api/gates answer, which drives the top bar's gate chip and the Xuất bản tab's FAIL lines.
+// Once everything is mounted, ext.js loads the UI extensions with the studio object below.
 import { h, toast } from "/dom.js";
 import { mountPlayer } from "/player.js";
 import { mountTimeline } from "/timeline.js";
@@ -14,6 +15,8 @@ import { mountAgent } from "/agent.js";
 import { ANSWER_TIMEOUT_MS, answerFailure } from "/gate-cards.js";
 import { keyAction, nextSfxId, splitOps } from "/timeline-edit.js";
 import { openMenu } from "/context-menu.js";
+import { icon } from "/icons.js";
+import { loadExtensions } from "/ext.js";
 
 const $ = (id) => document.getElementById(id);
 const TOKEN = document.querySelector('meta[name="studio-token"]').content;
@@ -192,10 +195,10 @@ const ctx = {
 const player = mountPlayer(ctx, $("player"), { playBtn: $("play-btn"), timeEl: $("time") });
 ctx.transport = player;
 const timeline = mountTimeline(ctx, $("timeline"), { zoomIn: $("zoom-in"), zoomOut: $("zoom-out"), zoomFit: $("zoom-fit"), snapBtn: $("snap-btn") });
-mountInspector(ctx, $("inspector"));
+const inspector = mountInspector(ctx, $("inspector"));
 const panels = mountPanels(ctx, document.querySelector(".rail"), $("panel"));
 ctx.openTab = (id) => panels.select(id, true);
-mountAgent(ctx, $("agent-chip"));
+const agent = mountAgent(ctx, $("agent-chip"));
 mountNewProject(ctx, $("new-btn"), {
   async onCreated(name, mode) {
     await loadProjects();
@@ -429,6 +432,20 @@ function runKey(a) {
     case "snap": return timeline.toggleSnap?.();
   }
 }
+
+// What an extension's register(studio) gets (docs/extensions.md).
+const studio = {
+  ctx,
+  addTab: (t) => panels.addTab(t),
+  addSection: (tabId, s) => panels.addSection(tabId, s),
+  addInspectorSection: (s) => inspector.addSection(s),
+  addAgentRows: (fn, opts) => agent.addRows(fn, opts),
+  addTimelineDecorator: (fn) => timeline.addDecorator(fn),
+  icon,
+};
+// Extensions load beside the project, not before it; a tab they add that ?tab= or localStorage
+// named is selected once they are in.
+loadExtensions(studio).then(() => panels.restore()).catch((e) => toast(`Extension lỗi: ${e.message}`, true));
 
 ctx.state.providerStatus = await ctx.api("/api/status").catch(() => null);
 await loadProjects().catch((e) => toast(`Không tải được danh sách dự án: ${e.message}`, true));
