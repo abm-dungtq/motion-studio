@@ -16,6 +16,7 @@ export function AgentChip() {
   return (
     <button
       type="button"
+      data-agent-chip=""
       title={c.title}
       aria-haspopup="dialog"
       aria-expanded={open}
