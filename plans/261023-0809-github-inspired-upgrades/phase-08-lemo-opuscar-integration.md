@@ -236,7 +236,7 @@ Tên provider không xuất hiện trong văn bản. Đường tài liệu của
   - sau khi áp `watercolor`: `BRIEF.md` có `lemo_style: watercolor`, `assets/lemo/CREDITS` có, hàng đợi có yêu cầu kèm dòng `next:`;
   - đạo diễn xong: `npm run check` của dự án exit 0; chụp cùng một khung hai lần cho `shasum` giống nhau;
   - sau khi áp `ukiyoe` cho `s2`: có yêu cầu kèm đường `STYLE.md` của `ukiyoe` và id `s2`; sha256 của `BRIEF.md` trước và sau giống nhau.
-- Phong cách riêng: đạo diễn tạo `lemo-style/` có `style.json`, `STYLE.md`, `CHANGES.md`, `styleframe.jpg`. "Giữ phong cách" tạo `/tmp/ms-smoke-8-my-styles/<slug>/` cùng dòng `README.md`, và thẻ hiện ở đầu mục "Của bạn".
+- Phong cách riêng: đạo diễn tạo `lemo-style/` có `style.json`, `STYLE.md`, `CHANGES.md` và khung chụp PNG. "Giữ phong cách" đổi khung đó thành `styleframe.jpg` bằng ffmpeg (không có ffmpeg thì giữ `styleframe.png`), tạo `/tmp/ms-smoke-8-my-styles/<slug>/` cùng dòng `README.md`, và thẻ hiện ở đầu mục "Của bạn".
 - `~/.cache/opus-video/` không đổi mtime (Studio không ghi vào cache của plugin).
 - Server 4408 đã dừng (`lsof -i :4408` rỗng). Server 4317 vẫn chạy, pid không đổi. Dự án `ms-smoke-8` và `/tmp/ms-smoke-8-my-styles` chỉ xoá khi người dùng xác nhận.
 

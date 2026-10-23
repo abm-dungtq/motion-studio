@@ -2,6 +2,7 @@
 
 ## Chưa phát hành
 
+- Tab Phong cách: 59 phong cách code của lemo-opuscar (MIT; ảnh CC BY 4.0, ghi công LemoLab) trong 11 nhóm, tên tiếng Việt, tìm kiếm, ảnh khung. Áp cho cả dự án hoặc từng shot; watercolor và glass-product thành lớp canvas qua provider. Đạo diễn soạn được phong cách riêng, "Giữ phong cách" lưu vào `~/lemo-my-styles/`. Bản tải về ghim commit, coi là dữ liệu, không chạy script nào trong đó.
 - Thư viện chuyển cảnh 54 mục (seam opus-video, gói Studio, HyperFrames) trong inspector của shot, có trang xem thử. Bốn gói anime tất định: `impact-frame`, `smear-cut`, `ink-wipe`, `speed-lines`. "Sửa clip": cắt đoạn, đổi tốc độ, đứng hình, LUT hoặc preset màu, cắt khung 9:16 / 16:9 / 1:1 / 4:5, ra `footage/cut/` kèm biên nhận. Xem `docs/transitions-and-effects.md`.
 - Chỉ mục B-roll theo hash nội dung (tab Footage): tách shot, contact sheet gộp nhiều shot cho mỗi lượt agent ảnh (mặc định agy), cache nên lần chạy sau không gọi agent và không giải mã lại. Tìm có dấu và không dấu, "Đặt vào shot" cắt clip vào `assets/broll/` và hoàn tác được. Cài đặt ở khoá `broll` của `studio.json` (`asr` mặc định tắt). Xem `docs/broll-index.md`.
 - Timeline: Roll/Ripple ở mép shot (phím R), Shift+kéo câu thoại dời cả các câu sau, nhạc chồng nhau tách làn, SFX xếp tối đa 4 tầng, làn B-roll nhận footage thả vào (chép vào `assets/footage/`, không ghi đè). Waveform và thumbnail cache trong IndexedDB; mốc phách và mốc từ kéo được, có hoàn tác và kiểm khớp lời. Popover agent có `max-height`. Xem `docs/timeline.md`.
