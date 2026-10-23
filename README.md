@@ -118,15 +118,29 @@ Studio đọc tên mới trước. Tên cũ vẫn chạy, mỗi tên in một d�
 | `MOTION_STUDIO_PROVIDER` | | Chọn provider trong `lib/providers/` (mặc định provider có `DEFAULT`) |
 | `MOTION_STUDIO_THUMBS` | | Thư mục ảnh bìa của thư viện mẫu (mặc định `~/.cache/motion-studio/library/thumbs`) |
 | `MOTION_STUDIO_HOME` | | Nơi shim của provider mặc định tìm Studio |
+| `MOTION_STUDIO_HF_SKILLS` | | Thư mục skill HyperFrames Studio đọc (mặc định `~/.claude/skills`) |
+| `MOTION_STUDIO_AGENT_PATH` | | Đường tìm agent CLI. Đã đặt thì Studio chỉ tìm ở đó, không thêm `~/.local/bin` hay `/opt/homebrew/bin` |
 | `OPUS_VIDEO_HOME` | | Thư mục plugin opus-video (chỉ provider mặc định đọc). Đã đặt thì Studio chỉ dùng thư mục đó |
 
 Lần đầu chạy mà chưa có `~/.config/motion-studio/studio.json`, Studio chép file trạng thái cũ của provider (`~/.config/opus-video/studio.json`) sang, và không xoá file cũ. Studio không đọc, không in, không chép file `.env` khoá API của provider.
 
 `OPUS_STUDIO_RUNNER` và `OPUS_STUDIO_REQUEST` không đổi tên: provider mặc định đặt chúng cho `claude -p` để MCP server của plugin biết yêu cầu nào đang chạy.
 
+## Tính năng mở rộng
+
+Thêm tính năng bằng cách thêm file, không sửa `server.mjs` hay `public/app.js`:
+
+- `routes/*.mjs`: route HTTP. Route của Studio luôn được thử trước; đường trùng làm Studio báo lỗi lúc khởi động.
+- `public/ext-*.js` và `public/ext-*.css`: tab, mục trong tab, mục trong inspector, dòng trong popover agent, dấu trên timeline, icon.
+- `lib/tools/*.mjs`: tool cho đạo diễn AI và MCP client.
+- `lib/quality/*.mjs`: kiểm chạy trên mọi file Studio tạo ra. Kết quả nằm trong biên nhận `<dự án>/.opus/receipts/`.
+- `lib/agents/cli/*.mjs`: agent CLI trên máy (claude, codex, codex-pool, agy, …) để viết chữ, đọc ảnh, sinh ảnh. Bảng trạng thái và nút "Thử khả năng" nằm trong popover của chip agent.
+
+Ví dụ chạy được cho từng chỗ cắm: [docs/extensions.md](docs/extensions.md). Agent CLI, thứ tự thử và cách đổi: [docs/agents.md](docs/agents.md).
+
 ## Provider
 
-Mọi thứ Studio cần từ bên ngoài đi qua `lib/provider.mjs`: đọc và kiểm `project.json`, cổng lệnh (patch, hoàn tác, làm lại, lịch sử), hàng đợi yêu cầu cho đạo diễn, danh sách tool và đoạn prompt cho `claude -p`, đường các lệnh (render, mix, pitch, import, demo, recipe, preflight, cases, styles), và file thư viện (hướng cảnh, phong cách). Contract ghi ở đầu file đó.
+Mọi thứ Studio cần từ bên ngoài đi qua `lib/provider.mjs`: đọc và kiểm `project.json`, cổng lệnh (patch, hoàn tác, làm lại, lịch sử), hàng đợi yêu cầu cho đạo diễn, danh sách tool và đoạn prompt cho `claude -p`, đường các lệnh (render, mix, pitch, import, demo, recipe, preflight, cases, styles, timing, beat grid, word sync, SFX sync, cut, reframe, qc), và file thư viện (hướng cảnh, phong cách). Contract ghi ở đầu file đó.
 
 Adapter nằm trong `lib/providers/`, mỗi provider một file đi kèm Studio. Studio không nạp mã từ thư mục ngoài repo. Hôm nay chỉ có `lib/providers/opus-video.mjs`; đó là file duy nhất nhắc tên plugin, đường dẫn và script của nó (test chặn tên này ở mọi chỗ khác).
 
