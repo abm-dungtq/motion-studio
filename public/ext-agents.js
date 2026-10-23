@@ -11,6 +11,8 @@ const COLOR = { yes: "var(--ok, #3fb950)", no: "var(--muted, #8b949e)", unknown:
 const POLL_MS = 1500;
 const PROBE_MAX_MS = 6 * 60000;
 
+// h() takes style as an object; these rows are written as CSS text.
+const st = (css) => Object.fromEntries(String(css).split(";").map((x) => x.split(/:(.*)/s).map((y) => y.trim())).filter(([k, v]) => k && v));
 const login = (a) => (a.detect_only && a.logged_in == null ? "—" : a.logged_in === true ? "có" : a.logged_in === false ? "chưa" : "chưa rõ");
 const pct = (n) => (n == null ? null : `${Math.round(n)}%`);
 
@@ -73,34 +75,43 @@ export function register(studio) {
   }
 
   function table(h) {
-    const found = scan.agents.filter((a) => a.found);
+    const runs = scan.agents.filter((a) => a.found && !a.detect_only);
+    const seen = scan.agents.filter((a) => a.found && a.detect_only);
     const missing = scan.agents.filter((a) => !a.found).map((a) => a.label);
-    const th = (t) => h("th", { style: "text-align:left;font-weight:600;padding:2px 6px;white-space:nowrap" }, t);
-    const td = (v, style = "") => h("td", { style: `padding:2px 6px;vertical-align:top;${style}` }, v);
+    const small = st("font-size:12px;margin:6px 0 0");
+    const bad = (t) => h("span", { style: st("color:var(--danger, #cf222e)") }, t);
+    const th = (t) => h("th", { style: st("text-align:left;font-weight:600;padding:2px 6px;white-space:nowrap") }, t);
+    const td = (v, style = "") => h("td", { style: st(`padding:2px 6px;vertical-align:top;${style}`) }, v);
     const cap = (a, c) => {
       const v = a.caps?.[c] ?? "unknown";
       const proved = a.verified?.[c];
-      return h("td", { style: `padding:2px 6px;vertical-align:top;white-space:nowrap;color:${COLOR[v] ?? "inherit"}`, title: proved ? `Đã thử: ${proved.ok ? "được" : "không được"}` : "" }, `${SAY[v] ?? v}${proved ? " ✓" : ""}`);
+      return h("td", { style: st(`padding:2px 6px;vertical-align:top;white-space:nowrap;color:${COLOR[v] ?? "inherit"}`), title: proved ? `Đã thử: ${proved.ok ? "được" : "không được"}` : "" }, `${SAY[v] ?? v}${proved ? " ✓" : ""}`);
     };
-    const rows = found.map((a) => h("tr", { title: a.error ? `Lỗi: ${a.error}` : a.detect_only ? "Chỉ dò thấy, Studio chưa chạy CLI này" : "" },
-      td(h("span", {}, a.label, a.detect_only ? h("span", { class: "muted" }, " (dò)") : null), "white-space:nowrap"),
-      td(a.error ? h("span", { class: "form-error" }, "lỗi") : (a.version ?? "—"), "white-space:nowrap"),
-      td(login(a)),
-      ...CAPS.map((c) => (a.detect_only ? td("—", "color:var(--muted, #8b949e)") : cap(a, c))),
-      td(poolLines(a.quota).length ? h("div", {}, ...poolLines(a.quota).map((l) => h("div", { style: "white-space:nowrap" }, l))) : "—"),
-    ));
+    const rows = runs.flatMap((a) => {
+      const row = h("tr", { title: a.error ? `Lỗi: ${a.error}` : "" },
+        td(a.label, "white-space:nowrap"),
+        td(a.error ? bad("lỗi") : (a.version ?? "—")),
+        td(login(a)),
+        ...CAPS.map((c) => cap(a, c)));
+      const q = poolLines(a.quota);
+      // Quota under its CLI, across the row, so the table keeps the popover's width.
+      return q.length ? [row, h("tr", {}, h("td", { colspan: 6, style: st("padding:0 6px 4px 18px;color:var(--muted, #8b949e)") }, `Quota: ${q.join(" · ")}`))] : [row];
+    });
+    const version = (a) => (a.error ? null : a.version ? ` ${a.version.replace(new RegExp(`^${a.id}[ /]`, "i"), "").replace(/\s*[([].*$/, "")}` : "");
     return [
-      h("table", { style: "border-collapse:collapse;width:100%;font-size:12px" },
-        h("thead", {}, h("tr", {}, th("CLI"), th("Phiên bản"), th("Đăng nhập"), ...CAPS.map((c) => th(CAP[c])), th("Quota"))),
+      h("table", { style: st("border-collapse:collapse;width:100%;font-size:12px") },
+        h("thead", {}, h("tr", {}, th("CLI"), th("Phiên bản"), th("Đăng nhập"), ...CAPS.map((c) => th(CAP[c])))),
         h("tbody", {}, ...rows)),
-      missing.length ? h("p", { class: "muted", style: "font-size:12px;margin:4px 0 0" }, `Không thấy: ${missing.join(", ")}`) : null,
+      seen.length ? h("p", { class: "muted", style: small, title: "Studio chỉ đọc phiên bản, không chạy các CLI này" },
+        "Chỉ dò thấy: ", ...seen.flatMap((a, i) => [i ? ", " : null, a.error ? h("span", { title: `Lỗi: ${a.error}` }, a.label, " (", bad("lỗi"), ")") : `${a.label}${version(a)}`])) : null,
+      missing.length ? h("p", { class: "muted", style: small }, `Không thấy: ${missing.join(", ")}`) : null,
     ];
   }
 
   function orderLine(h) {
     const o = scan?.order;
     if (!o) return null;
-    return h("div", { style: "font-size:12px;margin-top:6px" }, ...CAPS.filter((c) => o[c]?.length).map((c) => h("div", { class: "muted" }, `${CAP[c]}: ${o[c].join(" → ")}`)));
+    return h("div", { style: st("font-size:12px;margin-top:6px") }, ...CAPS.filter((c) => o[c]?.length).map((c) => h("div", { class: "muted" }, `${CAP[c]}: ${o[c].join(" → ")}`)));
   }
 
   function controls(h) {
@@ -111,7 +122,7 @@ export function register(studio) {
       ...runnable.map((a) => h("option", { value: a.id, selected: a.id === pick.id }, a.label)));
     const capSel = h("select", { "aria-label": "Khả năng để thử", onchange: (e) => { pick.cap = e.target.value; } },
       ...CAPS.map((c) => h("option", { value: c, selected: c === pick.cap }, CAP[c])));
-    return h("div", { style: "display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px" },
+    return h("div", { style: st("display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px") },
       h("button", { class: "btn", type: "button", onclick: () => { note = null; fetchScan(true); } }, "Làm mới"),
       agentSel, capSel,
       h("button", { class: "btn", type: "button", disabled: busy || running || !pick.id, title: "Chạy thật một lần, có tốn quota của agent này", onclick: startProbe }, running ? "Đang thử…" : "Thử khả năng"));
@@ -119,7 +130,7 @@ export function register(studio) {
 
   studio.addAgentRows((_data, { reload, h }) => {
     reloadChip = reload;
-    const head = h("h3", { style: "margin-top:12px" }, "Agent CLI");
+    const head = h("h3", { style: st("margin-top:12px") }, "Agent CLI");
     if (error) return [head, h("p", { class: "form-error" }, `Không đọc được danh sách agent: ${error}`), controls(h)];
     if (!scan) return [head, h("p", { class: "muted" }, "Đang quét các CLI…")];
     return [
@@ -129,7 +140,7 @@ export function register(studio) {
       controls(h),
       note ? h("p", { class: note.bad ? "form-error" : "note" }, note.text) : null,
       probeLine(h),
-      h("p", { class: "muted", style: "font-size:11px;margin:4px 0 0" }, `Quét lúc ${scan.at ? new Date(scan.at).toLocaleTimeString("vi-VN") : "?"}. "Thử khả năng" chạy thật một lần và tốn quota.`),
+      h("p", { class: "muted", style: st("font-size:11px;margin:4px 0 0") }, `Quét lúc ${scan.at ? new Date(scan.at).toLocaleTimeString("vi-VN") : "?"}. "Thử khả năng" chạy thật một lần và tốn quota.`),
     ].filter(Boolean);
   }, { width: "min(640px, calc(100vw - 16px))" });
 
