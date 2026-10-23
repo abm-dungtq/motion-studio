@@ -157,3 +157,12 @@ test("chooseArgv runs a declared choose command, else the pitch command's choose
   assert.deepEqual(chooseArgv(declared, "/w/demo", "3"), ["/p/pick.mjs", "direction", "--dir=/w/demo", "--n", "3"]);
   assert.deepEqual(chooseArgv({ pitch: "/p/x.mjs", choose: { file: 1 } }, "/d", 1)[0], "/p/x.mjs", "a malformed choose falls back");
 });
+
+test("chooseArgv appends extra arguments after the declared and the default form", () => {
+  const extra = ["--style-profile", "s1"];
+  assert.deepEqual(chooseArgv({ pitch: "/p/m.mjs" }, "/w/d", 2, extra), ["/p/m.mjs", "choose", "--project", "/w/d", "--pick", "2", "--accept-warnings", "--style-profile", "s1"]);
+  const declared = { pitch: "/p/m.mjs", choose: { file: "/p/c.mjs", args: ["x", "{project}", "{pick}"] } };
+  assert.deepEqual(chooseArgv(declared, "/w/d", 2, extra), ["/p/c.mjs", "x", "/w/d", "2", "--style-profile", "s1"]);
+  assert.deepEqual(chooseArgv({ pitch: "/p/m.mjs" }, "/w/d", 2), ["/p/m.mjs", "choose", "--project", "/w/d", "--pick", "2", "--accept-warnings"]);
+  assert.deepEqual(chooseArgv(declared, "/w/d", 2), ["/p/c.mjs", "x", "/w/d", "2"]);
+});

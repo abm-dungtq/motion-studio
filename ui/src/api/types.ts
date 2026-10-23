@@ -107,3 +107,29 @@ export interface MediaEntry { rel?: string | null; path?: string | null; kind?: 
 export interface FileEntry { path: string; size?: number; mtime?: number | string; [k: string]: unknown }
 // The other GET routes (library, broll, fx, lemo, anime, receipts) answer unknown: the area that
 // reads one narrows it where it uses it.
+
+// The stored suggestion (lib/suggest.mjs): each side ranks directions, styles and a way of working.
+// score is Jev's 0–4 (null on the deterministic side); fields name the BRIEF fields behind reason.
+export interface SuggestItem { id: string; label: string; score: number | null; confidence: number | null; reason: string; source: "jev" | "det"; fields?: string[]; directions?: string[] }
+export interface SuggestWorkflow { mode: string; label: string; pitch: boolean; steps: string[]; skip: { step: string; reason: string }[]; reason: string; source: "jev" | "det"; p?: number | null }
+export interface SuggestSide { directions: SuggestItem[]; styles: SuggestItem[]; workflow: SuggestWorkflow }
+export interface SuggestRecord {
+  v: number; at: string; project: string; hash: string;
+  source: "deterministic" | "observe" | "jev"; shown: "jev" | "det";
+  error: { code: string; message: string } | null;
+  det: SuggestSide; jev: SuggestSide | null; ms: number; questions: number;
+}
+// GET and POST /api/suggest (routes/suggest.mjs): the record, the rows of pitch/PICK.json and what
+// the provider can do. columns is the card's left-to-right column order (lib/suggest.mjs
+// columnsOf), the same order the pick log records; null without a record.
+export interface SuggestPick { n: number; id: string; style_profile: string | null; dir: string | null }
+export interface SuggestResponse {
+  record: SuggestRecord | null; columns: ("jev" | "det")[] | null; picks: SuggestPick[] | null; source: SuggestRecord["source"]; source_setting: string | null;
+  modes: { id: string; label: string }[]; can_save_mode: boolean; can_init_pitch: boolean;
+}
+// POST /api/suggest/choose (routes/suggest.mjs): one of three outcomes.
+export interface SuggestMode { saved: boolean; reason: string | null }
+export type SuggestChooseResult =
+  | { outcome: "chosen"; direction: string; pick: number; style: string | null; requested_style?: string; answered?: string | null; next?: unknown; initialized?: boolean; mode: SuggestMode }
+  | { outcome: "not_in_pitch"; picks: SuggestPick[]; mode: SuggestMode }
+  | { outcome: "queued"; request?: unknown; runner?: unknown; job?: unknown; mode: SuggestMode };

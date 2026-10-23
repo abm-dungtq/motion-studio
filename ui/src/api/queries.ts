@@ -9,7 +9,7 @@ import { queryOptions, useQuery, type QueryKey } from "@tanstack/react-query";
 import { api, projectText, queryClient, say, send, type SendResult } from "./client.ts";
 import type {
   AgentStatus, AgentsScan, DirectorRequest, FileEntry, Gates, Job, LogEntry, Manifest, MediaEntry,
-  ProjectEntry, SoundsList, StatusResponse, TimelineMedia,
+  ProjectEntry, SoundsList, StatusResponse, SuggestChooseResult, SuggestResponse, TimelineMedia,
 } from "./types.ts";
 import type { TimingData } from "@/core/markers.ts";
 
@@ -51,6 +51,7 @@ export const keys = {
   fxLuts: (name: string | null) => ["/api/fx/luts", name] as const,
   lemoStyles: (p?: Record<string, string>) => (p ? ["/api/lemo/styles", p] as const : ["/api/lemo/styles"] as const),
   lemoGuide: (slug: string, source: string) => ["/api/lemo/guide", slug, source] as const,
+  suggest: (name: string | null) => ["/api/suggest", name] as const,
   anime: (kind: AnimeKind, name: string | null) => ["/api/anime", kind, name] as const,
   animeJob: (name: string | null, id: string) => ["/api/anime/job", name, id] as const,
 };
@@ -308,6 +309,13 @@ export const lemoGuideQuery = (slug: string, source: string) => queryOptions({
 });
 export const useLemoGuide = (slug: string | null, source: string | null) => useQuery({ ...lemoGuideQuery(slug ?? "", source ?? ""), enabled: Boolean(slug && source) });
 
+// `/api/suggest` — routes/suggest.mjs (the stored ranking, the pitch rows, the modes)
+export const suggestQuery = (name: string | null) => queryOptions({
+  queryKey: keys.suggest(name),
+  queryFn: () => api<SuggestResponse>(`/api/suggest?name=${enc(name ?? "")}`),
+});
+export const useSuggest = (name: string | null) => useQuery({ ...suggestQuery(name), enabled: Boolean(name) });
+
 // `/api/anime/board`, `/api/anime/chars`, `/api/anime/manifest` — public/ext-anime.js:55.
 // These need a project folder only, not project.json.
 export type AnimeKind = "board" | "chars" | "manifest";
@@ -402,6 +410,10 @@ export const lemoApply = (b: NameBody) => write(`/api/lemo/apply`, b, [...edits(
 export const lemoDraft = (b: NameBody) => write(`/api/lemo/draft`, b, [keys.lemoStyles(), ...queue(b.name)]);
 // `/api/lemo/keep` — public/lemo-mystyle.js:34
 export const lemoKeep = (b: NameBody) => write(`/api/lemo/keep`, b, [keys.lemoStyles()]);
+// `/api/suggest` — routes/suggest.mjs (rank now; refresh skips the cache)
+export const suggestRun = (b: NameBody) => write(`/api/suggest`, b, [keys.suggest(b.name)], { timeout: 30000 });
+// `/api/suggest/choose` — routes/suggest.mjs (choose through the provider, or queue a pitch request)
+export const suggestChoose = (b: NameBody) => write(`/api/suggest/choose`, b, [keys.suggest(b.name), keys.projectText(b.name), ...edits(b.name), ...queue(b.name)], { timeout: 150000 }) as Promise<WriteResult<SuggestChooseResult>>;
 // `/api/anime/chars` — public/anime-chars.js:18, :26, :33 ({ name, char } | { name, remove } | { name, generate })
 export const animeChars = (b: NameBody) => write(`/api/anime/chars`, b, [keys.anime("chars", b.name), keys.anime("board", b.name)]);
 // `/api/anime/variant` — public/anime-board.js:62

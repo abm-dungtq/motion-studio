@@ -26,7 +26,7 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSyn
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getJob, running, startJob } from "../jobs.mjs";
-import { KIND as DIRECTOR, pump, runnerSetting } from "../director.mjs";
+import { queueRequest } from "../director.mjs";
 import { setFrontmatter } from "../create.mjs";
 import { PIN, cacheHome, readyDir } from "../lib/lemo/fetch.mjs";
 import { findStyle, groupsOf, layerSlugs, libraryStyles, merge, myStyles, myStylesDir, search, SLUG } from "../lib/lemo/catalog.mjs";
@@ -103,14 +103,7 @@ export function projectState(dir) {
 }
 
 // Queues a director request and starts the director when the runner is cli and it is idle.
-function direct(c, name, dir, { scope, target = null, text }) {
-  let request;
-  try { request = c.P.requests.enqueue(dir, { scope, target, t: null, base: c.P.manifest.load(dir)?.version, text }); } catch (e) { throw err(400, e.message); }
-  const runner = runnerSetting();
-  if (runner === "mcp") return { request, runner, job: null };
-  const job = running(name, DIRECTOR) ? null : pump(c.P, name, dir);
-  return { request, runner, job };
-}
+const direct = (c, name, dir, opts) => queueRequest(c.P, name, dir, opts);
 
 // One child of the project's "lemo" job kind, awaited: { code, lines }.
 const lemoJob = (name, cwd, args, meta) => new Promise((resolve, reject) => {

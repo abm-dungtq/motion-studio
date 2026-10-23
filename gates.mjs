@@ -18,16 +18,17 @@ const APPROVAL = /^\s*[-*]?\s*approval:.*$/im;
 // The argv after `node` that writes the picked direction. A provider that declares
 // commands.choose = { file, args } (placeholders {project}, {pick}) is run as declared; otherwise
 // its pitch command gets `choose --project <dir> --pick <n> --accept-warnings`.
-export function chooseArgv(commands, dir, pick) {
+// extra (the provider's suggest.styleArgs with {style} filled in) goes after the declared or default arguments.
+export function chooseArgv(commands, dir, pick, extra = []) {
   const c = commands.choose;
-  if (c && typeof c.file === "string" && Array.isArray(c.args)) return [c.file, ...c.args.map((a) => String(a).replaceAll("{project}", dir).replaceAll("{pick}", String(pick)))];
-  return [commands.pitch, "choose", "--project", dir, "--pick", String(pick), "--accept-warnings"];
+  if (c && typeof c.file === "string" && Array.isArray(c.args)) return [c.file, ...c.args.map((a) => String(a).replaceAll("{project}", dir).replaceAll("{pick}", String(pick))), ...extra];
+  return [commands.pitch, "choose", "--project", dir, "--pick", String(pick), "--accept-warnings", ...extra];
 }
 
 // Runs the provider's choose command for pick. Returns { code, stdout, stderr }.
-export async function writeDirection(dir, pick, { run = runFile } = {}) {
+export async function writeDirection(dir, pick, { run = runFile, extra = [] } = {}) {
   const p = await loadProvider();
-  return run(process.execPath, chooseArgv(p.commands, dir, pick), { cwd: dir, timeout: PITCH_TIMEOUT_MS });
+  return run(process.execPath, chooseArgv(p.commands, dir, pick, extra), { cwd: dir, timeout: PITCH_TIMEOUT_MS });
 }
 
 // Replaces the first approval: line of DEMO.md (or appends one). Returns the line, or null when
@@ -62,7 +63,7 @@ export function checkValue(ask, value) {
   return { error: "Câu trả lời cần 1–2000 ký tự" };
 }
 
-export async function answerCard(dir, { id, value }, { run = runFile } = {}) {
+export async function answerCard(dir, { id, value }, { run = runFile, extra = [] } = {}) {
   const p = await loadProvider();
   const req = p.requests.list(dir).find((r) => r.id === id);
   if (!req) return { status: 404, body: { error: `không có yêu cầu ${id}` } };
@@ -73,8 +74,8 @@ export async function answerCard(dir, { id, value }, { run = runFile } = {}) {
 
   if (ask.gate === "direction" && ask.kind === "choice") {
     if (!/^[1-9]\d*$/.test(v.pick)) return { status: 422, body: { error: `option ${v.pick} không phải số pick hợp lệ` } };
-    const r = await writeDirection(dir, v.pick, { run });
-    if (r.code !== 0) return { status: 422, body: { error: `${basename(chooseArgv(p.commands, dir, v.pick)[0])} choose lỗi (exit ${r.code})`, stderr: String(r.stderr || r.stdout).trimEnd().split("\n").slice(-20).join("\n") } };
+    const r = await writeDirection(dir, v.pick, { run, extra });
+    if (r.code !== 0) return { status: 422, body: { error: `${basename(chooseArgv(p.commands, dir, v.pick, extra)[0])} choose lỗi (exit ${r.code})`, stderr: String(r.stderr || r.stdout).trimEnd().split("\n").slice(-20).join("\n") } };
   }
   if (ask.gate === "animatic" && ask.kind === "approve" && v.approve) {
     if (!writeApproval(dir, `duyệt animatic ${ask.artifacts?.[0] ?? ""}`)) return { status: 409, body: { error: "Chưa có DEMO.md, cần chạy make-demo trước" } };

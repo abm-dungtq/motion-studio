@@ -180,3 +180,16 @@ export function pump(p, name, dir) {
   }
 }
 
+// Starts the director for the project when the runner is cli and no director job runs; else null.
+export function startIdle(p, name, dir) {
+  return runnerSetting() === "mcp" || running(name, KIND) ? null : pump(p, name, dir);
+}
+
+// Queues a director request and starts the director when it is idle: { request, runner, job }.
+export function queueRequest(p, name, dir, { scope = "project", target = null, text }) {
+  let request;
+  try { request = p.requests.enqueue(dir, { scope, target, t: null, base: p.manifest.load(dir)?.version, text }); }
+  catch (e) { throw Object.assign(new Error(e.message), { status: 400 }); }
+  return { request, runner: runnerSetting(), job: startIdle(p, name, dir) };
+}
+

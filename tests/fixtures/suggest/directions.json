@@ -1,0 +1,347 @@
+{
+ "directions": [
+  {
+   "id": "A1",
+   "slug": "one-shape-morph",
+   "ten_vi": "Một khối biến hình liên hoàn",
+   "mo_ta_vi": "Một khối duy nhất ở giữa màn hình đổi dáng qua từng ý: nút bấm thành thanh tải, thành biểu đồ, thành logo. Không cắt cảnh.",
+   "hook_vi": "Giây đầu: khối nhỏ nảy vào giữa khung, giãn ra thành ý đầu tiên đúng lúc giọng đọc bắt đầu.",
+   "tier": "continuous",
+   "categories": [
+    "product",
+    "interactive",
+    "motion"
+   ],
+   "topic_keywords": [
+    "app",
+    "saas",
+    "tính năng",
+    "feature",
+    "ui",
+    "sản phẩm",
+    "ai",
+    "công cụ"
+   ],
+   "aspects": [
+    "16:9",
+    "9:16",
+    "both"
+   ],
+   "energy": [
+    "vua",
+    "don-dap"
+   ],
+   "tags": [
+    "tech",
+    "clean",
+    "precise"
+   ],
+   "styles_goi_y": [
+    "expressive-material",
+    "precision-dark-product",
+    "glass-keynote",
+    "neo-brutalist-web"
+   ]
+  },
+  {
+   "id": "A2",
+   "slug": "prompt-live-artifact",
+   "ten_vi": "Gõ lệnh, máy bung kết quả tức thì",
+   "mo_ta_vi": "Khung gõ lệnh tự gõ một câu hỏi thật, AI chạy các bước, rồi kết quả (bảng, biểu đồ, bản kế hoạch) bung ra ngay trước mắt.",
+   "hook_vi": "Giây đầu: con trỏ nhấp nháy trong khung lệnh, câu hỏi gõ ra từng ký tự kèm tiếng phím.",
+   "tier": "fit",
+   "categories": [
+    "product",
+    "interactive",
+    "explainer"
+   ],
+   "topic_keywords": [
+    "ai",
+    "gemini",
+    "chatgpt",
+    "claude",
+    "agent",
+    "trợ lý",
+    "mô hình",
+    "llm",
+    "prompt",
+    "tự động"
+   ],
+   "aspects": [
+    "16:9",
+    "9:16",
+    "both"
+   ],
+   "energy": [
+    "vua",
+    "don-dap"
+   ],
+   "tags": [
+    "tech",
+    "dark",
+    "precise"
+   ],
+   "styles_goi_y": [
+    "precision-dark-product",
+    "terminal-ops",
+    "glass-keynote",
+    "accelerated-compute"
+   ]
+  },
+  {
+   "id": "A3",
+   "slug": "kinetic-invert",
+   "ten_vi": "Chữ khổng lồ đập theo nhịp trống",
+   "mo_ta_vi": "Chữ chiếm gần hết khung, từ mới lao vào húc văng từ cũ, nền đảo đen ↔ trắng đúng nhịp trống.",
+   "hook_vi": "Giây đầu: một từ khoá đập vào giữa khung trên nhịp trống đầu tiên, nền đảo màu.",
+   "tier": "bold",
+   "categories": [
+    "motion",
+    "story-music",
+    "product"
+   ],
+   "topic_keywords": [
+    "ra mắt",
+    "launch",
+    "tuyên ngôn",
+    "slogan",
+    "sự kiện",
+    "khuyến mãi",
+    "viral"
+   ],
+   "aspects": [
+    "16:9",
+    "9:16",
+    "both"
+   ],
+   "energy": [
+    "don-dap"
+   ],
+   "tags": [
+    "loud",
+    "precise"
+   ],
+   "styles_goi_y": [
+    "kinetic-typography",
+    "athletic-impact",
+    "extreme-energy",
+    "swiss-kinetic-editorial"
+   ]
+  },
+  {
+   "id": "A4",
+   "slug": "continuous-camera-cursor",
+   "ten_vi": "Một máy quay lướt qua bàn làm việc",
+   "mo_ta_vi": "Cả video là một không gian rộng không cắt cảnh. Máy quay lướt theo một con trỏ phóng to đang bấm, kéo, thả có lực thật.",
+   "hook_vi": "Giây đầu: con trỏ to lướt vào khung và bấm lún một nút, máy quay đẩy theo.",
+   "tier": "continuous",
+   "categories": [
+    "product",
+    "interactive"
+   ],
+   "topic_keywords": [
+    "dashboard",
+    "phần mềm",
+    "web",
+    "quy trình",
+    "workflow",
+    "công cụ",
+    "demo"
+   ],
+   "aspects": [
+    "16:9",
+    "9:16",
+    "both"
+   ],
+   "energy": [
+    "vua",
+    "don-dap"
+   ],
+   "tags": [
+    "tech",
+    "clean",
+    "playful"
+   ],
+   "styles_goi_y": [
+    "creative-canvas",
+    "saas-bento",
+    "premium-ui-demo",
+    "playful-productivity"
+   ]
+  },
+  {
+   "id": "A5",
+   "slug": "spatial-flythrough",
+   "ten_vi": "Bay xuyên không gian 3D",
+   "mo_ta_vi": "Các lớp thông tin xếp nghiêng trong chiều sâu, máy quay bay xuyên qua từng lớp, lớp phía sau mờ đi để làm nổi lớp đang nói.",
+   "hook_vi": "Giây đầu: máy quay lao từ xa vào giữa một không gian có chiều sâu, các mảnh bay về khoá đúng chỗ.",
+   "tier": "bold",
+   "categories": [
+    "3d",
+    "motion",
+    "explainer"
+   ],
+   "topic_keywords": [
+    "dữ liệu",
+    "data",
+    "hệ thống",
+    "kiến trúc",
+    "không gian",
+    "tương lai",
+    "công nghệ"
+   ],
+   "aspects": [
+    "16:9",
+    "9:16",
+    "both"
+   ],
+   "energy": [
+    "vua",
+    "don-dap"
+   ],
+   "tags": [
+    "tech",
+    "dark",
+    "loud"
+   ],
+   "styles_goi_y": [
+    "immersive-console",
+    "holographic-hud",
+    "accelerated-compute",
+    "neon-cyberpunk"
+   ]
+  },
+  {
+   "id": "A6",
+   "slug": "live-data-simulation",
+   "ten_vi": "Biểu đồ tự vẽ, số nhảy thật",
+   "mo_ta_vi": "Biểu đồ tự vẽ nét theo giọng đọc, một vạch đọc quét ngang làm con số nhảy theo. Số liệu thật, có nguồn.",
+   "hook_vi": "Giây đầu: một con số lớn đếm vụt lên đúng lúc giọng đọc nói ra nó.",
+   "tier": "fit",
+   "categories": [
+    "explainer",
+    "product",
+    "bat-dong-san"
+   ],
+   "topic_keywords": [
+    "số liệu",
+    "doanh thu",
+    "tăng trưởng",
+    "báo cáo",
+    "tài chính",
+    "kpi",
+    "thị trường",
+    "so sánh"
+   ],
+   "aspects": [
+    "16:9",
+    "9:16",
+    "both"
+   ],
+   "energy": [
+    "em",
+    "vua"
+   ],
+   "tags": [
+    "precise",
+    "clean",
+    "light"
+   ],
+   "styles_goi_y": [
+    "data-editorial",
+    "systematic-enterprise",
+    "friendly-system-motion",
+    "swiss-kinetic-editorial"
+   ]
+  },
+  {
+   "id": "A7",
+   "slug": "editorial-marker",
+   "ten_vi": "Tạp chí giấy, bút dạ vẽ tay",
+   "mo_ta_vi": "Nền giấy ấm, chữ có chân sang trọng. Khi giọng đọc chạm từ khoá, nét bút dạ tự khoanh tròn, gạch chân, tô sáng.",
+   "hook_vi": "Giây đầu: một câu in trên giấy, nét bút dạ quẹt tô sáng đúng từ đang được đọc.",
+   "tier": "fit",
+   "categories": [
+    "explainer",
+    "story-music"
+   ],
+   "topic_keywords": [
+    "kiến thức",
+    "bài học",
+    "sách",
+    "lãnh đạo",
+    "ceo",
+    "quản trị",
+    "chiến lược",
+    "câu chuyện"
+   ],
+   "aspects": [
+    "16:9",
+    "9:16",
+    "both"
+   ],
+   "energy": [
+    "em",
+    "vua"
+   ],
+   "tags": [
+    "paper",
+    "light",
+    "calm"
+   ],
+   "styles_goi_y": [
+    "editorial-intelligence",
+    "calm-workspace",
+    "quirky-editorial",
+    "paper-cut-collage"
+   ]
+  },
+  {
+   "id": "A8",
+   "slug": "map-pip-telemetry",
+   "ten_vi": "Bản đồ dẫn đường bám lời nói",
+   "mo_ta_vi": "Máy quay bay trên bản đồ hoặc sơ đồ tổng thể, ghim rơi xuống, đường nối tự vẽ, nhãn số liệu bật đúng chữ đang đọc.",
+   "hook_vi": "Giây đầu: máy quay sà xuống bản đồ, một chiếc ghim rơi nảy đúng điểm chính.",
+   "tier": "continuous",
+   "categories": [
+    "explainer",
+    "story-music",
+    "bat-dong-san"
+   ],
+   "topic_keywords": [
+    "bản đồ",
+    "địa điểm",
+    "bất động sản",
+    "du lịch",
+    "chi nhánh",
+    "chuỗi cung ứng",
+    "logistics",
+    "mạng lưới",
+    "căn hộ",
+    "dự án",
+    "vị trí",
+    "tiện ích",
+    "metro"
+   ],
+   "aspects": [
+    "16:9",
+    "9:16",
+    "both"
+   ],
+   "energy": [
+    "em",
+    "vua"
+   ],
+   "tags": [
+    "clean",
+    "precise"
+   ],
+   "styles_goi_y": [
+    "blueprint-engineering",
+    "precision-hardware",
+    "isometric-systems",
+    "mission-control"
+   ]
+  }
+ ]
+}

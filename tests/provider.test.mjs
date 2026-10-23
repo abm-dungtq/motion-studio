@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { extname, join, relative } from "node:path";
+import { extname, isAbsolute, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adapterFor, loadProvider, providerStatus } from "../lib/provider.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
@@ -108,4 +108,28 @@ test("STUDIO_API 4: declared COMMANDS and SKILLS are used; API 3 keeps the fixed
     assert.equal(p3.commands.qc, join(v3, "scripts", "qc-mp4.mjs"), "API 3 has the new commands at their file names too");
     assert.doesNotMatch(p3.director.promptFragments().skills, /s-one/);
   } finally { for (const d of [v4, v3]) rmSync(d, { recursive: true, force: true }); }
+});
+
+test("suggest and jev declarations: every mode step is a command, style args carry {style}", async () => {
+  const dir = fakePlugin({ schema: A.NEED.schema, api: 4 });
+  const extra = `export const OPS = ["set_workflow_mode"];\nexport const COMMANDS = { pitchInit: { file: "/x/make-pitch.mjs", args: ["init", "--project", "{project}", "--directions", "{directions}"] } };`;
+  const next = fakePlugin({ schema: A.NEED.schema, api: 4, extra });
+  try {
+    const p = await A.create({ OPUS_VIDEO_HOME: dir });
+    const names = new Set(Object.keys(p.commands));
+    for (const [id, m] of Object.entries(p.suggest.modes)) {
+      for (const step of m.steps) assert.ok(names.has(step) || step === "choose", `${id}: ${step} is a command`);
+    }
+    assert.ok(p.suggest.styleArgs.some((a) => a.includes("{style}")));
+    assert.equal(typeof p.jev.keyVar, "string");
+    assert.ok(p.jev.keyVar.length > 0);
+    assert.ok(isAbsolute(p.jev.envFile), p.jev.envFile);
+    assert.equal(p.suggest.canSetWorkflowMode, false);
+    assert.equal(p.suggest.pitchInit, null);
+    assert.equal(p.suggest.readPicks(dir), null, "no pitch/ folder, no picks");
+    const q = await A.create({ OPUS_VIDEO_HOME: next });
+    assert.equal(q.suggest.canSetWorkflowMode, true);
+    assert.ok(q.suggest.pitchInit.args.includes("{directions}"));
+    assert.deepEqual(q.suggest.workflowModeOp("nhanh"), { op: "set_workflow_mode", mode: "nhanh" });
+  } finally { for (const d of [dir, next]) rmSync(d, { recursive: true, force: true }); }
 });
