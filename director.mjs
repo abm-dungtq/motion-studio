@@ -15,14 +15,45 @@
 // The runner is `director.runner` in the state file (lib/config.mjs).
 // Tool lists, the plugin-specific prompt lines and the child env come from the provider
 // (lib/provider.mjs); every function here takes it as its first argument.
+// Studio's own tools (lib/tools/*.mjs) reach the director through Studio's MCP server
+// (mcp/studio-mcp.mjs, profile director, which hides the tools the provider's server already has):
+// --mcp-config <project>/.opus/studio-mcp.json and one allow rule per tool. The provider's MCP
+// server still loads as before (no --strict-mcp-config). studio.json director.studio_mcp: false
+// turns this off.
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { runnerSetting } from "./lib/config.mjs";
+import { basename, dirname, join } from "node:path";
+import { readState, runnerSetting } from "./lib/config.mjs";
+import { loadTools } from "./lib/tools.mjs";
+import { SERVER_NAME, serverArgs, toolsForProfile } from "./mcp/studio-mcp.mjs";
 import { startJob, running } from "./jobs.mjs";
 
 export { runnerSetting };
 export const KIND = "director";
 const RESUME_FAILED = /no conversation found|session.*(not found|does not exist|invalid)|could not resume/i;
+
+// Loaded once: a tool module that fails to load leaves the director with the provider's tools only.
+let STUDIO_TOOLS = [];
+try { STUDIO_TOOLS = await loadTools(); } catch (e) { console.error(`motion-studio: tool Studio không nạp được, đạo diễn chỉ có tool của provider: ${e.message}`); }
+export const STUDIO_PREFIX = `mcp__${SERVER_NAME}__`;
+export const studioMcpFile = (dir) => join(dir, ".opus", "studio-mcp.json");
+const studioMcpOn = () => readState()?.director?.studio_mcp !== false && STUDIO_TOOLS.length > 0;
+
+// The names (with prefix) of the Studio tools the director gets.
+export const studioToolNames = (p) => toolsForProfile("director", STUDIO_TOOLS, p).map((t) => STUDIO_PREFIX + t.name);
+
+// Writes the director's MCP config for this request; null when Studio's MCP server is off.
+export function studioMcp(p, dir, req) {
+  if (!studioMcpOn()) return null;
+  const tools = studioToolNames(p);
+  if (!tools.length) return null;
+  const file = studioMcpFile(dir);
+  mkdirSync(dirname(file), { recursive: true });
+  const config = { mcpServers: { [SERVER_NAME]: { command: process.execPath, args: serverArgs({ profile: "director", root: dirname(dir), request: req.id }) } } };
+  const tmp = `${file}.${process.pid}.tmp`;
+  writeFileSync(tmp, JSON.stringify(config, null, 2) + "\n");
+  renameSync(tmp, file);
+  return { file, tools };
+}
 
 const sessionFile = (dir) => join(dir, ".opus", "director.json");
 export function savedSession(dir) { try { return JSON.parse(readFileSync(sessionFile(dir), "utf8")).session_id ?? null; } catch { return null; } }
@@ -55,6 +86,7 @@ export function buildPrompt(p, dir, req) {
     f.retime,
     `Cần người dùng chọn hoặc duyệt (hướng đạo diễn, kịch bản, animatic) thì gọi studio_ask với project "${dir}", id "${req.id}", gate "direction" cho chọn hướng (${f.pitch ?? "mỗi option có id và label là tên hướng; styleframe trong artifacts"}) hoặc gate "animatic" cho duyệt animatic (kind "approve", artifacts là file animatic và contact sheet). Sau studio_ask, kết thúc lượt ngay, không gọi studio_request_done.`,
     "BRIEF.md và DEMO.md do Studio ghi. Không sửa hai file này; dòng direction: và approval: chỉ đến từ câu trả lời của người dùng.",
+    studioMcpOn() ? `Thao tác media (sinh ảnh, ffmpeg) dùng tool motion-studio (project "${basename(dir)}") để có biên nhận; ghi id biên nhận trong receipt cuối.` : null,
   ].filter(Boolean);
   return [
     req.follows ? `Đây là lượt tiếp theo sau câu trả lời của người dùng cho yêu cầu ${req.follows}.` : "",
@@ -70,14 +102,17 @@ export function buildPrompt(p, dir, req) {
   ].filter((x) => x !== "").join("\n");
 }
 
-export function claudeArgs(p, prompt, sid) {
+// mcp: studioMcp() of this request, or null.
+export function claudeArgs(p, prompt, sid, mcp = null) {
   return ["-p", prompt, "--output-format", "stream-json", "--verbose", "--permission-mode", "acceptEdits",
-    "--allowedTools", ...p.director.allowedTools, "--disallowedTools", ...p.director.deniedTools,
+    "--allowedTools", ...p.director.allowedTools, ...(mcp?.tools ?? []), "--disallowedTools", ...p.director.deniedTools,
+    ...(mcp ? ["--mcp-config", mcp.file] : []),
     ...(sid ? ["--resume", sid] : [])];
 }
 
 // One stream-json line → the text kept in the job log (null drops it); records init and result.
-function reader(p, dir, state) {
+// studio: the Studio tool names the director was given (they are checked like the provider's).
+export function reader(p, dir, state, studio = []) {
   const { mcpTools, toolPrefix, toolsLabel = "tool MCP" } = p.director;
   return (line, stream) => {
     if (stream === "stderr" || !line.startsWith("{")) return line;
@@ -85,11 +120,11 @@ function reader(p, dir, state) {
     try { e = JSON.parse(line); } catch { return line; }
     if (e.type === "system" && e.subtype === "init") {
       if (e.session_id) { state.session = e.session_id; saveSession(dir, e.session_id); }
-      const missing = mcpTools.filter((t) => !(e.tools ?? []).includes(t));
-      return missing.length ? `THIẾU tool MCP: ${missing.join(", ")}` : `Phiên ${e.session_id ?? "?"} · đủ ${mcpTools.length} ${toolsLabel}`;
+      const missing = [...mcpTools, ...studio].filter((t) => !(e.tools ?? []).includes(t));
+      return missing.length ? `THIẾU tool MCP: ${missing.join(", ")}` : `Phiên ${e.session_id ?? "?"} · đủ ${mcpTools.length} ${toolsLabel}${studio.length ? ` + ${studio.length} tool ${SERVER_NAME}` : ""}`;
     }
     if (e.type === "assistant") {
-      const parts = (e.message?.content ?? []).map((c) => (c.type === "text" ? c.text : c.type === "tool_use" ? `→ ${String(c.name).replace(toolPrefix, "")}` : null)).filter(Boolean);
+      const parts = (e.message?.content ?? []).map((c) => (c.type === "text" ? c.text : c.type === "tool_use" ? `→ ${String(c.name).replace(toolPrefix, "").replace(STUDIO_PREFIX, "")}` : null)).filter(Boolean);
       return parts.length ? parts.join("\n") : null;
     }
     if (e.type === "result") { state.result = e.result ?? ""; state.isError = Boolean(e.is_error); return `Kết quả: ${e.is_error ? "lỗi" : "xong"}`; }
@@ -109,9 +144,10 @@ function launch(p, name, dir, req, { resume = true, onEnd } = {}) {
   const { list, finish } = p.requests;
   const sid = resume ? savedSession(dir) : null;
   const state = { session: null, result: null, isError: false };
+  const mcp = studioMcp(p, dir, req);
   return startJob({
-    name, kind: KIND, cmd: "claude", args: claudeArgs(p, buildPrompt(p, dir, req), sid), cwd: dir, env: childEnv(p, req), meta: { request: req.id, resume: sid },
-    onLine: reader(p, dir, state),
+    name, kind: KIND, cmd: "claude", args: claudeArgs(p, buildPrompt(p, dir, req), sid, mcp), cwd: dir, env: childEnv(p, req), meta: { request: req.id, resume: sid },
+    onLine: reader(p, dir, state, mcp?.tools ?? []),
     onExit: (job) => {
       const now = list(dir).find((r) => r.id === req.id);
       if (now?.status === "running") {
