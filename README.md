@@ -102,6 +102,7 @@ Kết quả nằm trong `renders/<dự án>-<thời điểm>[-<tỉ lệ>]-bundl
 - `audio/mix.wav`, `voice.wav`, `music.wav`, `sfx.wav`: tiếng tổng và tiếng tách theo vai, 48 kHz, dài bằng video, đặt từ giây 0.
 - `captions.srt`: phụ đề từ các câu thoại, câu dài được tách theo mốc từng từ.
 - `manifest.json` (schema `motion-studio/bundle@1`): khung vào và ra của từng shot, file tiếng, câu thoại, SFX.
+- `timeline.fcpxml` (Final Cut Pro, DaVinci Resolve), `timeline.xml` (Premiere, Resolve), `timeline.otio` (OpenTimelineIO): các shot nối nhau, stem tiếng trên từng track, marker cho câu thoại và SFX. Mở trong phần mềm dựng, cờ `--nle` và giới hạn: [docs/nle-export.md](docs/nle-export.md).
 
 HyperFrames không render riêng một đoạn, nên lệnh render cả video một lần rồi cắt. Chuyển cảnh nằm sẵn trong hình của các shot nó vắt qua: giữ thứ tự và độ dài shot thì nối lại liền mạch. Lệnh dùng chung hàng đợi với Xuất video, mỗi dự án chạy một việc xuất một lúc. Bước nào lỗi thì cả thư mục bị xoá.
 
