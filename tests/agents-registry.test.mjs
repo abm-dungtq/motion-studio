@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
 import { createServer } from "../server.mjs";
+import { callTool, studioClient, toolEnv } from "../lib/tools.mjs";
 import { dropCache, listAgents, probeDir, readVerified, summarize } from "../lib/agents/index.mjs";
 import { detectBin, exec, firstJson, which } from "../lib/agents/run.mjs";
 import { redact, MASK } from "../lib/agents/redact.mjs";
@@ -155,6 +156,17 @@ test("/api/agents works without a provider; a probe job makes a PNG with a recei
     assert.equal(readVerified(f.env)["codex-pool"].image.ok, true);
     const after = await call(port, "POST", "/api/agents/refresh", {}, TOKEN);
     assert.deepEqual(after.json.agents.find((a) => a.id === "codex-pool").verified.image.ok, true);
+    // The image_generate tool goes through the running Studio: a project "image" job.
+    mkdirSync(join(root, "pj"));
+    writeFileSync(join(root, "pj", "project.json"), "{}");
+    const env = toolEnv({ root, studio: studioClient({ state: { url: `http://127.0.0.1:${port}/`, token: TOKEN } }) });
+    const t = await callTool("image_generate", { project: "pj", prompt: "a cat", out: "assets/cat.png" }, env);
+    assert.equal(t.ok, true, t.error);
+    assert.equal(t.result.ok, true, JSON.stringify(t.result));
+    assert.equal(t.result.file, join(realpathSync(root), "pj", "assets", "cat.png"));
+    assert.match(t.result.receipt, /^\.opus\/receipts\/\d{8}\/image-generate-/);
+    const bad = await call(port, "POST", "/api/agents/image", { name: "pj", prompt: "x", out: "../x.png" }, TOKEN);
+    assert.equal(bad.status, 400);
   } finally {
     server.closeAllConnections?.(); server.close();
     for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];

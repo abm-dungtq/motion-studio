@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { request } from "node:http";
 import { BUILTIN, createServer, transitionItems } from "../server.mjs";
 import { loadRoutes } from "../lib/routes.mjs";
+import { callTool, checkArgs, insideProject, loadTools, studioClient, toolEnv } from "../lib/tools.mjs";
 import { adapterFor } from "../lib/provider.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
 
@@ -132,4 +133,41 @@ test("BUILTIN lists exactly the paths server.mjs answers itself", () => {
   assert.ok(used.size > 20, "the route() body was found");
   assert.deepEqual([...new Set(BUILTIN)].sort(), [...used].sort());
   assert.equal(new Set(BUILTIN).size, BUILTIN.length);
+});
+
+test("tools load from lib/tools/, arguments are checked against inputSchema before a tool runs", async () => {
+  const names = (await loadTools()).map((t) => t.name);
+  for (const n of ["agents_list", "image_generate", "image_describe"]) assert.ok(names.includes(n), n);
+  const d = routesDir({
+    "a.mjs": `export const TOOLS = [{ name: "echo_args", inputSchema: { type: "object", required: ["text"], properties: { text: { type: "string" }, n: { type: "integer" }, tags: { type: "array", items: { type: "string" } }, mode: { type: "string", enum: ["a", "b"] } } }, run: (a, env) => ({ a, root: env.root }) },
+      { name: "needs_p", provider: true, inputSchema: { type: "object" }, run: () => 1 }];`,
+  });
+  try {
+    assert.deepEqual(await callTool("echo_args", { text: "hi", n: 2 }, { root: "/r" }, { dir: d }), { ok: true, result: { a: { text: "hi", n: 2 }, root: "/r" } });
+    assert.match((await callTool("echo_args", {}, {}, { dir: d })).error, /thiếu text/);
+    assert.match((await callTool("echo_args", { text: 1 }, {}, { dir: d })).error, /text phải là string/);
+    assert.match((await callTool("echo_args", { text: "x", n: 1.5 }, {}, { dir: d })).error, /n phải là integer/);
+    assert.match((await callTool("echo_args", { text: "x", tags: ["a", 2] }, {}, { dir: d })).error, /tags\[1\]/);
+    assert.match((await callTool("echo_args", { text: "x", mode: "c" }, {}, { dir: d })).error, /mode/);
+    assert.match((await callTool("needs_p", {}, {}, { dir: d })).error, /cần provider/);
+    assert.match((await callTool("nope", {}, {}, { dir: d })).error, /không có tool/);
+    assert.equal(checkArgs({ type: "object" }, []), "đối số phải là một object");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+  const dup = routesDir({ "a.mjs": `export const TOOLS = [{ name: "same_one", inputSchema: { type: "object" }, run: () => 1 }];`, "b.mjs": `export const TOOLS = [{ name: "same_one", inputSchema: { type: "object" }, run: () => 1 }];` });
+  try { await assert.rejects(loadTools(dup), /trùng tên/); } finally { rmSync(dup, { recursive: true, force: true }); }
+});
+
+test("studioClient reaches the running Studio with its token and says so when there is none", async () => {
+  const c = studioClient({ state: { url: `http://127.0.0.1:${port}/`, token: TOKEN } });
+  assert.deepEqual(await c.post("/api/echo", { x: 3 }), { got: 3 });
+  assert.deepEqual(await c.get("/api/hello?who=b"), { hi: "b", provider: true });
+  await assert.rejects(c.get("/api/boom"), (e) => e.status === 418 && e.message === "nope");
+  await assert.rejects(studioClient({ state: null }).get("/api/agents"), /Studio chưa chạy/);
+  await assert.rejects(studioClient({ state: { url: "http://127.0.0.1:9/", token: "x" } }).get("/api/agents"), /Studio chưa chạy/);
+  const env = toolEnv({ root, studio: c });
+  assert.throws(() => env.projectDir("../x"), /không hợp lệ/);
+  assert.throws(() => env.projectDir("missing"), /không có dự án/);
+  mkdirSync(join(root, "pj", "assets"), { recursive: true });
+  assert.equal(insideProject(join(root, "pj"), "assets/a.png", "out"), join(root, "pj", "assets", "a.png"));
+  for (const bad of ["../a.png", "/etc/a.png", ".opus/a.png", "assets/../../a.png", ""]) assert.throws(() => insideProject(join(root, "pj"), bad, "out"), /out/, bad);
 });
