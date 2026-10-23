@@ -78,7 +78,7 @@ Hai tool chỉ đọc nằm trong [`lib/tools/lemo.mjs`](../lib/tools/lemo.mjs):
 | Route | Việc |
 |---|---|
 | `GET /api/lemo/styles?q=&group=&name=` | Thư viện và phong cách riêng, lọc theo từ khoá và nhóm; `project` là trạng thái của dự án `name` |
-| `GET /api/lemo/frame/<slug>.jpg`, `/api/lemo/frame/mine/<slug>.jpg` | Ảnh khung. Slug sai mẫu hoặc đường ra ngoài thư mục thì 403, không có thì 404, không phải JPEG thì 415 |
+| `GET /api/lemo/frame/<slug>.jpg`, `/api/lemo/frame/mine/<slug>.jpg` | Ảnh khung. Slug sai mẫu hoặc đường ra ngoài thư mục thì 403, không có thì 404. Ảnh thư viện chỉ nhận JPEG, phong cách riêng nhận JPEG hoặc PNG; khác thì 415 |
 | `GET /api/lemo/guide?slug=&source=` | `STYLE.md` dạng chữ thuần |
 | `GET /api/lemo/project?name=` | `.opus/lemo.json`, file của lớp canvas, scene, khung dọc hay ngang, bản nháp trong `lemo-style/` |
 | `POST /api/lemo/fetch` | Tải thư viện (job `lemo-fetch`) |
