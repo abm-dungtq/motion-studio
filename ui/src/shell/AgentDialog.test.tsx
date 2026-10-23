@@ -1,4 +1,4 @@
-import { act, screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { registerAgentRows } from "@/ext/registry.ts";
 import { useStudio } from "@/store/studio.ts";
@@ -27,5 +27,19 @@ describe("AgentDialog", () => {
     expect(body?.textContent).toBe("hàng mộtMục mở rộng lỗi: hỏnghàng ba");
     act(() => useStudio.getState().openDialog(null));
     expect(document.querySelector('[data-slot="agent"]')).toBeNull();
+  });
+
+  it("gives focus back to the agent chip when it closes", async () => {
+    mockFetch({ "/api/agent": AGENT });
+    registerAgentRows({ component: () => <p>hàng</p> });
+    const chip = document.createElement("button");
+    chip.setAttribute("data-agent-chip", "");
+    document.body.append(chip);
+    useStudio.setState({ dialog: "agent" });
+    renderUi(<AgentDialog />);
+    act(() => useStudio.getState().openDialog(null));
+    // Radix moves focus on unmount in a timeout.
+    await waitFor(() => expect(document.activeElement).toBe(chip));
+    chip.remove();
   });
 });
