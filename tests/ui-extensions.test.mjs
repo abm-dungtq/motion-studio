@@ -54,3 +54,10 @@ test("every public/ file name is one the static route serves", () => {
   const dir = new URL("../public/", import.meta.url);
   for (const f of readdirSync(dir).filter((x) => /\.(js|css)$/.test(x))) assert.match(`/${f}`, PUBLIC_FILE, f);
 });
+
+test("the agent table shows codex-pool quota per account and the next account, never more", async () => {
+  const { poolLines } = await import("../public/ext-agents.js");
+  assert.deepEqual(poolLines({ accounts: [{ name: "acct1", ok: true, h5: 38, week: 12 }, { name: "acct2", ok: true, h5: null, week: null }], next: "acct2" }), ["acct1 5h 38% · tuần 12%", "acct2 chưa dùng", "kế tiếp: acct2"]);
+  assert.deepEqual(poolLines({ accounts: [{ name: "acct1", ok: false, h5: 100, week: 40 }], next: null }), ["acct1 5h 100% · tuần 40% · hết lượt"]);
+  assert.deepEqual(poolLines(null), []);
+});
