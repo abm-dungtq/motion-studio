@@ -22,7 +22,8 @@ export function myStyleView(ctx, store) {
       h("strong", {}, s ? `Bản nháp: ${s.en || s.cn || s.slug} (${s.slug})` : "Bản nháp trong lemo-style/ có style.json hỏng"),
       s?.based_on ? h("span", { class: "muted" }, `Dựa trên ${s.based_on}`) : null,
       s?.line ? h("p", { class: "lemo-line" }, s.line) : null,
-      draft.frame ? h("img", { class: "lemo-frame", src: `${fileUrl(name, draft.frame)}?v=${Date.now()}`, alt: "Khung phong cách" }) : h("p", { class: "muted" }, "Chưa có styleframe.jpg."),
+      draft.frame ? h("img", { class: "lemo-frame", src: `${fileUrl(name, draft.frame)}?v=${Date.now()}`, alt: "Khung phong cách" }) : h("p", { class: "muted" }, "Chưa có khung phong cách (ảnh PNG hoặc styleframe.jpg trong lemo-style/)."),
+      draft.frame_note ? h("p", { class: "note" }, draft.frame_note) : null,
       draft.changes ? h("details", { class: "lib-more", open: true }, h("summary", {}, "CHANGES.md"), Object.assign(h("pre", { class: "lemo-guide" }), { textContent: draft.changes })) : null,
       h("div", { class: "row" },
         h("button", {
@@ -31,7 +32,7 @@ export function myStyleView(ctx, store) {
           onclick: async () => {
             if (!confirm(`Giữ "${s.en || s.slug}" vào ${d.my_dir}/${s.slug}/? Thư mục đã có thì không ghi đè.`)) return;
             const r = await ctx.send("/api/lemo/keep", { name });
-            if (r.status === 200) toast(`Đã giữ phong cách ở ${r.dir}`); else toast(r.error ?? `Lỗi ${r.status}`, true);
+            if (r.status === 200) toast(`Đã giữ phong cách ở ${r.dir}${r.frame === "styleframe.png" ? " (chưa có ffmpeg nên khung giữ dạng PNG)" : ""}`); else toast(r.error ?? `Lỗi ${r.status}`, true);
             await store.load();
           },
         }, "Giữ phong cách"))));

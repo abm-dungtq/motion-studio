@@ -5,7 +5,8 @@
 //        library is downloaded
 //   GET  /api/lemo/frame/<slug>.jpg, /api/lemo/frame/mine/<slug>.jpg   a style's frame: the slug
 //        matches SLUG, the realpath stays in the library cache or the own-styles folder, the file
-//        starts like a JPEG (else 403 / 404 / 415)
+//        starts like a JPEG (an own style may also keep styleframe.png, sent as image/png)
+//        (else 403 / 404 / 415)
 //   GET  /api/lemo/guide?slug=&source=      STYLE.md as plain text
 //   GET  /api/lemo/project?name=            the style applied to the project (.opus/lemo.json),
 //        canvas-layer files, scene file, vertical frame, and the draft in lemo-style/
@@ -21,7 +22,7 @@
 //   POST /api/lemo/keep { name }            copies lemo-style/ to the own-styles folder (only the
 //        user's click; lib/lemo/my-styles.mjs)
 // The downloaded library is data: Studio never runs or imports a file of it.
-import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, realpathSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getJob, running, startJob } from "../jobs.mjs";
@@ -29,7 +30,7 @@ import { KIND as DIRECTOR, pump, runnerSetting } from "../director.mjs";
 import { setFrontmatter } from "../create.mjs";
 import { PIN, cacheHome, readyDir } from "../lib/lemo/fetch.mjs";
 import { findStyle, groupsOf, layerSlugs, libraryStyles, merge, myStyles, myStylesDir, search, SLUG } from "../lib/lemo/catalog.mjs";
-import { DRAFT, keepStyle } from "../lib/lemo/my-styles.mjs";
+import { DRAFT, imageKind, keepStyle, pickFrame } from "../lib/lemo/my-styles.mjs";
 import { draftStyle, grammarProject, grammarShot, insertMarkers, layerScene } from "../lib/lemo/requests.mjs";
 
 const FETCH = fileURLToPath(new URL("../lib/lemo/fetch.mjs", import.meta.url));
@@ -89,8 +90,8 @@ export function projectState(dir) {
   if (sj != null) {
     let style = null;
     try { const raw = JSON.parse(sj); style = { slug: String(raw.slug ?? ""), en: String(raw.en ?? ""), cn: String(raw.cn ?? ""), based_on: raw.based_on ? String(raw.based_on) : null, line: String(raw.line ?? "").slice(0, 400) }; } catch { style = null; }
-    const frame = ["styleframe.jpg", "styleframe-vs-base.jpg", "test.jpg"].find((f) => existsSync(join(draftDir, f)));
-    draft = { style, valid: Boolean(style), frame: frame ? `${DRAFT}/${frame}` : null, changes: smallText(join(draftDir, "CHANGES.md"), 32 << 10), has_guide: existsSync(join(draftDir, "STYLE.md")) };
+    const frame = pickFrame(draftDir);
+    draft = { style, valid: Boolean(style), frame: frame ? `${DRAFT}/${frame.rel}` : null, frame_note: frame?.warning ?? null, changes: smallText(join(draftDir, "CHANGES.md"), 32 << 10), has_guide: existsSync(join(draftDir, "STYLE.md")) };
   }
   return {
     ...readLemo(dir),
@@ -204,7 +205,7 @@ function frame(c) {
   const slug = file.match(/^([a-z0-9][a-z0-9-]{0,60})\.jpg$/)?.[1];
   if (!slug) return c.send(403, "không được phép");
   let base, cands;
-  if (mine) { base = myStylesDir(); cands = ["styleframe.jpg", "test.jpg"].map((f) => join(base, slug, f)); } else {
+  if (mine) { base = myStylesDir(); cands = ["styleframe.jpg", "styleframe.png", "test.jpg"].map((f) => join(base, slug, f)); } else {
     const lib = readyDir(cacheHome(), PIN);
     if (!lib) return c.send(404, "chưa tải thư viện");
     base = join(lib, "docs", "frames"); cands = [join(base, `${slug}.jpg`)];
@@ -215,12 +216,9 @@ function frame(c) {
   try { real = realpathSync(f); root = realpathSync(base); } catch { return c.send(404, "không có ảnh"); }
   if (!real.startsWith(root + sep)) return c.send(403, "không được phép");
   const st = lstatSync(real);
-  if (!st.isFile() || st.size > FRAME_MAX) return c.send(415, "không phải ảnh JPEG");
-  const head = Buffer.alloc(3);
-  const fd = openSync(real, "r");
-  try { readSync(fd, head, 0, 3, 0); } finally { closeSync(fd); }
-  if (head[0] !== 0xff || head[1] !== 0xd8 || head[2] !== 0xff) return c.send(415, "không phải ảnh JPEG");
-  return c.send(200, readFileSync(real), { "content-type": "image/jpeg", "cache-control": "private, max-age=3600" });
+  const kind = st.size <= FRAME_MAX ? imageKind(real) : null;
+  if (kind !== "jpg" && !(mine && kind === "png")) return c.send(415, "không phải ảnh JPEG");
+  return c.send(200, readFileSync(real), { "content-type": kind === "png" ? "image/png" : "image/jpeg", "cache-control": "private, max-age=3600" });
 }
 
 export const ROUTES = [
@@ -307,7 +305,7 @@ export const ROUTES = [
         const lib = libraryStyles();
         const librarySlugs = [...new Set([...PIN.slugs, ...lib.rows.map((r) => r.slug)])];
         const r = keepStyle({ projectDir: pd.dir, myDir: myStylesDir(), librarySlugs });
-        return { ok: true, slug: r.slug, dir: r.dir, files: r.files, bytes: r.bytes };
+        return { ok: true, slug: r.slug, dir: r.dir, files: r.files, bytes: r.bytes, frame: r.frame, warnings: r.warnings };
       } catch (e) { return answer(c, e); } finally { busy.delete(b.name); }
     },
   },

@@ -52,7 +52,7 @@ Mọi yêu cầu gửi đạo diễn đều kèm cùng bốn luật:
 Mục **Phong cách riêng** ở cuối tab đi theo quy trình `MY-STYLES.md` của lemo-opuscar:
 
 1. Chọn phong cách gốc, hoặc "Từ trang trắng". Ghi tên và mô tả nếu muốn, rồi bấm **Nhờ đạo diễn tạo**.
-2. Đạo diễn hỏi bạn từng câu bằng thẻ hỏi của Studio. Nó viết `style.json`, `STYLE.md`, `CHANGES.md` và khung phong cách `styleframe.jpg` trong `<dự án>/lemo-style/`, và có thể thêm `DEMO.md`, `demo/`, `test.mp4`. Đạo diễn không tự chép ra ngoài dự án.
+2. Đạo diễn hỏi bạn từng câu bằng thẻ hỏi của Studio. Nó viết `style.json`, `STYLE.md` và `CHANGES.md` trong `<dự án>/lemo-style/`, chụp một khung phong cách PNG vào đó, và có thể thêm `DEMO.md`, `demo/`, `test.mp4`. Đạo diễn không tự chép ra ngoài dự án, cũng không đổi tên hay định dạng file.
 3. Mục này hiện khung phong cách và bảng `CHANGES.md`. Ưng thì bấm **Giữ phong cách**. Chỉ cú bấm này ghi ra ngoài dự án.
 
 **Giữ phong cách** chép bản nháp vào `~/lemo-my-styles/<slug>/` (đổi chỗ bằng `LEMO_MY_STYLES`) và thêm một dòng vào `~/lemo-my-styles/README.md`. Đây đúng là thư mục và định dạng mà plugin lemo-opuscar dùng, nên hai bên thấy phong cách của nhau. Studio kiểm mấy điều trước khi chép:
@@ -61,6 +61,8 @@ Mục **Phong cách riêng** ở cuối tab đi theo quy trình `MY-STYLES.md` c
 - slug không trùng phong cách nào của thư viện hay phong cách riêng đã có;
 - chỉ chép `style.json`, `STYLE.md`, `CHANGES.md`, `DEMO.md`, `styleframe*.jpg`, `test.mp4`, `test.jpg` và `demo/` (bỏ symlink, file chấm, `node_modules`, `renders`, `out`);
 - tổng không quá 300 MB.
+
+Khung phong cách là `styleframe.jpg` nếu có; không thì `styleframe.png`, ảnh `frame-00-*.png` của `hyperframes snapshot`, hoặc ảnh PNG duy nhất trong `lemo-style/` (nhiều ảnh thì lấy ảnh mới nhất và báo). Studio đổi ảnh PNG thành `styleframe.jpg` bằng ffmpeg, đúng tên mà `MY-STYLES.md` dùng; máy không có ffmpeg thì giữ `styleframe.png`.
 
 Studio chép vào một thư mục tạm cạnh đích rồi đổi tên, nên không bao giờ ghi vào một thư mục đã có. Phong cách riêng hiện ở đầu tab, mục **Của bạn**, và áp theo ngữ pháp. Studio không tự xoá thứ gì trong `~/lemo-my-styles/`.
 

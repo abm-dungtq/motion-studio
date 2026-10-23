@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { keepStyle, MAX_BYTES, readmeRow, readmeSlugs } from "../lib/lemo/my-styles.mjs";
+import { execFileSync } from "node:child_process";
+import { imageKind, keepStyle, MAX_BYTES, pickFrame, readmeRow, readmeSlugs } from "../lib/lemo/my-styles.mjs";
 
 const made = [];
 const tmp = (p) => { const d = mkdtempSync(join(tmpdir(), p)); made.push(d); return d; };
@@ -71,4 +72,40 @@ test("a draft over the size limit is too_large and nothing is written", () => {
   truncateSync(big, MAX_BYTES + 1);
   assert.throws(() => keepStyle({ projectDir: dir, myDir: my }), code("too_large"));
   assert.equal(existsSync(my), false);
+});
+
+// A small real PNG made by ffmpeg.
+const png = (file, color = "red") => execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "lavfi", "-i", `color=${color}:s=64x36`, "-frames:v", "1", file]);
+
+test("a PNG snapshot becomes styleframe.jpg; without ffmpeg it stays styleframe.png", () => {
+  const dir = project();
+  rmSync(join(dir, "lemo-style", "styleframe.jpg"));
+  png(join(dir, "lemo-style", "at-8.8s.png"));
+  assert.deepEqual(pickFrame(join(dir, "lemo-style")), { rel: "at-8.8s.png", kind: "png", warning: null });
+  const my = tmp("lemo-my-");
+  const r = keepStyle({ projectDir: dir, myDir: my });
+  assert.equal(r.frame, "styleframe.jpg");
+  assert.equal(imageKind(join(my, "my-rain", "styleframe.jpg")), "jpg");
+  assert.ok(!readdirSync(join(my, "my-rain")).some((f) => f.endsWith(".png")));
+  const r2 = keepStyle({ projectDir: project({ slug: "my-snow" }), myDir: my, ffmpeg: "/nonexistent/ffmpeg" });
+  assert.equal(r2.frame, null, "the fixture's styleframe.jpg is not a real JPEG, so no frame is picked");
+  const dir3 = project({ slug: "my-hail" });
+  rmSync(join(dir3, "lemo-style", "styleframe.jpg"));
+  png(join(dir3, "lemo-style", "frame-00-at-2s.png"));
+  const r3 = keepStyle({ projectDir: dir3, myDir: my, ffmpeg: "/nonexistent/ffmpeg" });
+  assert.equal(r3.frame, "styleframe.png");
+  assert.equal(imageKind(join(my, "my-hail", "styleframe.png")), "png");
+});
+
+test("several PNGs: the newest is the frame, with a warning", () => {
+  const d = join(project(), "lemo-style");
+  png(join(d, "a.png"), "blue");
+  png(join(d, "b.png"), "green");
+  png(join(d, "styleframe.jpg"), "white");
+  const f = pickFrame(d);
+  assert.equal(f.kind, "jpg", "a real styleframe.jpg wins");
+  rmSync(join(d, "styleframe.jpg"));
+  const g = pickFrame(d);
+  assert.ok(["a.png", "b.png"].includes(g.rel));
+  assert.match(g.warning, /2 ảnh PNG/);
 });
