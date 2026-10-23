@@ -63,6 +63,16 @@ const statusOf = (EXIT) => ({ [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.
 const FREE = new Set(["/api/projects", "/api/status", "/api/agent", "/api/media/browse", "/api/media", "/api/jobs", "/api/settings", "/api/files", "/api/sounds", "/api/library",
   "/api/directions", "/api/cases", "/api/styles", "/api/media/register", "/api/sounds/import", "/api/jobs/cancel"]);
 
+// The transitions a directions file offers, as { id, kind }: seams is a list of { id, kind, … }
+// (an older file had an object keyed by id). Ids in seam_classes.banned are left out.
+export function transitionItems(d) {
+  const banned = new Set(Array.isArray(d?.seam_classes?.banned) ? d.seam_classes.banned : []);
+  const all = Array.isArray(d?.seams)
+    ? d.seams.filter((s) => s && typeof s.id === "string").map((s) => ({ id: s.id, kind: s.kind ?? null }))
+    : Object.entries(d?.seams ?? {}).map(([id, v]) => ({ id, kind: v?.kind ?? null }));
+  return all.filter((s) => !banned.has(s.id));
+}
+
 // The provider, or null with the reason the API reports (503 body, /api/status).
 async function current() {
   try { return { p: await loadProvider() }; } catch (e) {
@@ -336,7 +346,8 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
       if (p === "/api/directions") {
         if (!P) return send(res, 200, { seams: [], directions: [] });
         const d = JSON.parse(readFileSync(P.library.directionsFile, "utf8"));
-        return send(res, 200, { seams: Object.keys(d.seams ?? {}), directions: d.directions.map((x) => ({ id: x.id, ten_vi: x.ten_vi, mo_ta_vi: x.mo_ta_vi, seams: x.seams })) });
+        const items = transitionItems(d);
+        return send(res, 200, { seams: items.map((s) => s.id), seam_items: items, directions: (d.directions ?? []).map((x) => ({ id: x.id, ten_vi: x.ten_vi, mo_ta_vi: x.mo_ta_vi, seams: x.seams })) });
       }
       if (p === "/api/library") {
         try {
