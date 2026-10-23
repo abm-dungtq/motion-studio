@@ -2,7 +2,10 @@
 // footage, lines and voice, music, the reference library, export. Timeline edits go through
 // ctx.patch; anything for the director (a task, "Dùng cho dự án", a changed line) through
 // ctx.direct. The open panel is kept in localStorage ("studio.tab") and in the URL (?tab=).
-// Keys: Alt+1…Alt+6 pick a panel; arrow keys, Home and End move along the rail (ARIA tabs).
+// Keys: Alt+1…Alt+9 pick a panel; arrow keys, Home and End move along the rail (ARIA tabs).
+// Extensions (ext.js) add tabs after the six built-in ones (addTab) and sections at the end of a
+// tab (addSection); see docs/extensions.md. A footage row drags as text/x-ms-media
+// JSON { rel, kind, path }.
 import { h, thumb, fmtS, isMedia, toast } from "/dom.js";
 import { icon } from "/icons.js";
 import { answerFailure, cardCache, cardKey, liveDirectorJob, pressGate } from "/gate-cards.js";
@@ -17,6 +20,9 @@ const TABS = [
 ];
 const IDS = TABS.map((t) => t.id);
 const STORE = "studio.tab";
+const TAB_ID = /^[a-z][a-z0-9-]{1,30}$/;
+// Drag type of a footage row; the timeline and B-roll suggestions read the same JSON.
+export const MEDIA_DRAG = "text/x-ms-media";
 
 const KIND = { director: "Đạo diễn", export: "Xuất video" };
 const STEP = { bundle: "bộ lớp dựng" };
@@ -74,6 +80,7 @@ function readTab() {
 }
 
 export function mountPanels(ctx, railEl, panelEl) {
+  const sections = {}; // tab id → [{ id, order, view }], from addSection
   let tab = readTab();
   // Panel state that survives a redraw: drafts, the browse folder, reopened and rejecting cards.
   const memo = { brief: "", libMode: "videos", libQuery: "", libCat: "", libFeatured: false, libCats: [], browse: null, drafts: {}, reopen: new Set(), rejecting: new Set() };
@@ -83,13 +90,14 @@ export function mountPanels(ctx, railEl, panelEl) {
   const press = pressGate(); // redraws wait while a mouse or Space press is on the panel
 
   // Rail buttons with icon, label and a count badge; roving tabindex as in the ARIA tabs pattern.
-  const buttons = new Map(TABS.map((t, i) => {
+  const railButton = (t, i) => {
     const count = h("span", { class: "rail-count", hidden: true });
-    const b = h("button", { type: "button", role: "tab", id: `tab-${t.id}`, class: "rail-item", "data-tab": t.id, "aria-controls": "panel", title: `${t.label} (Alt+${i + 1})` },
-      h("span", { class: "rail-icon" }, icon(t.id), count), h("span", { class: "rail-label" }, t.label));
+    const b = h("button", { type: "button", role: "tab", id: `tab-${t.id}`, class: "rail-item", "data-tab": t.id, "aria-controls": "panel", title: i < 9 ? `${t.label} (Alt+${i + 1})` : t.label },
+      h("span", { class: "rail-icon" }, icon(t.icon ?? t.id), count), h("span", { class: "rail-label" }, t.label));
     railEl.append(b);
     return [t.id, { b, count, label: t.label }];
-  }));
+  };
+  const buttons = new Map(TABS.map(railButton));
 
   const loading = () => h("p", { class: "muted" }, "Đang tải…");
   const fail = (e) => h("p", { class: "empty" }, `Không tải được: ${e.message}. Thử bấm lại mục này trên thanh trái.`);
@@ -350,6 +358,31 @@ export function mountPanels(ctx, railEl, panelEl) {
     },
   };
 
+  // What an extension view gets: the panel's own helpers, so its empty and error states match.
+  const helpers = { h, empty, needManifest, loading, fail, select: (id, focus) => select(id, focus), render: () => render() };
+  const guard = (what, fn) => { try { return [fn(helpers)].flat(Infinity).filter(Boolean); } catch (e) { console.error(what, e); return [fail(e)]; } };
+
+  // A tab after the built-in ones. view(helpers) returns a node or a list; badge() a count.
+  function addTab({ id, label, lead = "", icon: iconName, view, badge }) {
+    if (!TAB_ID.test(String(id)) || IDS.includes(id)) throw new Error(`addTab: id "${id}" không hợp lệ hoặc đã có`);
+    if (typeof view !== "function" || !label) throw new Error(`addTab ${id}: cần label và view()`);
+    const t = { id, label, lead, icon: iconName, badge };
+    TABS.push(t); IDS.push(id);
+    buttons.set(...railButton(t, TABS.length - 1));
+    views[id] = () => guard(`tab ${id}`, view);
+    badges();
+    return { id };
+  }
+  // A section at the end of a tab (built-in or extension), sorted by order.
+  function addSection(tabId, { id, order = 100, view }) {
+    if (typeof view !== "function") throw new Error(`addSection ${tabId}/${id}: cần view()`);
+    (sections[tabId] ??= []).push({ id, order: Number(order) || 0, view });
+    sections[tabId].sort((a, b) => a.order - b.order);
+    if (tabId === tab) render();
+  }
+  // The tab the URL or localStorage asked for, once extensions have added theirs.
+  function restore() { const want = readTab(); if (want !== tab) select(want); }
+
   // One request as chat turns: the user's words on the right, the director's answer on the left.
   // A follow-up (joined) request shows no user words; its trigger is the answer above it.
   function turn(name, r, joined) {
@@ -473,7 +506,13 @@ export function mountPanels(ctx, railEl, panelEl) {
   function mediaRow(m) {
     const file = String(m.rel ?? m.path ?? "").split("/").pop();
     const meta = [KIND_VI[m.kind] ?? m.kind, Number.isFinite(m.duration) ? mss(m.duration) : null, m.width && m.height ? `${m.width}×${m.height}` : null].filter(Boolean).join(" · ");
-    return h("div", { class: "card media-row" }, h("span", { class: "entry-name", title: m.rel ?? m.path }, file), h("small", { class: "muted num" }, meta));
+    const row = h("div", { class: "card media-row", draggable: "true", title: "Kéo vào timeline" }, h("span", { class: "entry-name", title: m.rel ?? m.path }, file), h("small", { class: "muted num" }, meta));
+    row.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData(MEDIA_DRAG, JSON.stringify({ rel: m.rel ?? null, kind: m.kind ?? null, path: m.path ?? null }));
+      e.dataTransfer.setData("text/plain", m.rel ?? m.path ?? file);
+      e.dataTransfer.effectAllowed = "copy";
+    });
+    return row;
   }
 
   function badges() {
@@ -481,6 +520,7 @@ export function mountPanels(ctx, railEl, panelEl) {
       ai: ctx.state.requests.filter((r) => r.status === "waiting_user").length,
       voice: (ctx.state.m?.lines ?? []).filter((l) => l.gate === "stale").length,
     };
+    for (const t of TABS) if (t.badge && !(t.id in counts)) { try { counts[t.id] = Number(t.badge()) || 0; } catch { counts[t.id] = 0; } }
     for (const [id, { b, count, label }] of buttons) {
       const n = counts[id] ?? 0;
       count.hidden = !n;
@@ -504,7 +544,7 @@ export function mountPanels(ctx, railEl, panelEl) {
     // A live card drawn again stays where the user sees it; otherwise the chat follows its end.
     const anchor = tab === "ai" ? panelEl.querySelector(".card.gate:not(.expired)") : null;
     const top = anchor?.getBoundingClientRect().top;
-    panelEl.replaceChildren(head, ...views[tab]().filter(Boolean));
+    panelEl.replaceChildren(head, ...views[tab]().filter(Boolean), ...(sections[tab] ?? []).flatMap((x) => guard(`section ${tab}/${x.id}`, x.view)));
     if (tab === "ai") cards.sweep();
     badges();
     if (anchor?.isConnected) panelEl.scrollTop += anchor.getBoundingClientRect().top - top;
@@ -546,8 +586,8 @@ export function mountPanels(ctx, railEl, panelEl) {
   document.addEventListener("keydown", (e) => {
     if (!e.altKey || e.metaKey || e.ctrlKey || e.shiftKey) return;
     if (e.target.closest?.("input, textarea, select, [contenteditable]") || document.querySelector("dialog[open]")) return;
-    const m = /^Digit([1-6])$/.exec(e.code);
-    if (!m) return;
+    const m = /^Digit([1-9])$/.exec(e.code);
+    if (!m || !IDS[Number(m[1]) - 1]) return;
     e.preventDefault();
     select(IDS[Number(m[1]) - 1], true);
   });
@@ -577,5 +617,5 @@ export function mountPanels(ctx, railEl, panelEl) {
     else if (!typing()) render();
   });
   render();
-  return { render, select };
+  return { render, select, addTab, addSection, restore };
 }

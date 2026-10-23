@@ -1,5 +1,7 @@
-// icons.js — the six rail icons: one stroke family (24 grid, 1.75 stroke, round caps), drawn in
-// currentColor so the active and hover colors come from the CSS tokens.
+// icons.js — the rail icons: one stroke family (24 grid, 1.75 stroke, round caps), drawn in
+// currentColor so the active and hover colors come from the CSS tokens. icon(name, shapes)
+// registers an extension's icon first: shapes is a list of [tag, attrs] like SHAPES below, or one
+// path "d" string. A name nobody registered draws the default puzzle-piece icon.
 const NS = "http://www.w3.org/2000/svg";
 
 const SHAPES = {
@@ -17,10 +19,15 @@ const SHAPES = {
   output: [["path", { d: "M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4M12 15V4M7.5 8.5 12 4l4.5 4.5" }]],
 };
 
-export function icon(name) {
+// A puzzle piece: an extension tab without its own icon.
+const FALLBACK = [["path", { d: "M10 4h4v2.5a1.5 1.5 0 0 0 3 0V4h3v6h-2.5a1.5 1.5 0 0 0 0 3H20v7h-7v-2.5a1.5 1.5 0 0 0-3 0V20H4v-6h2.5a1.5 1.5 0 0 0 0-3H4V4z" }]];
+
+export function icon(name, shapes) {
+  if (typeof shapes === "string") shapes = [["path", { d: shapes }]];
+  if (Array.isArray(shapes) && shapes.length && !Object.hasOwn(SHAPES, name)) SHAPES[name] = shapes;
   const svg = document.createElementNS(NS, "svg");
   for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", width: 22, height: 22, fill: "none", stroke: "currentColor", "stroke-width": 1.75, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true", focusable: "false", class: "icon" })) svg.setAttribute(k, String(v));
-  for (const [tag, attrs] of SHAPES[name] ?? []) {
+  for (const [tag, attrs] of (Object.hasOwn(SHAPES, name) ? SHAPES[name] : FALLBACK)) {
     const el = document.createElementNS(NS, tag);
     for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
     svg.append(el);

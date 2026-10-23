@@ -1,7 +1,9 @@
 // agent.js — the "Agent trên máy" chip in the topbar and its popover, from GET /api/agent.
 // Dot: green when claude is found and not known to be logged out, amber when login is unknown,
 // red when claude is missing or logged out, or when Studio has no provider (data.provider null). Reloads when a project opens, when the popover
-// opens, and every 60 s.
+// opens, and every 60 s. The label adds "· N agent" when data.agents (the CLI registry, lib/agents)
+// lists usable ones. Extensions add popover rows with addRows(fn(data, { reload, h }) → Node[],
+// { width }) (see docs/extensions.md).
 import { h } from "/dom.js";
 
 const EVERY_MS = 60000;
@@ -16,8 +18,12 @@ function level(a) {
   return a.claude.logged_in === null ? "unknown" : "ok";
 }
 
+// Agents that can do work now: found, runnable and not known to be logged out.
+export const usableAgents = (list) => (Array.isArray(list) ? list.filter((a) => a.found && !a.error && a.logged_in !== false && Object.values(a.caps ?? {}).includes("yes")) : []);
+
 export function mountAgent(ctx, chip) {
   let data = null, error = null, seq = 0;
+  const rows = []; // extension row builders, from addRows
   const dot = h("span", { class: "dot unknown", "aria-hidden": "true" });
   const label = h("span", {}, "Claude Code");
   chip.replaceChildren(dot, label);
@@ -32,7 +38,8 @@ export function mountAgent(ctx, chip) {
     dot.className = `dot ${lv}`;
     const v = semver(data?.claude.version);
     const noProvider = data?.provider === null;
-    label.textContent = noProvider ? "Chưa có provider" : data && !data.claude.found ? "Claude Code: không thấy" : `Claude Code${v ? ` ${v}` : ""}`;
+    const n = usableAgents(data?.agents).length;
+    label.textContent = noProvider ? "Chưa có provider" : data && !data.claude.found ? `Claude Code: không thấy${n ? ` · ${n} agent` : ""}` : `Claude Code${v ? ` ${v}` : ""}${n ? ` · ${n} agent` : ""}`;
     chip.title = error ? `Không đọc được trạng thái agent: ${error}` : noProvider ? (data.provider_error?.error ?? "Chưa có provider") : { ok: "Claude Code sẵn sàng", unknown: "Chưa rõ đã đăng nhập Claude Code chưa", bad: "Claude Code chưa sẵn sàng" }[lv];
     if (!pop.hidden) fill();
   }
@@ -55,7 +62,15 @@ export function mountAgent(ctx, chip) {
       row("ffmpeg", data.ffmpeg ? "có" : "không tìm thấy"),
       !c.found ? h("p", { class: "note" }, "Cài Claude Code rồi mở lại Studio để đạo diễn AI chạy trên máy.") : null,
       c.found && c.logged_in !== true ? h("p", { class: "note" }, "Mở Terminal và chạy ", h("code", {}, "claude"), " để đăng nhập.") : null,
+      ...rows.flatMap((fn) => { try { return [fn(data, { reload: load, h })].flat(Infinity); } catch (e) { console.error("agent rows", e); return [h("p", { class: "form-error" }, `Mục mở rộng lỗi: ${e.message}`)]; } }),
     ].filter(Boolean));
+  }
+
+  function addRows(fn, { width } = {}) {
+    if (typeof fn !== "function") throw new Error("addAgentRows: cần một hàm");
+    rows.push(fn);
+    if (width) pop.style.width = width;
+    if (!pop.hidden) fill();
   }
 
   async function load() {
@@ -99,5 +114,5 @@ export function mountAgent(ctx, chip) {
   setInterval(load, EVERY_MS);
   paint();
   load();
-  return { load };
+  return { load, addRows };
 }

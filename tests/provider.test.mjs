@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,7 +24,13 @@ test("loadProvider returns the contract Studio uses and caches it", async () => 
   for (const k of ["enqueue", "list", "next", "finish", "cancelRequest", "ask", "answer", "expireWaiting"]) assert.equal(typeof p.requests[k], "function", k);
   assert.equal(p.director.mcpTools.length, 7);
   assert.ok(p.director.mcpTools.every((t) => t.startsWith(p.director.toolPrefix)));
-  for (const [k, f] of Object.entries(p.commands)) assert.match(f, /^\/.+\.mjs$/, k);
+  for (const k of ["timing", "beatGrid", "wordSync", "sfxSync", "cut", "reframe", "qc"]) assert.ok(existsSync(p.commands[k]), `${k}: ${p.commands[k]}`);
+  // A command is a script path, or (STUDIO_API 4) a { file, args } object that runs one.
+  for (const [k, c] of Object.entries(p.commands)) {
+    if (typeof c === "string") { assert.match(c, /^\/.+\.mjs$/, k); continue; }
+    assert.match(c?.file, /^\/.+\.mjs$/, k);
+    assert.ok(Array.isArray(c.args) && c.args.every((a) => typeof a === "string"), `${k}: args is a list of strings`);
+  }
   const env = p.director.childEnv({ id: "r-1" }, { KEEP: "1" });
   assert.equal(env.KEEP, "1");
   assert.ok(Object.values(env).includes("r-1") && Object.values(env).includes("cli"), "the MCP server learns the request and the runner");
@@ -92,10 +98,14 @@ test("STUDIO_API 4: declared COMMANDS and SKILLS are used; API 3 keeps the fixed
     assert.equal(p4.commands.pitch, "/x/pitch.mjs");
     assert.deepEqual(p4.commands.choose.args.slice(0, 2), ["choose", "--project"]);
     assert.equal(p4.commands.render, join(v4, "scripts", "render-final.mjs"), "a command COMMANDS leaves out keeps its file name");
+    for (const [k, f] of Object.entries({ timing: "timing.mjs", beatGrid: "beat-grid.mjs", wordSync: "word-sync.mjs", sfxSync: "sfx-sync.mjs", cut: "cut.mjs", reframe: "reframe.mjs", qc: "qc-mp4.mjs" })) {
+      assert.equal(p4.commands[k], join(v4, "scripts", f), k);
+    }
     assert.match(p4.director.promptFragments().skills, /: s-one, s-two\.$/);
     const p3 = await A.create({ OPUS_VIDEO_HOME: v3 });
     assert.equal(p3.commands.pitch, join(v3, "scripts", "make-pitch.mjs"));
     assert.equal(p3.commands.choose, undefined);
+    assert.equal(p3.commands.qc, join(v3, "scripts", "qc-mp4.mjs"), "API 3 has the new commands at their file names too");
     assert.doesNotMatch(p3.director.promptFragments().skills, /s-one/);
   } finally { for (const d of [v4, v3]) rmSync(d, { recursive: true, force: true }); }
 });

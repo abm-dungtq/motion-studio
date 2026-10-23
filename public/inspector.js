@@ -6,6 +6,7 @@
 // - music: start, end, head trim, volume, fades → one update_music with the changed fields.
 // - event: label, sound, time (→ move_event); delete only for SFX added in Studio.
 // Read-only projects show every field disabled.
+// Extensions add sections at the end (addSection({ kinds, view(pick, m) }), see docs/extensions.md).
 import { fmt, fmtS, h, round1, thumb } from "/dom.js";
 import { eventStart } from "/timeline-edit.js";
 
@@ -13,6 +14,7 @@ const r3 = (x) => Math.round(x * 1000) / 1000;
 
 export function mountInspector(ctx, el) {
   let seams = [];
+  const extra = []; // [{ kinds:Set, view }], from addSection
   ctx.api("/api/directions").then((d) => { seams = d.seams ?? []; render(); }).catch(() => {});
 
   function render() {
@@ -21,8 +23,19 @@ export function mountInspector(ctx, el) {
     const p = ctx.state.pick ?? { kind: "shot", id: ctx.state.sel };
     const view = { line: lineView, music: musicView, event: eventView }[p.kind];
     const node = view?.(m, p.id);
-    if (node) return el.replaceChildren(...node);
-    shotView(m);
+    if (node) el.replaceChildren(...node);
+    else shotView(m);
+    for (const x of extra) {
+      if (!x.kinds.has(p.kind)) continue;
+      try { el.append(...[x.view(p, m)].flat(Infinity).filter(Boolean)); } catch (e) { console.error("inspector section", e); el.append(h("p", { class: "form-error" }, `Mục mở rộng lỗi: ${e.message}`)); }
+    }
+  }
+
+  // kinds: the picks it shows for (shot, line, music, event); view(pick, m) → node, list or null.
+  function addSection({ kinds = ["shot"], view }) {
+    if (typeof view !== "function") throw new Error("addInspectorSection: cần view()");
+    extra.push({ kinds: new Set(kinds), view });
+    render();
   }
 
   function shotView(m) {
@@ -156,5 +169,5 @@ export function mountInspector(ctx, el) {
   ctx.on("manifest", render);
   ctx.on("select", render);
   ctx.on("focus-note", () => el.querySelector('[data-role="motion-note"]')?.focus());
-  return { render };
+  return { render, addSection };
 }
