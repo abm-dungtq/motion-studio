@@ -68,6 +68,8 @@ printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | node mcp/studio-mcp.mjs --profile external
 ```
 
+Mỗi tool khai `annotations.readOnlyHint`: tool chỉ đọc là `true`, tool ghi (`project_patch`, `project_undo`, `media_check`, `image_generate`) là `false`. Codex chạy `codex exec` với chính sách duyệt `never` thì chỉ gọi được tool chỉ đọc. Tool ghi cần chạy Codex ở chế độ có duyệt.
+
 `image_generate` gửi việc cho Studio đang chạy, đọc url và token từ file trạng thái. Studio chưa chạy thì tool báo "Studio chưa chạy". Các tool khác chạy được khi Studio tắt.
 
 ## Đạo diễn trong Studio
