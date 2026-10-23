@@ -28,7 +28,7 @@ before(async () => {
   writeFileSync(join(root, "shared-assets", "sfx", "boom.mp3"), Buffer.alloc(16, 1));
   mkdirSync(join(root, "demo", "assets", "sfx"), { recursive: true });
   writeFileSync(join(root, "demo", "assets", "sfx", "a.mp3"), Buffer.alloc(8, 2));
-  server = createServer({ root, token: TOKEN, runtime: null });
+  server = createServer({ root, token: TOKEN, runtime: null, ui: fileURLToPath(new URL("./fixtures/ui-dist", import.meta.url)) });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
 });

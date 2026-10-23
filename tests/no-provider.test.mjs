@@ -20,7 +20,7 @@ before(async () => {
   process.env.OPUS_VIDEO_HOME = empty;
   root = mkdtempSync(join(tmpdir(), "studio-np-"));
   cpSync(FIXTURE, join(root, "demo"), { recursive: true });
-  server = createServer({ root, token: TOKEN, runtime: null });
+  server = createServer({ root, token: TOKEN, runtime: null, ui: fileURLToPath(new URL("./fixtures/ui-dist", import.meta.url)) });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
 });

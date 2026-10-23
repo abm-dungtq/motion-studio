@@ -1,5 +1,9 @@
 // server.mjs — Motion Studio HTTP server (node:http, Node built-ins only). Started by
 // bin/motion-studio.mjs; createServer({ root, token }) is exported for tests (listen on port 0).
+// The page: GET / reads ui/dist/index.html (the Vite build of ui/, made by npm run setup or by
+// start when the sources are newer; 503 with what to run when it is missing) and injects the
+// token; GET /assets/<file> serves the build's files. Static files, not API routes; createServer's
+// ui option points at another build (tests).
 // Every edit goes through the provider's command gateway (lib/provider.mjs) as actor "human".
 // The provider loads lazily: without one the server still starts and serves the page, GET
 // /api/status says why ({ ok: false, provider: null, error, hint }), and every route that needs
@@ -49,6 +53,8 @@ import { checkRoutes, findRoute, loadRoutes, PUBLIC_FILE } from "./lib/routes.mj
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const PUBLIC = join(HERE, "public");
+const UI_DIST = join(HERE, "ui", "dist");
+const ASSET = /^[A-Za-z0-9._-]+$/;
 const BUNDLE = join(HERE, "bundle.mjs");
 const RATIO = /^\d+x\d+$/;
 export const NAME = /^[A-Za-z0-9._-]+$/;
@@ -147,7 +153,7 @@ export function projectFile(projectDir, rel) {
   return { file: real, parts };
 }
 
-export function createServer({ root, token, runtime = undefined, run: runCmd = runFile, mediaRoots = BROWSE_ROOTS, routes = DEFAULT_ROUTES }) {
+export function createServer({ root, token, runtime = undefined, run: runCmd = runFile, mediaRoots = BROWSE_ROOTS, routes = DEFAULT_ROUTES, ui = UI_DIST }) {
   root = realpathSync(resolve(root));
   const ext = checkRoutes(routes, BUILTIN);
   const runtimeFor = (dir) => (runtime === undefined ? findRuntime(dir) : runtime);
@@ -301,8 +307,22 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
     };
     if (req.method === "GET") {
       if (p === "/" || p === "/index.html") {
-        const html = readFileSync(join(PUBLIC, "index.html"), "utf8").replace("__STUDIO_TOKEN__", token);
+        const page = join(ui, "index.html");
+        if (!existsSync(page)) return send(res, 503, "Giao diện chưa được build. Chạy npm run setup trong thư mục Motion Studio rồi tải lại trang.");
+        const html = readFileSync(page, "utf8").replace("__STUDIO_TOKEN__", token);
         return send(res, 200, html, { "content-type": TYPES[".html"] });
+      }
+      // Files of the UI build (flat names; realpath must stay inside <ui>/assets).
+      if (p.startsWith("/assets/")) {
+        const name = p.slice("/assets/".length);
+        if (!ASSET.test(name) || name === "." || name === "..") return send(res, 404, "không có");
+        let file;
+        try {
+          const dir = realpathSync(join(ui, "assets"));
+          file = realpathSync(join(dir, name));
+          if (!file.startsWith(dir + sep) || !statSync(file).isFile()) file = null;
+        } catch { file = null; }
+        return file ? serveFile(req, res, file) : send(res, 404, "không có");
       }
       if (PUBLIC_FILE.test(p) && existsSync(join(PUBLIC, p.slice(1)))) return serveFile(req, res, join(PUBLIC, p.slice(1)));
       if (p === "/hf/runtime.js") {
