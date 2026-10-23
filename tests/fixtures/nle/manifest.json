@@ -1,0 +1,36 @@
+{
+  "schema": "motion-studio/bundle@1",
+  "project": "nle-demo",
+  "title": "Demo & <Thử> 'NLE'",
+  "version": 3,
+  "ratio": "16x9",
+  "composition": "index.html",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "frames": 240,
+  "duration": 8,
+  "created": "2026-10-23T02:00:00.000Z",
+  "source": { "kind": "render" },
+  "shots": [
+    { "id": "s1", "name": "Tiêu đề", "file": "shots/01-s1.mp4", "frame_in": 0, "frame_out": 75, "start": 0, "end": 2.5, "start_set": 0, "end_set": 2.5 },
+    { "id": "s2", "name": "Ba chip", "file": "shots/02-s2.mp4", "frame_in": 75, "frame_out": 174, "start": 2.5, "end": 5.8, "start_set": 2.5, "end_set": 5.8 },
+    { "id": "s3", "name": "Kết quả", "file": "shots/03-s3.mp4", "frame_in": 174, "frame_out": 240, "start": 5.8, "end": 8, "start_set": 5.8, "end_set": 8 }
+  ],
+  "audio": [
+    { "kind": "mix", "file": "audio/mix.wav" },
+    { "kind": "voice", "file": "audio/voice.wav" },
+    { "kind": "music", "file": "audio/music.wav" },
+    { "kind": "sfx", "file": "audio/sfx.wav" }
+  ],
+  "captions": "captions.srt",
+  "lines": [
+    { "id": "vo-01", "shot": "s1", "start": 0.4, "end": 2.2, "text": "Công ty bạn có một đống dữ liệu & không ai đọc hết <được>." },
+    { "id": "vo-02", "shot": "s2", "start": 2.6, "end": 5.5, "text": "Bạn đưa cả mã nguồn, ảnh chụp." }
+  ],
+  "events": [
+    { "id": "ev-1", "shot": "s2", "start": 2.7, "sound": "assets/sfx/pop.wav", "label": "pop" },
+    { "id": "ev-2", "shot": "s3", "start": 6.1, "sound": "assets/sfx/whoosh.wav", "label": "" }
+  ],
+  "note": "Chuyển cảnh nằm sẵn trong hình của các shot nó vắt qua: giữ thứ tự và độ dài shot thì liền mạch. Tiếng đặt từ giây 0 của timeline."
+}
