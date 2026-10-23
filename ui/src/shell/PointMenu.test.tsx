@@ -17,4 +17,23 @@ describe("PointMenu", () => {
     expect(other).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
   });
+
+  it("focuses the first item, runs it on Enter, wraps ↑ and closes on Tab", async () => {
+    const first = vi.fn();
+    renderUi(<PointMenuHost />);
+    act(() => openPointMenu(10, 10, [{ label: "Chọn câu", run: first }, { label: "Xoá" }]));
+    const items = await screen.findAllByRole("menuitem");
+    await waitFor(() => expect(document.activeElement).toBe(items[0]));
+    await userEvent.keyboard("{ArrowUp}");
+    expect(document.activeElement).toBe(items[1]);
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+    expect(first).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+
+    act(() => openPointMenu(10, 10, [{ label: "Chọn câu", run: first }]));
+    await screen.findByRole("menuitem");
+    await userEvent.keyboard("{Tab}");
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    expect(first).toHaveBeenCalledTimes(1);
+  });
 });

@@ -1,8 +1,9 @@
 // A small menu at the point of a click (replaces public/context-menu.js): openPointMenu(x, y, items)
 // with items [{ label, run, disabled? }]. One menu at a time; it closes on a click outside, on
-// Escape, or after an item runs. ↑/↓/Enter come from Radix. Keys pressed inside the menu stay
-// inside, so the timeline's shortcuts do not fire under it. <PointMenuHost/> is mounted once by App.
-import { useSyncExternalStore } from "react";
+// Escape or Tab, or after an item runs. Like the old menu, it opens with the first live item
+// focused (so Enter runs it) and ↑/↓ wrap. Keys pressed inside the menu stay inside, so the
+// timeline's shortcuts do not fire under it. <PointMenuHost/> is mounted once by App.
+import { useEffect, useSyncExternalStore } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export interface PointMenuItem { label: string; run?: () => void; disabled?: boolean }
@@ -30,6 +31,15 @@ const subscribe = (fn: () => void) => { listeners.add(fn); return () => { listen
 
 export function PointMenuHost() {
   const m = useSyncExternalStore(subscribe, () => menu, () => menu);
+  // DropdownMenuContent has no onOpenAutoFocus, and a menu not opened from the keyboard focuses its
+  // frame. Move focus to the first live item once Radix has done that.
+  useEffect(() => {
+    if (!m) return;
+    const t = setTimeout(() => {
+      document.querySelector<HTMLElement>("[data-point-menu] [role=menuitem]:not([data-disabled])")?.focus();
+    });
+    return () => clearTimeout(t);
+  }, [m]);
   if (!m) return null;
   const x = Math.max(4, Math.min(m.x, window.innerWidth - 4));
   const y = Math.max(4, Math.min(m.y, window.innerHeight - 4));
@@ -41,7 +51,12 @@ export function PointMenuHost() {
       <DropdownMenuContent
         align="start"
         sideOffset={0}
-        onKeyDown={(e) => e.stopPropagation()}
+        loop
+        data-point-menu=""
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Tab") { e.preventDefault(); closePointMenu(); }
+        }}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {m.items.map((it, i) => (
