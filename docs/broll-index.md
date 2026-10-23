@@ -51,7 +51,7 @@ Giới hạn lý thuyết là ceil(33 / 12) = 3 lượt. Thực tế tốn 2 lư
 Đặt trong `studio.json`, khoá `broll`. Khoá này được giữ lại khi Studio dừng rồi chạy lại.
 
 ```json
-{ "broll": { "auto": true, "vision": true, "asr": true, "max_calls_per_run": 50 } }
+{ "broll": { "auto": true, "vision": true, "asr": false, "max_calls_per_run": 50 } }
 ```
 
 - `auto: false`: đăng ký footage xong không tự phân tích.
@@ -122,7 +122,7 @@ Dòng lệnh: `node lib/broll/index.mjs run '{"root":"/Volumes/2/Edit-Video","sc
 
 - `scdet` bắt tốt cắt cứng nhưng kém với chuyển cảnh mềm. Clip anime nhiều cắt nhanh cho shot dài khoảng 0,7–1 s.
 - Một clip dài không có cắt nào là một shot duy nhất, với một chú thích. Ví dụ clip đường phố 60 s.
-- ASR dùng `transcribe.mjs` của media-use. Trên máy này nó chạy whisper qua `hyperframes transcribe`, không chỉ định ngôn ngữ. Với nhạc hay tiếng Việt, kết quả có thể là câu tiếng Anh bịa ra (ví dụ "Thanks for watching!"), và câu đó vào chỉ mục tìm kiếm. Tắt bằng `broll.asr: false` nếu thấy nhiễu.
+- ASR dùng `transcribe.mjs` của media-use. Trên máy này nó chạy whisper qua `hyperframes transcribe`, không chỉ định ngôn ngữ. Với nhạc hay tiếng Việt, kết quả có thể là câu tiếng Anh bịa ra (ví dụ "Thanks for watching!"), và câu đó vào chỉ mục tìm kiếm. Vì vậy `asr` mặc định tắt; bật bằng `broll.asr: true` khi footage có lời rõ.
 - Tìm không dấu thì "biển" cũng khớp "biến". Đây là cái giá của việc tìm có dấu và không dấu cho cùng kết quả.
 - Huỷ job giữa lượt đọc ảnh thì CLI của agent (chạy trong process group riêng) vẫn chạy tới hết thời gian chờ của nó (tối đa 3 phút). ffmpeg thì dừng ngay.
 
