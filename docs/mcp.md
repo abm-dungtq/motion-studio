@@ -81,6 +81,6 @@ Mỗi yêu cầu chạy bằng runner `cli` được Studio ghi một file `.opu
 
 Server MCP của provider vẫn nạp như cũ, vì Studio không dùng `--strict-mcp-config`. Prompt có thêm đúng một luật: thao tác media đi qua tool motion-studio để có biên nhận, và id biên nhận được ghi trong receipt cuối.
 
-Dòng đầu của log job đạo diễn có dạng `Phiên … · đủ 7 tool … + 8 tool motion-studio`. Thiếu tool nào thì log ghi `THIẾU tool MCP: …`.
+Dòng đầu của log job đạo diễn có dạng `Phiên … · đủ 7 tool … + 8 tool motion-studio` (số tool motion-studio tăng theo tính năng đã thêm vào `lib/tools/`). Thiếu tool nào thì log ghi `THIẾU tool MCP: …`.
 
 Tắt phần này (ví dụ khi `--mcp-config` gây lỗi) bằng `"director": { "studio_mcp": false }` trong `studio.json`. Khoá `director` được giữ qua các lần dừng và chạy lại Studio.
