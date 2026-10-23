@@ -1,10 +1,11 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
-import { createServer, transitionItems } from "../server.mjs";
+import { BUILTIN, createServer, transitionItems } from "../server.mjs";
+import { loadRoutes } from "../lib/routes.mjs";
 import { adapterFor } from "../lib/provider.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
 
@@ -12,7 +13,21 @@ import { fakePlugin } from "./fake-plugin.mjs";
 // installed one.
 const A = await adapterFor({});
 const TOKEN = "r".repeat(64);
-let root, plugin, server, port, saved;
+let root, plugin, server, port, saved, extDir;
+
+// A routes folder with the given modules ({ "a.mjs": "source" }).
+const routesDir = (files) => {
+  const d = mkdtempSync(join(tmpdir(), "ms-routes-"));
+  for (const [f, src] of Object.entries(files)) writeFileSync(join(d, f), src);
+  return d;
+};
+const EXT = `export const ROUTES = [
+  { method: "GET", path: "/api/hello", handler: (c) => ({ hi: c.q("who"), provider: Boolean(c.P) }) },
+  { method: "GET", path: "/api/free", provider: false, handler: (c) => c.send(200, { free: true, provider: Boolean(c.P) }) },
+  { method: "POST", path: "/api/echo", handler: (c) => ({ got: c.body.x }) },
+  { method: "GET", path: "/api/tree", prefix: true, handler: (c) => ({ rest: c.url.pathname.slice("/api/tree/".length) }) },
+  { method: "GET", path: "/api/boom", handler: () => { throw Object.assign(new Error("nope"), { status: 418 }); } },
+];`;
 
 const DIRECTIONS = {
   seam_classes: { banned: ["fade", "dissolve"] },
@@ -27,13 +42,14 @@ before(async () => {
   writeFileSync(join(plugin, "data", "directions.json"), JSON.stringify(DIRECTIONS));
   process.env.OPUS_VIDEO_HOME = plugin;
   root = mkdtempSync(join(tmpdir(), "studio-routes-"));
-  server = createServer({ root, token: TOKEN, runtime: null });
+  extDir = routesDir({ "a-ext.mjs": EXT });
+  server = createServer({ root, token: TOKEN, runtime: null, routes: await loadRoutes(extDir) });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
 });
 after(() => {
   server.closeAllConnections?.(); server.close();
-  rmSync(root, { recursive: true, force: true }); rmSync(plugin, { recursive: true, force: true });
+  rmSync(root, { recursive: true, force: true }); rmSync(plugin, { recursive: true, force: true }); rmSync(extDir, { recursive: true, force: true });
   if (saved === undefined) delete process.env.OPUS_VIDEO_HOME; else process.env.OPUS_VIDEO_HOME = saved;
 });
 
@@ -60,4 +76,60 @@ test("/api/directions lists transition ids, not array indexes, and leaves banned
 test("transitionItems still reads an older directions file keyed by id", () => {
   assert.deepEqual(transitionItems({ seams: { a: { kind: "k" }, fade: {} }, seam_classes: { banned: ["fade"] } }), [{ id: "a", kind: "k" }]);
   assert.deepEqual(transitionItems({}), []);
+});
+
+test("an extension route answers after the built-in ones: returned value, c.send, POST body, prefix, thrown status", async () => {
+  assert.deepEqual((await http("GET", "/api/hello?who=an")).json, { hi: "an", provider: true });
+  assert.deepEqual((await http("GET", "/api/free")).json, { free: true, provider: true });
+  assert.deepEqual((await http("POST", "/api/echo", { body: { x: 7 }, token: TOKEN })).json, { got: 7 });
+  assert.deepEqual((await http("GET", "/api/tree/a/b")).json, { rest: "a/b" });
+  const boom = await http("GET", "/api/boom");
+  assert.equal(boom.status, 418);
+  assert.equal(boom.json.error, "nope");
+  assert.equal((await http("GET", "/api/nothing-here")).status, 404);
+  assert.equal((await http("POST", "/api/hello", { body: {}, token: TOKEN })).status, 404, "a GET route does not answer POST");
+});
+
+test("a POST to an extension route without the token is 403 before anything else", async () => {
+  const r = await http("POST", "/api/echo", { body: { x: 1 } });
+  assert.equal(r.status, 403);
+});
+
+test("provider: false keeps answering without a provider; other extension routes answer 503", async () => {
+  process.env.OPUS_VIDEO_HOME = "/nonexistent";
+  try {
+    const free = await http("GET", "/api/free");
+    assert.equal(free.status, 200);
+    assert.deepEqual(free.json, { free: true, provider: false });
+    const r = await http("GET", "/api/hello");
+    assert.equal(r.status, 503);
+    assert.equal(r.json.code, "NO_PROVIDER");
+  } finally { process.env.OPUS_VIDEO_HOME = plugin; }
+});
+
+test("a path that repeats a built-in or another extension route makes createServer throw", async () => {
+  const cases = [
+    `export const ROUTES = [{ method: "POST", path: "/api/agent", handler: () => 1 }];`,
+    `export const ROUTES = [{ method: "GET", path: "/api/director", prefix: true, handler: () => 1 }];`,
+    `export const ROUTES = [{ method: "GET", path: "/api/x", handler: () => 1 }, { method: "GET", path: "/api/x", handler: () => 2 }];`,
+  ];
+  for (const src of cases) {
+    const d = routesDir({ "x.mjs": src });
+    try {
+      const routes = await loadRoutes(d);
+      assert.throws(() => createServer({ root, token: TOKEN, runtime: null, routes }), /trùng/, src);
+    } finally { rmSync(d, { recursive: true, force: true }); }
+  }
+  const bad = routesDir({ "y.mjs": `export const ROUTES = [{ method: "GET", path: "/p/x", handler: () => 1 }];` });
+  try { await assert.rejects(loadRoutes(bad), /\/api\//); } finally { rmSync(bad, { recursive: true, force: true }); }
+  assert.deepEqual(await loadRoutes(join(tmpdir(), "ms-routes-none")), [], "a missing folder has no routes");
+});
+
+test("BUILTIN lists exactly the paths server.mjs answers itself", () => {
+  const src = readFileSync(new URL("../server.mjs", import.meta.url), "utf8");
+  const body = src.slice(src.indexOf("async function route("), src.indexOf("const server = httpServer("));
+  const used = new Set([...body.matchAll(/\bp === "(\/[^"]*)"/g)].map((m) => m[1]));
+  assert.ok(used.size > 20, "the route() body was found");
+  assert.deepEqual([...new Set(BUILTIN)].sort(), [...used].sort());
+  assert.equal(new Set(BUILTIN).size, BUILTIN.length);
 });

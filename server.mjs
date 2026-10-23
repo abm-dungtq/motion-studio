@@ -29,6 +29,8 @@
 // without overwriting. GET /api/gates runs check-preflight --stage final (one run per project at a
 // time; the provider's preflight command). POST /api/bundle runs bundle.mjs (shots, stems, SRT, manifest for an NLE) as an export
 // job. GET /api/library pages the Thư viện mẫu (lib/library.mjs); /library/thumb/<id> its cover images. createServer's run and mediaRoots options exist for tests.
+// Extension routes: routes/*.mjs through lib/routes.mjs, tried after the built-in ones (BUILTIN);
+// createServer's routes option (await loadRoutes(dir)) replaces them in tests.
 import { createServer as httpServer } from "node:http";
 import { constants as FS, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, watch, createReadStream } from "node:fs";
 import { execFile, execFileSync } from "node:child_process";
@@ -43,6 +45,7 @@ import { browse, register, readMedia, BROWSE_ROOTS, AUDIO_EXT } from "./media.mj
 import { agentStatus } from "./agent.mjs";
 import { answerCard } from "./gates.mjs";
 import { query as libraryQuery, thumbFile } from "./lib/library.mjs";
+import { checkRoutes, findRoute, loadRoutes } from "./lib/routes.mjs";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const PUBLIC = join(HERE, "public");
@@ -72,6 +75,16 @@ export function transitionItems(d) {
     : Object.entries(d?.seams ?? {}).map(([id, v]) => ({ id, kind: v?.kind ?? null }));
   return all.filter((s) => !banned.has(s.id));
 }
+
+// Every path route() answers itself (each `p === "…"` below; a test checks the two agree).
+// Extension routes (lib/routes.mjs) may not reuse one.
+export const BUILTIN = ["/", "/index.html", "/hf/runtime.js",
+  "/api/projects", "/api/status", "/api/project", "/api/log", "/api/requests", "/api/agent", "/api/media/browse", "/api/media", "/api/jobs",
+  "/api/settings", "/api/files", "/api/sounds", "/api/gates", "/api/directions", "/api/library", "/api/cases", "/api/styles", "/api/events",
+  "/api/import", "/api/patch", "/api/undo", "/api/redo", "/api/director", "/api/projects/new", "/api/media/register", "/api/sounds/import",
+  "/api/director/answer", "/api/director/cancel", "/api/jobs/cancel", "/api/export", "/api/bundle"];
+// The routes/*.mjs of this checkout; createServer({ routes }) replaces them (tests).
+const DEFAULT_ROUTES = await loadRoutes();
 
 // The provider, or null with the reason the API reports (503 body, /api/status).
 async function current() {
@@ -134,8 +147,9 @@ export function projectFile(projectDir, rel) {
   return { file: real, parts };
 }
 
-export function createServer({ root, token, runtime = undefined, run: runCmd = runFile, mediaRoots = BROWSE_ROOTS }) {
+export function createServer({ root, token, runtime = undefined, run: runCmd = runFile, mediaRoots = BROWSE_ROOTS, routes = DEFAULT_ROUTES }) {
   root = realpathSync(resolve(root));
+  const ext = checkRoutes(routes, BUILTIN);
   const runtimeFor = (dir) => (runtime === undefined ? findRuntime(dir) : runtime);
   const watchers = new Map(); // name → { clients:Set, close() }
   let port = 0;
@@ -276,7 +290,15 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
     const q = (k) => url.searchParams.get(k);
     if (req.method === "POST" && req.headers["x-studio-token"] !== token) return send(res, 403, { error: "thiếu X-Studio-Token" });
     const { p: P, why } = await current();
-    if (!P && p.startsWith("/api/") && !FREE.has(p)) return send(res, 503, why);
+    const er = findRoute(ext, req.method, p);
+    if (!P && p.startsWith("/api/") && !FREE.has(p) && !(er && !er.provider)) return send(res, 503, why);
+    // An extension route, tried where the built-in branch would answer 404.
+    const extension = async (b = {}) => {
+      if (!er) return send(res, 404, { error: "không có" });
+      const c = { req, res, url, q, body: b, send: (status, data, headers) => send(res, status, data, headers), projectDir, withManifest, root, token, P, why, startJob, runtimeFor };
+      const out = await er.handler(c);
+      if (!res.headersSent && !res.writableEnded) send(res, 200, out ?? { ok: true });
+    };
     if (req.method === "GET") {
       if (p === "/" || p === "/index.html") {
         const html = readFileSync(join(PUBLIC, "index.html"), "utf8").replace("__STUDIO_TOKEN__", token);
@@ -377,7 +399,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         if (pd.error) return send(res, pd.status, { error: pd.error });
         return subscribe(P, q("name"), pd.dir, res);
       }
-      return send(res, 404, { error: "không có" });
+      return extension();
     }
     if (req.method === "POST") {
       const b = await body(req);
@@ -496,7 +518,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
           return send(res, 200, { job });
         } catch (e) { return send(res, e.code === "BUSY" ? 409 : 500, { error: e.message }); }
       }
-      return send(res, 404, { error: "không có" });
+      return extension(b);
     }
     return send(res, 405, { error: "method không hỗ trợ" });
   }
