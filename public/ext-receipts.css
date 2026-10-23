@@ -1,0 +1,20 @@
+/* public/ext-receipts.css — receipts in the export tab and the shot inspector (ext-receipts.js). */
+.rc-head { justify-content: space-between; align-items: center; }
+.rc-head h3 { margin: 0; }
+.rc-item { border-top: 1px solid var(--line); }
+.rc-row { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 10px; align-items: center; width: 100%; padding: 8px 4px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rc-row:hover, .rc-row[aria-expanded="true"] { background: var(--sunk); }
+.rc-files { grid-column: 1 / -1; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.badge.rc-pass { color: var(--voice); border-color: var(--voice-line); background: var(--voice-bg); }
+.badge.rc-warn { color: var(--warn); border-color: var(--warn-line); background: var(--warn-bg); }
+.badge.rc-fail { color: var(--danger); border-color: var(--danger); background: var(--panel); }
+.rc-detail { padding: 4px 4px 10px; }
+.rc-checks { list-style: none; margin: 0 0 6px; padding: 0; font-size: 13px; }
+.rc-checks li { padding: 2px 0; overflow-wrap: anywhere; }
+.rc-checks .rc-mark { display: inline-block; width: 1.2em; font-weight: 700; }
+.rc-checks .ok .rc-mark { color: var(--voice); }
+.rc-checks .bad.fail .rc-mark { color: var(--danger); }
+.rc-checks .bad.warn .rc-mark { color: var(--warn); }
+.rc-json { max-height: 320px; overflow: auto; font-size: 12px; background: var(--sunk); padding: 8px; border-radius: var(--radius-sm); }
+.rc-inspector { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.rc-inspector h4 { margin: 0 0 4px; font-size: 13px; }
