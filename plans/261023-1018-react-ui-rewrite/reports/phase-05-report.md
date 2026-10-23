@@ -23,6 +23,31 @@ fps=58.7 runs=58.5,58.7,58.8
 fps=58.6 runs=58.9,58.6,58.5
 ```
 
+## Ảnh 1440 và 2560
+
+Lệnh `node ui/scripts/shoot.mjs --base http://127.0.0.1:4410 --views ui/scripts/views-new.json --out /Volumes/2/Edit-Video/plans/reports/react-ui-rewrite/final --widths 1440,2560` thoát 0 và in `ok 28`. Gốc thử được dựng lại sạch, rồi seed thẻ chọn hướng.
+
+Selector `ready` của các view `thuy-mau-demo` có thêm `body:has([data-to])`. `/api/gates` cần khoảng 1,7 s mới trả lời, nên nếu không đợi thì ảnh chụp trước khi chip cổng hiện. Tab `voice` và `library` không có `section`, nên selector `ready` của hai tab này có thêm ô nhập câu và thẻ mẫu.
+
+JPEG nằm ở `screens/`. Ảnh 1440 lưu ở chất lượng 75. Nếu ảnh 2560 cũng lưu ở 75 thì tổng 28 ảnh là 9,6 MB, vượt giới hạn 8 MB, nên ảnh 2560 lưu ở chất lượng 60. Tổng hiện là 7 968 KB. PNG gốc nằm ở `/Volumes/2/Edit-Video/plans/reports/react-ui-rewrite/final/{1440,2560}/`.
+
+| View | 1440 | 2560 |
+|---|---|---|
+| `tab-media` | [1440](../screens/1440-tab-media.jpg) | [2560](../screens/2560-tab-media.jpg) |
+| `tab-styles-code` | [1440](../screens/1440-tab-styles-code.jpg) | [2560](../screens/2560-tab-styles-code.jpg) |
+| `tab-anime` | [1440](../screens/1440-tab-anime.jpg) | [2560](../screens/2560-tab-anime.jpg) |
+| `tab-fx` | [1440](../screens/1440-tab-fx.jpg) | [2560](../screens/2560-tab-fx.jpg) |
+| `tab-voice` | [1440](../screens/1440-tab-voice.jpg) | [2560](../screens/2560-tab-voice.jpg) |
+| `tab-music` | [1440](../screens/1440-tab-music.jpg) | [2560](../screens/2560-tab-music.jpg) |
+| `tab-library` | [1440](../screens/1440-tab-library.jpg) | [2560](../screens/2560-tab-library.jpg) |
+| `director` | [1440](../screens/1440-director.jpg) | [2560](../screens/2560-director.jpg) |
+| `export` | [1440](../screens/1440-export.jpg) | [2560](../screens/2560-export.jpg) |
+| `new-project` | [1440](../screens/1440-new-project.jpg) | [2560](../screens/2560-new-project.jpg) |
+| `agent` | [1440](../screens/1440-agent.jpg) | [2560](../screens/2560-agent.jpg) |
+| `inspector-shot` | [1440](../screens/1440-inspector-shot.jpg) | [2560](../screens/2560-inspector-shot.jpg) |
+| `readonly` | [1440](../screens/1440-readonly.jpg) | [2560](../screens/2560-readonly.jpg) |
+| `gate-card` | [1440](../screens/1440-gate-card.jpg) | [2560](../screens/2560-gate-card.jpg) |
+
 ## Thử liên vùng trên 4410
 
 Server: `ui/scripts/smoke-server.mjs`. Gốc thử `/tmp/ms-react-root-4410` dựng lại bằng `make-test-root.mjs`. Trình duyệt là Chrome (`playwright-core`), cửa sổ 1440×900. Script thử nằm ở `/tmp/ms-react-walk-4410/walk.mjs`, kết quả thô ở `results.json` cùng thư mục.
