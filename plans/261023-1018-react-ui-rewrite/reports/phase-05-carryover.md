@@ -6,3 +6,4 @@
 - media: "Thêm" bị tắt ở dự án chỉ xem theo phase file (bản cũ không tắt); giữ như phase file. Sửa `docs/extensions.md` mục "Kéo footage": `MEDIA_DRAG` nay ở `ui/src/core/dnd.ts`. Bấm lại INSP-17 (Gợi ý B-roll) sau khi có timeline.
 - shell: ScrollArea đã sửa gốc (viewport con là block); kiểm lại bằng mắt mọi panel với tên file dài.
 - lemo: `docs/lemo-styles.md` dòng 1 và 3 đổi tên tab "Phong cách code" thành "Phong cách"; bấm shot s2 trên timeline rồi chụp lại `inspector-lemo` (INSP-19).
+- director: bấm lại trên timeline thật các khối beat, word, line, music, event (bản 4d thử bằng hook trình duyệt); `docs/extensions.md` đổi `addInspectorSection` thành `registerInspectorSection`, thêm mục thẻ cổng.
