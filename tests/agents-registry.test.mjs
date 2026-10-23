@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { listAgents, summarize } from "../lib/agents/index.mjs";
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { request } from "node:http";
+import { createServer } from "../server.mjs";
+import { dropCache, listAgents, probeDir, readVerified, summarize } from "../lib/agents/index.mjs";
 import { detectBin, exec, firstJson, which } from "../lib/agents/run.mjs";
 import { redact, MASK } from "../lib/agents/redact.mjs";
 import { parseStatus } from "../lib/agents/cli/codex-pool.mjs";
@@ -99,4 +104,62 @@ test("firstJson reads a fenced block, a bare object or one inside text", () => {
   assert.deepEqual(firstJson('The answer is {"b":"x}y"} done'), { b: "x}y" });
   assert.deepEqual(firstJson("[1,2]"), [1, 2]);
   assert.equal(firstJson("no json"), null);
+});
+
+const call = (port, method, path, body, token) => new Promise((res, rej) => {
+  const data = body === undefined ? null : JSON.stringify(body);
+  const req = request({ host: "127.0.0.1", port, method, path, headers: { host: `127.0.0.1:${port}`, ...(data ? { "content-type": "application/json" } : {}), ...(token ? { "x-studio-token": token } : {}) } }, (r) => {
+    let s = ""; r.on("data", (c) => (s += c)); r.on("end", () => { let json = null; try { json = JSON.parse(s); } catch { /* text */ } res({ status: r.statusCode, json, text: s }); });
+  });
+  req.on("error", rej);
+  if (data) req.write(data);
+  req.end();
+});
+
+test("/api/agents works without a provider; a probe job makes a PNG with a receipt and records the result", async () => {
+  const f = fakeAgents();
+  const saved = { ...process.env };
+  Object.assign(process.env, f.env, { OPUS_VIDEO_HOME: "/nonexistent" });
+  dropCache();
+  const root = mkdtempSync(join(tmpdir(), "ms-agents-root-"));
+  const TOKEN = "a".repeat(64);
+  const server = createServer({ root, token: TOKEN, runtime: null });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const port = server.address().port;
+  try {
+    const g = await call(port, "GET", "/api/agents");
+    assert.equal(g.status, 200, g.text);
+    assert.equal(g.json.agents.find((a) => a.id === "claude").version, "2.1.304");
+    assert.equal(g.json.probe, null);
+    const chip = await call(port, "GET", "/api/agent");
+    assert.equal(chip.json.agents.find((a) => a.id === "codex-pool").found, true, "the chip gets the cached scan");
+    assert.equal((await call(port, "POST", "/api/agents/probe", { id: "codex-pool", cap: "image" })).status, 403);
+    assert.equal((await call(port, "POST", "/api/agents/probe", { id: "nope", cap: "image" }, TOKEN)).status, 400);
+    assert.equal((await call(port, "POST", "/api/agents/probe", { id: "claude", cap: "fly" }, TOKEN)).status, 400);
+    assert.equal((await call(port, "POST", "/api/agents/probe", { id: "goose", cap: "text" }, TOKEN)).status, 400, "detect-only agents are not run");
+    const p = await call(port, "POST", "/api/agents/probe", { id: "codex-pool", cap: "image" }, TOKEN);
+    assert.equal(p.status, 200, p.text);
+    assert.equal(p.json.job.kind, "agent-probe");
+    let job;
+    for (let i = 0; i < 100; i++) {
+      job = (await call(port, "GET", "/api/agents")).json.probe;
+      if (job && job.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    assert.equal(job.status, "exited", JSON.stringify(job));
+    assert.equal(job.code, 0, job.tail.join("\n"));
+    assert.ok(job.tail.some((l) => l.startsWith("OK ")), job.tail.join("\n"));
+    const pngs = readdirSync(probeDir(f.env)).filter((x) => x.endsWith(".png"));
+    assert.equal(pngs.length, 1);
+    assert.ok(existsSync(join(probeDir(f.env), ".opus", "receipts")));
+    assert.equal(readVerified(f.env)["codex-pool"].image.ok, true);
+    const after = await call(port, "POST", "/api/agents/refresh", {}, TOKEN);
+    assert.deepEqual(after.json.agents.find((a) => a.id === "codex-pool").verified.image.ok, true);
+  } finally {
+    server.closeAllConnections?.(); server.close();
+    for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+    Object.assign(process.env, saved);
+    dropCache();
+    rmSync(root, { recursive: true, force: true }); f.rm();
+  }
 });
