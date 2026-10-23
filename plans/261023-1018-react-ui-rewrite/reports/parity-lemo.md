@@ -1,0 +1,34 @@
+# Parity vùng lemo (nhóm 4g)
+
+Thử ngày 2026-10-23 trên `http://127.0.0.1:4418` (`ui/scripts/smoke-server.mjs`, gốc thử `/tmp/ms-react-root-4418`, chạy với `LEMO_MY_STYLES=/tmp/ms-react-root-4418/my-styles` để "Giữ phong cách" chỉ ghi vào `/tmp`). Thư viện lemo-opuscar đọc từ bộ đệm có sẵn trên máy (`~/.cache/motion-studio/lemo-opuscar`, chỉ đọc). Trạng thái lỗi và "chưa tải thư viện" tạo bằng `page.route` của Playwright. Server 4411 không chạy lúc thử, nên đối chiếu chữ theo cột "Cũ (4411)" của checklist và mã `public/lemo-*.js`.
+
+| ID | Có | Chỗ trong UI mới | Ghi chú |
+| --- | --- | --- | --- |
+| INSP-19 | có | cột phải, tab Shot, mục "Phong cách code" (`ui/src/ext/lemo/ShotStyle.tsx`) | Tiêu đề "Phong cách code", "Dự án: Sản phẩm thuỷ tinh 3D (lớp canvas)", mục "Áp phong cách cho shot này", 60 lựa chọn. Bấm Áp → confirm "Áp \"Ink Test\" cho shot s1: nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)?", Huỷ → 0 POST. Nhánh này chưa có timeline (vùng 4a) nên chưa bấm được khối shot; shot đang chọn là s1 do `syncPick` tự chọn shot đầu. Bấm s2 thử lại ở phase 5 |
+| TAB-styles-code-01 | có | panel trái, tab Phong cách | Chặn styles trả `fetched:false` → chữ trống và nút "Tải thư viện (≈ 5 MB)", phong cách riêng có thì hiện dưới "Của bạn". Bấm thật: thư viện đã có trên máy nên server trả `fetched:true` ngay, không tải gì; POST /api/lemo/fetch [200], hỏi lại styles tới khi `fetched`, lưới hiện "60 / 60 phong cách" |
+| TAB-styles-code-02 | có | panel trái, tab Phong cách | Ô tìm "Tìm: thuỷ màu, ukiyo, tin tức…", nhóm ["Mọi nhóm (11)","Hoạt hình và anime (4)","Điện ảnh và thời kỳ (2)"] |
+| TAB-styles-code-03 | có | panel trái, tab Phong cách | Gõ "thuỷ" → sau 200 ms một GET `/api/lemo/styles?q=thu%E1%BB%B7&name=thuy-mau-demo`, "11 / 59 phong cách", focus giữ ở ô "Tìm phong cách code". Chọn nhóm "Hoạt hình và anime" (bỏ chữ tìm) → "4 / 60 phong cách" (60 vì đã giữ một phong cách riêng). Khác nhỏ: URL bỏ `group=` rỗng vì `params()` của `api/queries.ts` bỏ giá trị rỗng; server đọc như cũ |
+| TAB-styles-code-04 | có | panel trái, tab Phong cách | "59 / 59 phong cách" |
+| TAB-styles-code-05 | có | panel trái, tab Phong cách | Không có phong cách riêng: không có tiêu đề nhóm. Sau khi giữ "Ink Test": tiêu đề ["Của bạn","Thư viện"], thẻ riêng đứng đầu |
+| TAB-styles-code-06 | có | panel trái, tab Phong cách | Thẻ đầu: ảnh, "Bàn đèn lưu trữ" + nhãn "Theo ngữ pháp", "Archive Light Table · 档案灯台 · Phim bằng chứng", dòng "The telegram said 57 seconds; under a loupe, the Wrights' gl…", nút ["Áp cho dự án","Đọc STYLE.md","Xem phim mẫu ↗"] |
+| TAB-styles-code-07 | có | panel trái, tab Phong cách | Sau khi áp glass-product: thẻ có "Đang dùng cho dự án (lớp canvas)", viền màu nhấn |
+| TAB-styles-code-08 | có | panel trái, tab Phong cách | Confirm "Áp \"Bàn đèn lưu trữ\" cho cả dự án: nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)?"; Huỷ → 0 POST |
+| TAB-styles-code-09 | có | panel trái, tab Phong cách | Đồng ý → POST /api/lemo/apply `{slug:"archive-lighttable",source:"library",mode:"grammar",shot:null}` [200], toast "Đã áp "Bàn đèn lưu trữ" cho cả dự án; đã gửi yêu cầu cho đạo diễn (chờ phiên Claude Code nhận việc)" |
+| TAB-styles-code-10 | có | panel trái, tab Phong cách | glass-product: POST [409 mode layer, 200 mode layer replace:true], hai confirm đúng chữ cũ, toast "Đã áp "Sản phẩm thuỷ tinh 3D" cho cả dự án; đã gửi yêu cầu cho đạo diễn (chờ phiên Claude Code nhận việc)" |
+| TAB-styles-code-11 | có | hộp thoại (Dialog shadcn) mở từ thẻ | Tiêu đề "STYLE.md · Bàn đèn lưu trữ", aria-label "STYLE.md của Bàn đèn lưu trữ", ghi chú "Văn bản của bên thứ ba (MIT). Chỉ học ngữ pháp hình ảnh, không chép câu chuyện phim mẫu.", 13296 ký tự trong `pre` (0 phần tử con), nút Đóng |
+| TAB-styles-code-12 | có | panel trái, tab Phong cách | 59 link "Xem phim mẫu ↗" (chỉ URL `https://`) |
+| TAB-styles-code-13 | có | panel trái, tab Phong cách | "Ảnh và phim mẫu: LemoLab, CC BY 4.0, github.com/lemomo-ai/lemo-opuscar. Mã và tài liệu: MIT." (link tới repo) |
+| TAB-styles-code-14 | có | panel trái, tab Phong cách | Không có cảnh báo: mục ẩn. Chặn styles thêm 2 cảnh báo → "2 cảnh báo khi đọc thư viện" |
+| TAB-styles-code-15 | có | panel trái, tab Phong cách, mục Phong cách riêng | Mở `/?tab=styles-code`: "Mở một dự án để tạo phong cách riêng. Phong cách đã giữ nằm ở /tmp/ms-react-root-4418/my-styles." (đường dẫn theo `LEMO_MY_STYLES` của server thử; máy thật in `~/lemo-my-styles` như cũ) |
+| TAB-styles-code-16 | có | panel trái, tab Phong cách, mục Phong cách riêng | {"h":"Phong cách riêng","summary":"Tạo phong cách riêng","base":60,"btn":"Nhờ đạo diễn tạo"} |
+| TAB-styles-code-17 | có | panel trái, tab Phong cách, mục Phong cách riêng | Gõ "Phong cách thử", bấm → POST /api/lemo/draft `{base:null,title:"Phong cách thử"}` [200], toast "Đã gửi yêu cầu tạo phong cách riêng cho đạo diễn" |
+| TAB-styles-code-18 | có | panel trái, tab Phong cách, mục Phong cách riêng | Chưa có bản nháp: không có nút Giữ. Bản nháp thử đặt trong `lemo-style/` của gốc thử: "Bản nháp: Ink Test (muc-thu)", khung `/p/thuy-mau-demo/lemo-style/styleframe.png?v=…`, `CHANGES.md` chứa `<script>` hiện nguyên chữ (0 phần tử con, không thêm `script`). Bấm Giữ phong cách → confirm "Giữ \"Ink Test\" vào /tmp/ms-react-root-4418/my-styles/muc-thu/? Thư mục đã có thì không ghi đè.", POST /api/lemo/keep [200], toast "Đã giữ phong cách ở /tmp/ms-react-root-4418/my-styles/muc-thu". `~/lemo-my-styles` không bị tạo |
+| TAB-styles-code-19 | có | panel trái, tab Phong cách | Chặn styles trả 500 → "Không tải được: lỗi thử lemo. Thử bấm lại mục này trên thanh trái." + nút "Thử lại"; bỏ chặn, bấm Thử lại → "60 / 60 phong cách" |
+| API-37 | có | `lemoApply` của `ui/src/api/queries.ts`, gọi từ `ui/src/ext/lemo/store.ts` (`applyStyle`) | Như TAB-styles-code-09, -10 |
+| API-38 | có | `lemoDraft`, gọi từ `ui/src/ext/lemo/MyStyle.tsx` | Như TAB-styles-code-17 |
+| API-39 | có | `lemoFetch`, gọi từ `fetchLibrary` trong `ui/src/ext/lemo/store.ts` | Như TAB-styles-code-01; hỏi lại mỗi 1,5 s, tối đa 10 phút, job lỗi thì toast "Tải thư viện lỗi: …" |
+| API-40 | có | `lemoGuideQuery`, gọi từ `showGuide` trong `ui/src/ext/lemo/store.ts` | Như TAB-styles-code-11; lỗi thì toast "Không đọc được STYLE.md: …" |
+| API-41 | có | `lemoKeep`, gọi từ `ui/src/ext/lemo/MyStyle.tsx` | Như TAB-styles-code-18 |
+| API-42 | có | `lemoStylesQuery` qua `useGalleryStyles` / `useAllStyles` trong `ui/src/ext/lemo/store.ts` | Như TAB-styles-code-03; khoá query có tên dự án nên đổi dự án là tải lại |
+| STATE-27 | có | panel trái, tab Phong cách | "Thư viện 59 phong cách phim dựng bằng code chưa có trên máy. Tải một lần (khoảng 5 MB: ảnh khung, STYLE.md, DEMO.md; không tải mã chạy được)." + nút "Tải thư viện (≈ 5 MB)" |
+| STATE-28 | có | panel trái, tab Phong cách | "Không có phong cách nào khớp "zzzzqq". Thử từ khoá ngắn hơn hoặc bỏ dấu." |
