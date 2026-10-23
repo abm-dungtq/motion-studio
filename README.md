@@ -65,6 +65,8 @@ Không chạy khi con trỏ đang ở ô nhập liệu.
 | S | Cắt shot đang chọn tại playhead |
 | Delete | Xoá SFX đang chọn (chỉ SFX thêm từ Studio) |
 | N | Bật / tắt hít |
+| R | Đổi chế độ kéo mép shot: Ripple (video dài/ngắn theo) hoặc Roll (chỉ dời điểm cắt) |
+| Shift+kéo câu thoại | Dời câu đó và các câu sau nó trong cùng shot |
 | Shift+Z | Vừa khung |
 | Cmd/Ctrl+Z | Hoàn tác |
 | Cmd/Ctrl+Shift+Z | Làm lại (nút "Làm lại" luôn bật; không còn gì để làm lại thì hiện thông báo) |
