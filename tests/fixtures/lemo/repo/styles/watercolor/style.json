@@ -1,0 +1,14 @@
+{
+ "slug": "watercolor",
+ "num": "02",
+ "en": "Watercolor Brush",
+ "cn": "水彩笔刷",
+ "category_en": "Hand-drawn & Painting",
+ "category_cn": "手绘与绘画",
+ "film": "Follow the Rain",
+ "line": "Follow the rain across a painted land.",
+ "uses": ["Nature documentary", "Travel", "Science explainers", "a", "b", "c", "d", "e"],
+ "frame_sec": 68.16,
+ "dur": 113.6,
+ "secret_field": "must not leak"
+}
