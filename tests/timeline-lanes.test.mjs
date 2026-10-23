@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { decorationItems, keyAction, markerDrag, stackLanes, wordBounds } from "../public/timeline-edit.js";
+import { decorationItems, keyAction, markerDrag, stackLanes, wordBounds } from "../ui/src/core/timeline-edit.ts";
 import { assetPath, latestRender, mediaStamps } from "../routes/timeline-assets.mjs";
 
 const five = [

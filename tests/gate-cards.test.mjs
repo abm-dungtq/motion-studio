@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ANSWER_TIMEOUT_MS, answerFailure, cardCache, cardKey, liveDirectorJob, pressGate } from "../public/gate-cards.js";
+import { ANSWER_TIMEOUT_MS, answerFailure, cardCache, cardKey, liveDirectorJob, pressGate } from "../ui/src/core/gate-cards.ts";
 
 const ask = { kind: "approve", gate: "animatic", question: "Duyệt animatic?", at: "2026-10-17T09:00:00.000Z" };
 const waiting = { id: "r1", status: "waiting_user", ask };
