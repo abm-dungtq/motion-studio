@@ -1,0 +1,18 @@
+{
+  "base": "origin/feat/react-ui",
+  "areas": {
+    "timeline":    ["ui/src/timeline/**", "ui/src/core/timeline-geometry.ts", "tests/timeline-geometry.test.mjs", "ui/scripts/perf-playhead.mjs"],
+    "media":       ["ui/src/panels/media/**", "ui/src/ext/broll/**"],
+    "voice-music": ["ui/src/panels/voice/**", "ui/src/panels/music/**"],
+    "director":    ["ui/src/panels/director/**", "ui/src/panels/inspector/**", "ui/src/core/inspector-ops.ts"],
+    "export":      ["ui/src/panels/export/**", "ui/src/ext/receipts/**", "ui/src/panels/library/**", "ui/src/core/library.ts", "ui/src/panels/agent/**", "ui/src/ext/agents/**"],
+    "anime":       ["ui/src/ext/anime/**"],
+    "lemo":        ["ui/src/ext/lemo/**"],
+    "fx":          ["ui/src/ext/fx/**"]
+  },
+  "every_area": [
+    "plans/261023-1018-react-ui-rewrite/reports/parity-{area}.md",
+    "plans/261023-1018-react-ui-rewrite/reports/phase-04-{area}-report.md",
+    "plans/261023-1018-react-ui-rewrite/reports/contract-requests-{area}.md"
+  ]
+}
