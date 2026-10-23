@@ -1,0 +1,746 @@
+{
+  "fps": 30,
+  "dir": "assets/plates/anim",
+  "stacks": {
+    "s1-zoro": {
+      "shot": "s1",
+      "breathe": true,
+      "tracks": [
+        {
+          "type": "wind",
+          "frames": [
+            "base",
+            "s1-zoro-w1",
+            "s1-zoro-w2",
+            "s1-zoro-w1"
+          ],
+          "fps": 6,
+          "phase": 0
+        }
+      ]
+    },
+    "s1-mihawk": {
+      "shot": "s1",
+      "breathe": true,
+      "tracks": [
+        {
+          "type": "wind",
+          "frames": [
+            "base",
+            "s1-mihawk-w1",
+            "s1-mihawk-w2",
+            "s1-mihawk-w1"
+          ],
+          "fps": 6,
+          "phase": 2
+        }
+      ]
+    },
+    "s2-zoro": {
+      "shot": "s2",
+      "tracks": [
+        {
+          "type": "keys",
+          "keys": [
+            {
+              "pose": "s2-k1",
+              "frames": 6
+            },
+            {
+              "pose": "base",
+              "frames": 6
+            },
+            {
+              "pose": "s2-k2",
+              "frames": 6
+            },
+            {
+              "pose": "s2-k3"
+            }
+          ]
+        }
+      ]
+    },
+    "s3": {
+      "shot": "s3",
+      "tracks": [
+        {
+          "type": "keys",
+          "keys": [
+            {
+              "pose": "s3-closed",
+              "frames": 6
+            },
+            {
+              "pose": "s3-half",
+              "frames": 3
+            },
+            {
+              "pose": "base"
+            }
+          ]
+        }
+      ]
+    },
+    "s4-mihawk": {
+      "shot": "s4",
+      "breathe": true,
+      "tracks": [
+        {
+          "type": "lipsync",
+          "voice": "vo-01",
+          "open": "s4-m-open",
+          "half": "s4-m-half",
+          "closed": "s4-m-closed",
+          "idle": "closed"
+        },
+        {
+          "type": "lipsync",
+          "voice": "vo-01",
+          "from": 4,
+          "to": 4.7,
+          "open": "s4-glance-open",
+          "half": "s4-glance-half",
+          "closed": "s4-glance-closed",
+          "idle": "closed"
+        },
+        {
+          "type": "blink",
+          "pose": "s4-blink",
+          "at": [
+            3.9,
+            5.2
+          ],
+          "frames": 3
+        }
+      ],
+      "origin": "52% 78%",
+      "tweens": [
+        {
+          "at": 4.55,
+          "until": "s4.end",
+          "from": {
+            "rotation": 0
+          },
+          "to": {
+            "rotation": -2.2
+          },
+          "ease": "sine.inOut"
+        }
+      ]
+    },
+    "s5": {
+      "shot": "s5",
+      "tracks": [
+        {
+          "type": "keys",
+          "at": "sfx-hilt-click",
+          "keys": [
+            {
+              "pose": "s5-k1",
+              "frames": 3
+            },
+            {
+              "pose": "s5-k2"
+            }
+          ]
+        }
+      ]
+    },
+    "s6-mihawk": {
+      "shot": "s6",
+      "tracks": [
+        {
+          "type": "keys",
+          "keys": [
+            {
+              "pose": "s6-k1",
+              "sec": 0.2
+            },
+            {
+              "pose": "base",
+              "sec": 0.2,
+              "smear": "right"
+            },
+            {
+              "pose": "s6-k3",
+              "smear": "right"
+            }
+          ],
+          "motion": {
+            "tweens": [
+              {
+                "at": "s6+0.2",
+                "dur": 0.2,
+                "from": {
+                  "y": 0
+                },
+                "to": {
+                  "y": -120
+                },
+                "ease": "power2.out"
+              }
+            ]
+          },
+          "fallback": {
+            "tweens": [
+              {
+                "at": "s6",
+                "dur": 0.13,
+                "from": {
+                  "scaleX": 1,
+                  "scaleY": 1
+                },
+                "to": {
+                  "scaleX": 1.05,
+                  "scaleY": 0.92
+                },
+                "ease": "power2.in"
+              },
+              {
+                "at": "s6+0.13",
+                "dur": 0.22,
+                "from": {
+                  "scaleX": 1.05,
+                  "scaleY": 0.92,
+                  "y": 0,
+                  "rotation": 0
+                },
+                "to": {
+                  "scaleX": 0.96,
+                  "scaleY": 1.06,
+                  "y": -160,
+                  "rotation": 6
+                },
+                "ease": "power3.out"
+              },
+              {
+                "at": "s6+0.35",
+                "until": "s6.end",
+                "from": {
+                  "scaleX": 0.96,
+                  "scaleY": 1.06,
+                  "y": -160,
+                  "rotation": 6
+                },
+                "to": {
+                  "scaleX": 1,
+                  "scaleY": 1,
+                  "y": -110,
+                  "rotation": -9
+                },
+                "ease": "power4.out"
+              }
+            ],
+            "smears": [
+              {
+                "at": "s6+0.35",
+                "frames": 2,
+                "dir": "right",
+                "blur": 6,
+                "scaleX": 1.15
+              }
+            ],
+            "ghosts": [
+              {
+                "from": "s6+0.1",
+                "to": "s6.end",
+                "lags": [
+                  2,
+                  4,
+                  6
+                ],
+                "opacity": [
+                  0.35,
+                  0.2,
+                  0.1
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "s7-mihawk": {
+      "shot": "s7",
+      "tracks": [
+        {
+          "type": "keys",
+          "keys": [
+            {
+              "pose": "s6-k3"
+            }
+          ],
+          "fallback": {
+            "tweens": [
+              {
+                "at": "s7",
+                "until": "s7.end",
+                "from": {
+                  "rotation": -9
+                },
+                "to": {
+                  "rotation": -12
+                },
+                "ease": "none",
+                "target": "shake"
+              }
+            ]
+          }
+        }
+      ],
+      "tweens": [
+        {
+          "at": "s7",
+          "until": "s7.end",
+          "from": {
+            "y": -120
+          },
+          "to": {
+            "y": -130
+          },
+          "ease": "none"
+        }
+      ],
+      "smears": [
+        {
+          "at": "s7+0.133",
+          "frames": 5,
+          "dir": "right",
+          "blur": 8,
+          "scaleX": 1.15
+        }
+      ]
+    },
+    "s8-clash": {
+      "shot": "s8",
+      "origin": "755px 196px",
+      "tweens": [
+        {
+          "at": "s8",
+          "dur": 0.2,
+          "from": {
+            "y": -18,
+            "scale": 1.03
+          },
+          "to": {
+            "y": 0,
+            "scale": 1
+          },
+          "ease": "power3.out"
+        },
+        {
+          "at": "s8+0.2",
+          "dur": 0.2667,
+          "from": {
+            "y": 0,
+            "x": 0
+          },
+          "to": {
+            "y": 14,
+            "x": 6
+          },
+          "ease": "power1.in"
+        },
+        {
+          "at": "s8+0.4667",
+          "until": "s8.end",
+          "from": {
+            "y": 14,
+            "x": 6
+          },
+          "to": {
+            "y": -6,
+            "x": -28
+          },
+          "ease": "power3.out"
+        }
+      ],
+      "tremor": [
+        {
+          "from": "s8+0.2",
+          "to": "s8+0.4667",
+          "amp0": 3,
+          "amp1": 5,
+          "every": 1
+        },
+        {
+          "from": "s8+0.4667",
+          "to": "s8+0.7333",
+          "amp0": 4,
+          "amp1": 1,
+          "every": 2
+        }
+      ],
+      "tracks": [
+        {
+          "type": "keys",
+          "keys": [
+            {
+              "pose": "s8-impact",
+              "frames": 6
+            },
+            {
+              "pose": "s8-press",
+              "frames": 8
+            },
+            {
+              "pose": "s8-grind"
+            }
+          ]
+        }
+      ]
+    },
+    "s9-mihawk": {
+      "shot": "s9",
+      "tracks": [
+        {
+          "type": "wind",
+          "frames": [
+            "base",
+            "s9-k1",
+            "s9-k2",
+            "s9-k1"
+          ],
+          "fps": 6
+        }
+      ],
+      "tweens": [
+        {
+          "at": "s9",
+          "dur": 0.3,
+          "from": {
+            "scale": 1.07
+          },
+          "to": {
+            "scale": 1
+          },
+          "ease": "power3.out"
+        }
+      ],
+      "tremor": [
+        {
+          "from": "s9+0.1",
+          "to": "s9.end-0.067",
+          "every": 1,
+          "amp0": 2,
+          "amp1": 5
+        }
+      ]
+    },
+    "s10-zoro": {
+      "shot": "s10",
+      "breathe": true,
+      "tracks": [
+        {
+          "type": "wind",
+          "frames": [
+            "base",
+            "s10-w1",
+            "s10-w2",
+            "s10-w1"
+          ],
+          "fps": 6
+        },
+        {
+          "type": "keys",
+          "at": 10.2,
+          "keys": [
+            {
+              "pose": "s10-glare"
+            }
+          ]
+        }
+      ]
+    },
+    "s11-zoro": {
+      "shot": "s11",
+      "breathe": true,
+      "tracks": [
+        {
+          "type": "lipsync",
+          "voice": "vo-03",
+          "open": "base",
+          "half": "s11-m-half",
+          "open2": "s11-w1",
+          "closed": "s11-m-closed",
+          "idle": "closed"
+        }
+      ],
+      "tremor": [
+        {
+          "amp0": 1,
+          "amp1": 8,
+          "every": 2
+        }
+      ]
+    },
+    "s13-zoro": {
+      "shot": "s13",
+      "tweens": [
+        {
+          "at": "s13",
+          "until": "s13+0.2333",
+          "from": {
+            "x": -360,
+            "skewX": 0
+          },
+          "to": {
+            "x": -400,
+            "skewX": 0
+          },
+          "ease": "power1.in"
+        },
+        {
+          "at": "s13+0.5",
+          "until": "s13.end",
+          "from": {
+            "x": 443,
+            "skewX": 0
+          },
+          "to": {
+            "x": 490,
+            "skewX": 0
+          },
+          "ease": "back.out(2.2)"
+        }
+      ],
+      "steps": [
+        {
+          "from": "s13+0.2333",
+          "to": "s13+0.5",
+          "every": 1,
+          "values": [
+            {
+              "x": -344,
+              "skewX": -4
+            },
+            {
+              "x": -244,
+              "skewX": -6
+            },
+            {
+              "x": -200,
+              "skewX": -10
+            },
+            {
+              "x": -70,
+              "skewX": -10
+            },
+            {
+              "x": 115,
+              "skewX": -4
+            },
+            {
+              "x": 400,
+              "skewX": 0
+            },
+            {
+              "x": 440,
+              "skewX": 0
+            },
+            {
+              "x": 460,
+              "skewX": 0
+            }
+          ]
+        }
+      ],
+      "ghosts": [
+        {
+          "from": "s13+0.2667",
+          "to": "s13+0.5",
+          "lags": [
+            1,
+            2,
+            3
+          ],
+          "opacity": [
+            0.35,
+            0.2,
+            0.1
+          ]
+        }
+      ],
+      "streaks": [
+        {
+          "from": "s13+0.3",
+          "to": "s13+0.5667",
+          "side": "left",
+          "opacity": 0.8
+        }
+      ],
+      "tracks": [
+        {
+          "type": "keys",
+          "keys": [
+            {
+              "pose": "s13-k0",
+              "frames": 7
+            },
+            {
+              "pose": "s13-launch",
+              "frames": 2
+            },
+            {
+              "pose": "s13-glide",
+              "frames": 2
+            },
+            {
+              "pose": "s13-smear",
+              "frames": 1
+            },
+            {
+              "pose": "s13-k2",
+              "frames": 3
+            },
+            {
+              "pose": "s13-k3"
+            }
+          ]
+        }
+      ]
+    },
+    "s14-zoro": {
+      "shot": "s14",
+      "breathe": true,
+      "tracks": [
+        {
+          "type": "keys",
+          "at": "sfx-sheathe-0.35",
+          "keys": [
+            {
+              "pose": "s14-k1",
+              "frames": 5
+            },
+            {
+              "pose": "s14-k2",
+              "frames": 5
+            },
+            {
+              "pose": "base"
+            }
+          ],
+          "fallback": {
+            "tweens": [
+              {
+                "at": "s14",
+                "until": "s14.end",
+                "from": {
+                  "y": -18
+                },
+                "to": {
+                  "y": 0
+                },
+                "ease": "power2.out"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "from": "sfx-sheathe",
+          "to": "sfx-sheathe+0.1",
+          "every": 1,
+          "target": "shake",
+          "values": [
+            {
+              "y": 8,
+              "rotation": 0.8
+            },
+            {
+              "y": -4,
+              "rotation": -0.4
+            },
+            {
+              "y": 2,
+              "rotation": 0.2
+            }
+          ],
+          "end": {
+            "y": 0,
+            "rotation": 0
+          }
+        }
+      ],
+      "tweens": [
+        {
+          "at": "sfx-sheathe-0.2",
+          "dur": 0.2,
+          "from": {
+            "y": 0
+          },
+          "to": {
+            "y": 6
+          },
+          "ease": "power2.in"
+        },
+        {
+          "at": "sfx-sheathe",
+          "dur": 0.35,
+          "from": {
+            "y": 6
+          },
+          "to": {
+            "y": 0
+          },
+          "ease": "back.out(3)"
+        }
+      ],
+      "ghosts": [
+        {
+          "lags": [
+            1
+          ],
+          "opacity": [
+            0.3
+          ],
+          "from": "sfx-sheathe-0.183",
+          "to": "sfx-sheathe-0.117"
+        }
+      ]
+    },
+    "s15-mihawk": {
+      "shot": "s15",
+      "breathe": true,
+      "tracks": [
+        {
+          "type": "lipsync",
+          "voice": "vo-04",
+          "open": "s15-m-open",
+          "closed": "s15-m-closed",
+          "idle": "closed"
+        },
+        {
+          "type": "blink",
+          "pose": "s15-smile",
+          "at": [
+            "vo-04+0.42"
+          ],
+          "frames": 8
+        }
+      ]
+    }
+  },
+  "impacts": [
+    {
+      "at": 7.1,
+      "frames": 2
+    },
+    {
+      "at": 13,
+      "frames": 2
+    },
+    {
+      "at": 13.5,
+      "frames": 2,
+      "mode": "silhouette",
+      "stack": "s13-zoro"
+    },
+    {
+      "at": 16,
+      "frames": 2
+    }
+  ]
+}

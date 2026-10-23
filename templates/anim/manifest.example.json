@@ -1,0 +1,27 @@
+{
+  "fps": 30,
+  "dir": "assets/plates/anim",
+  "stacks": {
+    "s1-hero": {
+      "shot": "s1",
+      "breathe": true,
+      "tracks": [
+        { "type": "wind", "frames": ["base", "s1-hero-w1", "s1-hero-w2", "s1-hero-w1"], "fps": 6, "phase": 0 },
+        { "type": "lipsync", "voice": "voice-01", "open": "s1-hero-m-open", "half": "s1-hero-m-half", "closed": "s1-hero-m-closed", "idle": "closed" },
+        { "type": "blink", "pose": "s1-hero-blink", "at": ["s1+0.8"], "frames": 3 }
+      ],
+      "offsets": { "s1-hero-m-open": { "x": 0, "y": -2, "scale": 1 } }
+    },
+    "s2-hero": {
+      "shot": "s2",
+      "tracks": [
+        { "type": "keys", "keys": [{ "pose": "s2-k1", "frames": 6 }, { "pose": "s2-k2", "smear": "right", "frames": 4 }, { "pose": "s2-k3" }] }
+      ],
+      "tremor": [{ "from": "s2+0.3", "amp": 4 }]
+    }
+  },
+  "impacts": [
+    { "at": "s2+0.3", "frames": 2, "mode": "invert" },
+    { "at": "s2+0.5", "frames": 2, "mode": "silhouette", "stack": "s2-hero" }
+  ]
+}
