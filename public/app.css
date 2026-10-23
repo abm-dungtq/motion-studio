@@ -14,8 +14,9 @@
   --radius: 6px; --radius-sm: 4px;
   --control: 36px;
   --rail: 76px; --side: 300px;
-  /* Bottom panel: tool bar (49) + ruler (24) + 4 tracks (44) + room for a horizontal scrollbar. */
-  --track-h: 44px; --timeline-h: 272px;
+  /* Bottom panel: tool bar (49) + ruler (24) + Shot, B-roll (34), voice, music, SFX + room for a
+     horizontal scrollbar; more music lanes or SFX tiers scroll inside the timeline. */
+  --track-h: 44px; --timeline-h: 320px;
   --shadow-pop: 0 6px 24px rgba(17, 22, 31, .14);
   --backdrop: rgba(17, 22, 31, .35);
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -139,6 +140,9 @@ details summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 .bottom { grid-area: bottom; border-top: 1px solid var(--line-strong); background: var(--panel); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .timeline-bar { display: flex; align-items: center; gap: 6px; padding: 6px 16px; border-bottom: 1px solid var(--line); background: var(--sunk); }
 .hint { color: var(--muted); font-size: 13px; }
+.timeline-bar .hint { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.timeline-bar .spacer { display: none; }
+.timeline-bar .btn { flex: none; white-space: nowrap; }
 .timeline { flex: 1; overflow: auto; position: relative; }
 .tl-inner { position: relative; min-height: 100%; }
 .tl-ruler { position: sticky; top: 0; height: 24px; border-bottom: 1px solid var(--line-strong); background: var(--panel); cursor: pointer; z-index: 3; margin-left: 90px; }
@@ -170,6 +174,35 @@ details summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 .snap-line { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); pointer-events: none; z-index: 5; }
 .tl-beat { position: absolute; bottom: 0; height: 7px; border-left: 1px solid var(--music-line); pointer-events: none; }
 .word-mark { position: absolute; bottom: 3px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--voice); pointer-events: none; }
+/* Draggable markers (timeline-markers.js): a wider hit area around the same thin line or dot. */
+.beat-layer { position: absolute; inset: 0; pointer-events: none; }
+.beat-layer.dragging .tl-beat { border-left-color: var(--accent); }
+.tl-beat.drag { pointer-events: auto; cursor: ew-resize; height: 11px; width: 7px; margin-left: -3px; border-left: 0; background: linear-gradient(var(--music-line), var(--music-line)) center / 1px 100% no-repeat; }
+.tl-beat.drag:hover, .tl-beat.drag.sel { background-image: linear-gradient(var(--accent), var(--accent)); background-size: 3px 100%; }
+.word-mark.drag { pointer-events: auto; cursor: ew-resize; width: 7px; height: 7px; margin-left: -3.5px; bottom: 2px; border: 1px solid var(--panel); z-index: 1; }
+.word-mark.drag:hover, .word-mark.drag.sel, .word-mark.drag.dragging { background: var(--accent); transform: scale(1.3); }
+.readonly .word-mark.drag, .readonly .tl-beat.drag { cursor: pointer; }
+/* Lanes: music beds a lane each, SFX in tiers, the B-roll lane of shot assets. */
+.t-broll .blk { top: 4px; bottom: 4px; }
+.blk.broll { background: var(--sunk); border: 1px solid var(--line-strong); color: var(--muted); font-weight: 500; gap: 4px; padding: 0 4px; }
+.blk.broll.empty { border-style: dashed; border-color: var(--line); background: transparent; }
+.blk.broll.overlay { background: var(--shot-bg); border-color: var(--shot-line); color: var(--text); }
+.broll-chip { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px 0 2px; height: 22px; border-radius: var(--radius-sm); background: var(--panel); border: 1px solid var(--line); font-size: 11px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.broll-thumb { width: 32px; height: 18px; object-fit: cover; border-radius: 2px; flex: none; }
+.drop-on { outline: 2px dashed var(--accent) !important; outline-offset: -2px; background-color: var(--accent-soft) !important; }
+.blk.sfx { min-height: 14px; }
+.tl-label .tl-note { display: block; font-size: 10px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.tl-label .tl-note.stale { color: var(--warn); }
+.tl-label:has(.tl-note) { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; }
+/* Shot thumbnails: a frame of the newest render behind the label; faded when that render is older than the timeline. */
+.blk.shot.has-thumb { background-size: auto 100%; background-repeat: repeat-x; background-position: left center; }
+.blk.shot.has-thumb .shot-label { background: rgba(255, 255, 255, .86); padding: 1px 5px; border-radius: 3px; color: var(--text); }
+.blk.shot.sel.has-thumb { box-shadow: inset 0 0 0 3px var(--accent); }
+.blk.shot.sel.has-thumb .shot-label { background: var(--accent); color: var(--on-accent); }
+.blk.shot.thumb-stale { background-blend-mode: luminosity; }
+.blk.shot.thumb-stale::before { content: ""; position: absolute; inset: 0; background: rgba(255, 255, 255, .45); pointer-events: none; }
+.blk.shot .shot-label { position: relative; overflow: hidden; text-overflow: ellipsis; }
+#mode-btn[data-mode="roll"], #mode-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .blk.voice, .blk.music { isolation: isolate; }
 .wave { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
 .blk.voice .wave { color: var(--voice); }
@@ -211,6 +244,8 @@ details summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 .dot.bad { background: var(--danger); }
 .agent-pop { position: fixed; z-index: 20; width: 320px; max-width: calc(100vw - 16px); padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-pop); }
 .agent-pop[hidden] { display: none; }
+/* The agent table grows with every CLI found: past the window's height the popover scrolls inside. */
+.agent-pop { max-height: calc(100vh - 72px); overflow-y: auto; overscroll-behavior: contain; }
 .agent-pop h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
 .kv { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
 .kv > :last-child { text-align: right; font-weight: 600; }

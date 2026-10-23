@@ -4,6 +4,8 @@
 // returned transport (play, pause, toggle, step, seek) is what the keyboard shortcuts drive. Once
 // ready, the composition's window.TIMING goes to ctx.state.timing ("timing" event) for snapping and
 // marks, and the mute/solo rule of the timeline is applied to its <audio> tags (setMute).
+// reload() loads the same version again at the same time: the timing job rewrote TIMING in the
+// HTML without a new project.json version (beat or word markers moved).
 import { fmt, h } from "/dom.js";
 
 export function mountPlayer(ctx, el, { playBtn, timeEl }) {
@@ -48,13 +50,13 @@ export function mountPlayer(ctx, el, { playBtn, timeEl }) {
     show(0);
   }
 
-  function load(m, keep = 0) {
+  function load(m, keep = 0, bust = 0) {
     cancelAnimationFrame(raf);
     hf = null;
     w = m.width || 1920; ht = m.height || 1080;
     shown = `${ctx.state.name}:${m.version}`;
     const html = String(m.html || "index.html").split("/").map(encodeURIComponent).join("/");
-    frame = h("iframe", { src: `/p/${encodeURIComponent(ctx.state.name)}/${html}?v=${m.version}`, width: w, height: ht, title: "Xem trước", style: { width: `${w}px`, height: `${ht}px` } });
+    frame = h("iframe", { src: `/p/${encodeURIComponent(ctx.state.name)}/${html}?v=${m.version}${bust ? `&t=${bust}` : ""}`, width: w, height: ht, title: "Xem trước", style: { width: `${w}px`, height: `${ht}px` } });
     el.replaceChildren(frame);
     fit();
     const me = frame, t0 = Date.now();
@@ -94,6 +96,12 @@ export function mountPlayer(ctx, el, { playBtn, timeEl }) {
     seek(Math.min(duration(), Math.max(0, time() + dt)));
   }
 
+  function reload() {
+    const m = ctx.state.m;
+    if (!m || !frame) return;
+    load(m, hf?.getTime?.() ?? 0, Date.now());
+  }
+
   playBtn.addEventListener("click", toggle);
 
   // A new version may change index.html (timing markers): reload and return to the same time.
@@ -108,5 +116,5 @@ export function mountPlayer(ctx, el, { playBtn, timeEl }) {
     reloadTimer = setTimeout(() => load(m, keep), 250);
   });
 
-  return { load, clear, seek, play, pause, toggle, time, step, playing, duration, setMute };
+  return { load, reload, clear, seek, play, pause, toggle, time, step, playing, duration, setMute };
 }

@@ -2,6 +2,7 @@
 
 ## Chưa phát hành
 
+- Timeline: Roll/Ripple ở mép shot (phím R), Shift+kéo câu thoại dời cả các câu sau, nhạc chồng nhau tách làn, SFX xếp tối đa 4 tầng, làn B-roll nhận footage thả vào (chép vào `assets/footage/`, không ghi đè). Waveform và thumbnail cache trong IndexedDB; mốc phách và mốc từ kéo được, có hoàn tác và kiểm khớp lời. Popover agent có `max-height`. Xem `docs/timeline.md`.
 - Tab Anime cho video anime motion-comic: board shot đọc `assets/anim/manifest.json`, sinh biến thể tư thế qua agent ảnh (tách nền xanh, có biên nhận), sửa track lipsync/blink/wind/keys trên UI rồi build ra `anim-data.js` tất định. Mẫu `templates/anim/`, tool `anime_*`. Xem `docs/anime-motion-comic.md`.
 - Bộ tool chung qua MCP (`mcp/studio-mcp.mjs`, profile `external` và `director`): `project_*`, `receipts_list`, `receipt_get`, `media_check`. Biên nhận có verdict `pass`/`warn`/`fail` từ chín kiểm chất lượng (ngưỡng ở khoá `quality` của `studio.json`), hiện ở tab Xuất bản và inspector. `/api/mcp/config` trả lệnh nối cho claude, codex, agy, opencode. Xem `docs/mcp.md`, `docs/receipts.md`.
 - Bộ lớp dựng ghi thêm `timeline.fcpxml` (FCPXML 1.10, `--fcpxml-version 1.8`), `timeline.xml` (xmeml v5) và `timeline.otio` (OpenTimelineIO), mở thẳng trong Final Cut Pro, Premiere và DaVinci Resolve. `manifest.json` giữ schema `motion-studio/bundle@1`, thêm trường `nle`. Cờ `--nle fcpxml,xmeml,otio | none`; tool `nle_export`. Xem `docs/nle-export.md`.

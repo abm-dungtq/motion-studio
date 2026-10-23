@@ -43,8 +43,10 @@
 
     <section class="bottom">
       <div class="timeline-bar">
-        <span class="hint">Kéo khối để dời · kéo mép để cắt · chuột phải để xem thêm · S cắt shot · Space phát/dừng · N bật/tắt hít · Ctrl/Cmd+cuộn để zoom</span>
+        <span class="hint">Kéo khối để dời · kéo mép để cắt · Shift+kéo câu dời cả câu sau · kéo phách/chấm từ để sửa mốc · R Ripple/Roll · S cắt shot · Space phát/dừng · N hít · Ctrl/Cmd+cuộn zoom</span>
         <div class="spacer"></div>
+        <button id="mode-btn" class="btn" type="button" aria-pressed="false" title="Kéo mép shot: Ripple đổi độ dài và dời các shot sau, Roll dời điểm cắt giữ tổng thời lượng (R)">Ripple</button>
+        <button id="timing-undo-btn" class="btn" type="button" disabled title="Chưa sửa mốc phách hay mốc từ nào">Hoàn tác mốc</button>
         <button id="snap-btn" class="btn" type="button" aria-pressed="true" title="Hít vào mép shot, câu, SFX, playhead, phách, đầu từ (N)">Hít</button>
         <button id="zoom-out" class="btn icon" aria-label="Thu nhỏ">−</button>
         <button id="zoom-in" class="btn icon" aria-label="Phóng to">+</button>
