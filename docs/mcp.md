@@ -42,6 +42,7 @@ Actor của mọi sửa đổi là `director`, vì cổng lệnh chưa có actor
 | `agents_list` | đọc | cả hai | Agent CLI trên máy, khả năng, quota |
 | `image_generate` | ghi file | cả hai | Sinh một ảnh PNG thành job của Studio, có biên nhận. Cần Studio đang chạy |
 | `image_describe` | đọc | cả hai | Cho agent đọc ảnh, trả JSON |
+| `style_suggest` | sửa (ghi `.opus/suggest/`) | cả hai | Xếp hạng hướng, style và chế độ vận hành; hiện thẻ trong tab Đạo diễn, không chọn thay người dùng. Xem `docs/suggest.md` |
 
 Các tool `project_get`, `project_log`, `project_patch` và `project_undo` cũng có trên server MCP của provider, nên profile `director` ẩn chúng. Đạo diễn dùng bản của provider như trước. Tool do các tính năng khác thêm vào `lib/tools/` tự hiện ở cả hai profile.
 
