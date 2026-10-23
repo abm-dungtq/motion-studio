@@ -84,7 +84,7 @@ export function Analyse() {
     <details className="flex flex-col gap-2 rounded-md border border-border p-2" open>
       <summary className="cursor-pointer text-sm font-semibold">Phân tích footage</summary>
       <div className="mt-2 flex flex-col gap-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Select value={scope} onValueChange={(s) => setScope(s as Scope)}>
             <SelectTrigger aria-label="Phạm vi phân tích" size="sm" className="h-8 border-border bg-panel-2">
               <SelectValue />
