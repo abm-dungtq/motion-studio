@@ -59,6 +59,7 @@ describe("SuggestCard", () => {
   it("observe shows both columns, picks nothing, and compares rank one", () => {
     show(resp());
     expect(card().querySelector('[data-role="suggest-columns"]')).not.toBeNull();
+    expect(card().querySelector('[data-role="suggest-source"]')).toHaveTextContent(/^Jev và tất định, chưa chọn nguồn mặc định$/);
     expect(dirs("jev")).toHaveLength(3);
     expect(dirs("det")).toHaveLength(3);
     expect(dirs("jev")[0]).toHaveAttribute("data-id", "A8");

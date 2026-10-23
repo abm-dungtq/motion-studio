@@ -59,6 +59,10 @@ function Option({ item, role, checked, onPick, disabled }: { item: SuggestItem; 
 }
 
 const sourceLabel = (k: ColumnKey) => (k === "jev" ? "Jev" : "Tất định");
+// The header chip names the card's source. While observing it names both sources evenly, so the
+// header does not lean towards either column before a default source has been decided.
+const sourceChip = (r: SuggestRecord) =>
+  r.source === "observe" && r.jev ? "Jev và tất định, chưa chọn nguồn mặc định" : r.shown === "jev" && r.jev ? "Jev" : "Tất định";
 
 function chooseNotice(d: SuggestChooseResult): Notice {
   const extra = d.mode && d.mode.saved === false && d.mode.reason ? d.mode.reason : null;
@@ -224,7 +228,7 @@ function Card({ name }: { name: string }) {
         <strong className="text-sm">{TITLE}</strong>
         {record ? (
           <span data-role="suggest-source" className="rounded-sm bg-panel-2 px-1.5 py-0.5 text-xs text-muted-foreground">
-            {record.shown === "jev" && record.jev ? "Jev" : "Tất định"}
+            {sourceChip(record)}
           </span>
         ) : null}
         <Button className="ml-auto" data-role="suggest-run" disabled={running || !resp} onClick={() => { void run(); }}>{record ? "Gợi ý lại" : "Gợi ý"}</Button>
