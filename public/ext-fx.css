@@ -1,0 +1,31 @@
+/* ext-fx.css — transition library and clip editor (ext-fx.js). Uses the variables of app.css. */
+.fx-gallery, .fx-footage { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.fx-gallery input[type=search] { width: 100%; }
+.fx-chips .fx-chip { min-height: 28px; padding: 0 10px; font-weight: 500; }
+.fx-chips .fx-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.fx-list { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; padding-right: 2px; }
+.fx-card { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--text); cursor: pointer; }
+.fx-card:hover { border-color: var(--line-strong); }
+.fx-card.on { border-color: var(--accent); background: var(--accent-soft); }
+.fx-card.current .fx-name::after { content: " ●"; color: var(--accent); }
+.fx-name { font-weight: 600; }
+.fx-meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11px; }
+.fx-meta code { color: var(--muted); }
+.fx-src { padding: 0 6px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); }
+.fx-src-studio { border-color: var(--accent); color: var(--accent); }
+.fx-soft, .fx-cur { font-style: italic; }
+.fx-detail { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--sunk); }
+.fx-detail p { margin: 0; }
+.fx-preview { width: 100%; aspect-ratio: 16 / 10; border: 0; border-radius: var(--radius); background: #000; }
+.fx-path { word-break: break-all; }
+.fx-editor { display: flex; flex-direction: column; gap: 8px; }
+.fx-editor label { display: flex; flex-direction: column; gap: 4px; }
+.fx-editor label.row { flex-direction: row; }
+.fx-result { display: flex; flex-direction: column; gap: 6px; }
+.fx-ab { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.fx-ab figure { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.fx-ab video { width: 100%; max-height: 200px; background: #000; border-radius: var(--radius); }
+.fx-ab figcaption { font-size: 11px; color: var(--muted); }
+.fx-receipt { font-size: 12px; font-weight: 600; }
+.fx-receipt.ok { color: var(--accent); }
+.fx-receipt.bad { color: var(--danger, #c0392b); }
