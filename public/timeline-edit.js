@@ -1,7 +1,9 @@
 // timeline-edit.js — the timeline's edit logic without the DOM: which shot holds a time, the ops of
-// a shot split and of a music drag, the next free SFX id, the shortcut a key press means, and
-// what a drag snaps to (shot edges, lines, SFX, the playhead, beats and word starts).
-// No imports, so Node tests load it directly.
+// a shot split, a roll edit, a shift-ripple of lines and a music drag, the next free SFX id, the
+// shortcut a key press means, what a drag snaps to (shot edges, lines, SFX, the playhead, beats and
+// word starts), how overlapping blocks stack into lanes, the bounds of a beat or word marker drag
+// and the marks of the timeline decorators.
+// No imports, so Node tests load it directly; lib/timing-edit.mjs reuses the marker bounds.
 const MIN = 0.5;
 const EPS = 1e-6;
 const r3 = (x) => Math.round(x * 1000) / 1000;
@@ -117,7 +119,7 @@ export function keyAction(e, { inField = false } = {}) {
   if (key === "Home") return "start";
   if (key === "End") return "end";
   if (key === "Delete" || key === "Backspace") return "delete";
-  return { j: "back1", k: "pause", l: "play", s: "split", n: "snap" }[letter] ?? null;
+  return { j: "back1", k: "pause", l: "play", s: "split", n: "snap", r: "mode" }[letter] ?? null;
 }
 
 // Beat times of a TIMING block up to end: beat0 + k*beatLen when beatLen > 0, plus every kick,
@@ -189,4 +191,128 @@ export function snap(t, targets, pps, px = 8) {
     if (d <= reach + EPS && (!best || d < Math.abs(best.t - t))) best = x;
   }
   return best ? { t: best.t, kind: best.kind } : { t, kind: null };
+}
+
+// Roll edit of the cut after shot shotId: that shot gets dt seconds longer and the next one dt
+// shorter, so the video keeps its length. Two resize_shot ops; the gateway ripples the first
+// (everything from the next shot on moves dt) and the second moves everything after the next shot
+// back, so only the cut and what the next shot holds move. { ops, error }.
+export function rollOps(m, shotId, dt) {
+  const shots = m?.shots ?? [];
+  const i = shots.findIndex((s) => s.id === shotId);
+  if (i < 0) return { ops: [], error: "Không có shot này" };
+  const a = shots[i], b = shots[i + 1];
+  if (!b) return { ops: [], error: "Roll cần một shot kế tiếp; shot cuối chỉ kéo được kiểu Ripple" };
+  if (!Number.isFinite(dt)) return { ops: [], error: "Độ dời không hợp lệ" };
+  const da = r3(a.end - a.start + dt), db = r3(b.end - b.start - dt);
+  if (da < MIN - EPS || db < MIN - EPS) return { ops: [], error: "Mỗi shot phải dài ít nhất 0,5 giây" };
+  if (Math.abs(dt) < EPS) return { ops: [], error: null };
+  return { ops: [{ op: "resize_shot", id: a.id, duration: da }, { op: "resize_shot", id: b.id, duration: db }], error: null };
+}
+
+// The largest dt (both signs) a roll of the cut after shot i allows: [lo, hi].
+export function rollRange(m, shotId) {
+  const shots = m?.shots ?? [];
+  const i = shots.findIndex((s) => s.id === shotId);
+  const a = shots[i], b = shots[i + 1];
+  if (!a || !b) return null;
+  return [r3(MIN - (a.end - a.start)), r3(b.end - b.start - MIN)];
+}
+
+// Shift-drag of line lineId to start t: that line and every later line of the same shot move by
+// the same delta, in one patch of move_line ops. Lines of other shots stay. { ops, error }.
+export function rippleLineOps(m, lineId, t) {
+  const line = (m?.lines ?? []).find((l) => l.id === lineId);
+  if (!line) return { ops: [], error: "Không có câu này" };
+  if (!Number.isFinite(t)) return { ops: [], error: "Thời điểm không hợp lệ" };
+  const d = r3(t - line.start);
+  const moving = m.lines.filter((l) => l.shot === line.shot && (l.id === line.id || l.start > line.start + EPS || (Math.abs(l.start - line.start) <= EPS && l.id > line.id)));
+  if (moving.some((l) => l.start + d < -EPS)) return { ops: [], error: "Câu không thể bắt đầu trước 0 giây" };
+  if (Math.abs(d) < EPS) return { ops: [], error: null };
+  return { ops: moving.map((l) => ({ op: "move_line", id: l.id, start: r3(Math.max(0, l.start + d)) })), error: null };
+}
+
+// Greedy interval partitioning (first free lane in start order, which uses the fewest lanes):
+// intervals [{ id, start, end }] → { lane: { id: index }, count, overflow }. Ties sort by end then
+// id, so the same input always gives the same lanes. More than max lanes: the rest share the last
+// lane and overflow is true. A lane is free for an interval that starts where the last one ended.
+export function stackLanes(intervals, max = Infinity) {
+  const list = [...(intervals ?? [])].filter((x) => x && Number.isFinite(x.start))
+    .map((x) => ({ id: String(x.id), start: x.start, end: Number.isFinite(x.end) && x.end > x.start ? x.end : x.start }))
+    .sort((a, b) => a.start - b.start || a.end - b.end || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const ends = [], lane = {};
+  let overflow = false;
+  const cap = Number.isFinite(max) ? Math.max(1, Math.floor(max)) : Infinity;
+  for (const x of list) {
+    let k = ends.findIndex((e) => e <= x.start + EPS);
+    if (k < 0) {
+      if (ends.length < cap) { k = ends.length; ends.push(x.end); }
+      else { k = ends.length - 1; overflow = true; ends[k] = Math.max(ends[k], x.end); }
+    } else ends[k] = x.end;
+    lane[x.id] = k;
+  }
+  return { lane, count: ends.length, overflow };
+}
+
+// Bounds of a word start or end in a words.json list ([{ text, start, end }], seconds of the file):
+// a start stays at or after the word before it ended (or its own start, when the file already has
+// them overlapping) and 10 ms before its own end; an end stays 10 ms after its start and at or
+// before the next word starts. null when index is not a word of the list.
+export const MIN_WORD = 0.01;
+export function wordBounds(words, index, field = "start") {
+  const w = words?.[index];
+  if (!w || !Number.isFinite(w.start) || !Number.isFinite(w.end)) return null;
+  const prev = words[index - 1], next = words[index + 1];
+  if (field === "end") {
+    const hi = next && Number.isFinite(next.start) ? Math.max(next.start, w.end) : Infinity;
+    return { lo: r3(w.start + MIN_WORD), hi: hi === Infinity ? Infinity : r3(hi) };
+  }
+  const lo = prev && Number.isFinite(prev.end) ? Math.min(prev.end, w.start) : 0;
+  return { lo: r3(Math.max(0, lo)), hi: r3(w.end - MIN_WORD) };
+}
+
+// beat0 lies in [0, beatLen): a grid moved by a whole beat or more would renumber every B(n).
+export function beatBounds(beatLen) {
+  const len = Number(beatLen);
+  if (!(len > 0)) return null;
+  return { lo: 0, hi: r3(len - 0.001) };
+}
+
+// A marker drag of dt seconds → { value, clamped } or { error }. kind "beat": marker is
+// { beat0, beatLen } and value the new beat0. kind "word": marker is { words, index, field? } and
+// value the new start (or end) in seconds of the voice file.
+export function markerDrag(marker, kind, dt) {
+  if (!Number.isFinite(dt)) return { error: "Độ dời không hợp lệ" };
+  let from, b;
+  if (kind === "beat") {
+    b = beatBounds(marker?.beatLen);
+    if (!b) return { error: "Nhạc chưa đo lưới phách" };
+    from = Number(marker.beat0) || 0;
+  } else if (kind === "word") {
+    const field = marker?.field === "end" ? "end" : "start";
+    b = wordBounds(marker?.words, marker?.index, field);
+    if (!b) return { error: "Không có từ này" };
+    from = marker.words[marker.index][field];
+  } else return { error: `Không biết loại mốc ${kind}` };
+  const raw = r3(from + dt);
+  const value = r3(clamp(raw, b.lo, b.hi));
+  return { value, clamped: Math.abs(value - raw) > EPS, from };
+}
+
+// The marks of every decorator for one render, by lane: { shot, voice, music, sfx } of
+// { t, until (null for a thin mark), label, kind }. A decorator that throws is reported to
+// onError and skipped; marks with an unknown lane, a bad time or until <= t are dropped.
+export const DECO_LANES = ["shot", "voice", "music", "sfx"];
+export function decorationItems(decorators, m, state, onError = null) {
+  const by = Object.fromEntries(DECO_LANES.map((k) => [k, []]));
+  for (const fn of decorators ?? []) {
+    let items;
+    try { items = fn(m, state); } catch (e) { onError?.(e); continue; }
+    for (const d of Array.isArray(items) ? items : []) {
+      const t = Number(d?.t), until = d?.until == null ? null : Number(d.until);
+      if (!DECO_LANES.includes(d?.lane) || !Number.isFinite(t) || (until !== null && !(until > t))) continue;
+      by[d.lane].push({ t, until, label: String(d.label ?? ""), kind: String(d.kind ?? "info") });
+    }
+  }
+  return by;
 }
