@@ -5,10 +5,17 @@
 // <root>/footage/raw/<basename> (a taken name gets -2, -3, … before the extension; never
 // overwritten). Every path is checked by realpath, so a symlink cannot lead outside the roots.
 // Metadata comes from ffprobe (no shell, 20 s timeout); a failed probe still registers.
+// A newly registered video is queued for the B-roll index (lib/broll/index.mjs enqueueIndex: the
+// offline steps only) unless studio.json broll.auto is false; register's answer does not wait.
+// hashFile(path) is the index's content hash (sha256, remembered per path, size and mtime).
 import { constants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import { basename, dirname, extname, join, relative, sep } from "node:path";
+
+export { hashFile } from "./lib/broll/hash.mjs";
+// Loaded on first use: lib/broll/index.mjs reaches lib/quality, which imports this file.
+const enqueueIndex = (path) => import("./lib/broll/index.mjs").then((m) => m.enqueueIndex(path)).catch((e) => console.error(`motion-studio broll: ${e.message}`));
 
 export const BROWSE_ROOTS = [homedir(), "/Volumes"];
 export const VIDEO_EXT = [".mp4", ".mov", ".m4v", ".mkv", ".webm"];
@@ -99,7 +106,7 @@ function copyFree(src, destDir) {
 }
 
 // Registers src for the project at dir. Returns { media, copied, existing }.
-export async function register(root, dir, src, { roots = BROWSE_ROOTS, probeFn = probe } = {}) {
+export async function register(root, dir, src, { roots = BROWSE_ROOTS, probeFn = probe, index = enqueueIndex } = {}) {
   const file = allowed(src, roots);
   if (!statSync(file).isFile()) throw fail(400, "chỉ đăng ký được file thường");
   const kind = kindOf(file);
@@ -123,5 +130,8 @@ export async function register(root, dir, src, { roots = BROWSE_ROOTS, probeFn =
     ...(kind === "image" ? {} : { probe: meta ? "ok" : null }), added: new Date().toISOString(),
   };
   writeMedia(dir, [...now, media]);
+  if (kind === "video" && index) {
+    try { index(path); } catch (e) { console.error(`motion-studio broll: ${e.message}`); }
+  }
   return { media, copied: !inPlace, existing: false };
 }
