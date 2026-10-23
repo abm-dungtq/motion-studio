@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Xem thử: ink-wipe</title>
+  <style>
+    html, body { margin: 0; background: #111; color: #ddd; font: 13px system-ui, sans-serif; }
+    #view { position: relative; width: 100vw; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
+    #root { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; }
+    .scene { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 900 170px/1 system-ui, sans-serif; }
+    #scene1 { background: #f1e9d2; color: #1b1b1b; }
+    #scene2 { background: #8d0801; color: #fff; opacity: 0; visibility: hidden; }
+    .bar { display: flex; gap: 8px; align-items: center; padding: 8px; }
+    .bar input[type=range] { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="view">
+    <div id="root" data-composition-id="main" data-width="1920" data-height="1080" data-start="0" data-duration="3">
+      <div id="scene1" class="scene">GIẤY</div>
+      <div id="scene2" class="scene">MỰC</div>
+      <svg id="ms-ink" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true"
+           style="position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; z-index: 60; pointer-events: none">
+        <defs>
+          <filter id="ms-ink-rough" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="3" seed="11" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="80" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+          <mask id="ms-ink-holes" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080">
+            <rect width="1920" height="1080" fill="#fff" />
+            <g id="ms-ink-hole-group" filter="url(#ms-ink-rough)" fill="#000"></g>
+          </mask>
+        </defs>
+        <g id="ms-ink-blob-group" filter="url(#ms-ink-rough)" fill="#0b0b0f"></g>
+        <rect id="ms-ink-cover" width="1920" height="1080" fill="#0b0b0f" mask="url(#ms-ink-holes)" style="visibility: hidden" />
+      </svg>
+    </div>
+  </div>
+  <div class="bar">
+    <button id="play" type="button">Phát</button>
+    <button id="prev" type="button">◀ khung</button>
+    <button id="next" type="button">khung ▶</button>
+    <input id="t" type="range" min="0" max="3" step="0.033333" value="0" />
+    <span id="lab">0.000 s</span>
+  </div>
+  <script src="../../vendor/gsap.min.js"></script>
+  <script src="snippet.js"></script>
+  <script>
+    var FPS = 30, AT = 1.0;
+    var tl = gsap.timeline({ paused: true });
+    var fx = window.MotionFx["ink-wipe"], opts = { at: AT, duration: 0.9, blobs: 7, ox: 0.35, oy: 0.55, rough: 80, seed: 11 };
+    var NS = "http://www.w3.org/2000/svg", blobs = [], holes = [];
+    for (var i = 0; i < opts.blobs; i++) {
+      var b = document.createElementNS(NS, "circle"); document.getElementById("ms-ink-blob-group").appendChild(b); blobs.push(b);
+      var h = document.createElementNS(NS, "circle"); document.getElementById("ms-ink-hole-group").appendChild(h); holes.push(h);
+    }
+    fx.attach(tl, {
+      overlay: document.getElementById("ms-ink"), blobs: blobs, holes: holes, cover: document.getElementById("ms-ink-cover"),
+      noise: document.querySelector("#ms-ink-rough feTurbulence"), disp: document.querySelector("#ms-ink-rough feDisplacementMap"),
+      from: document.getElementById("scene1"), to: document.getElementById("scene2"),
+    }, opts);
+    tl.set({}, {}, 3);
+    window.__timelines = { main: tl };
+
+    var range = document.getElementById("t"), lab = document.getElementById("lab");
+    var show = function () { range.value = tl.time(); lab.textContent = tl.time().toFixed(3) + " s · khung " + Math.round(tl.time() * FPS); };
+    var seek = function (t) { tl.pause(); tl.seek(Math.max(0, Math.min(3, t))); show(); };
+    tl.eventCallback("onUpdate", show);
+    range.addEventListener("input", function () { seek(Number(range.value)); });
+    document.getElementById("play").addEventListener("click", function () { tl.play(tl.time() >= 3 ? 0 : tl.time()); });
+    document.getElementById("prev").addEventListener("click", function () { seek(Math.round(tl.time() * FPS - 1) / FPS); });
+    document.getElementById("next").addEventListener("click", function () { seek(Math.round(tl.time() * FPS + 1) / FPS); });
+    var fit = function () { document.getElementById("root").style.transform = "scale(" + document.getElementById("view").clientWidth / 1920 + ")"; };
+    window.addEventListener("resize", fit); fit();
+    seek(AT + 0.3);
+  </script>
+</body>
+</html>

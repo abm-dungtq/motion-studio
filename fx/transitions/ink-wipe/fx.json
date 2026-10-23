@@ -1,0 +1,18 @@
+{
+  "id": "ink-wipe",
+  "name_vi": "Loang mực",
+  "kind": "svg",
+  "description_vi": "Vệt mực loang từ một điểm cho tới khi phủ kín khung, đổi cảnh dưới lớp mực, rồi mực thủng lỗ và mở dần ra cảnh mới. Mép mực sần nhờ nhiễu SVG có seed cố định.",
+  "duration": 0.9,
+  "energy": ["em", "vua"],
+  "pair_seam": "domain-warp",
+  "params": {
+    "duration": { "type": "number", "default": 0.9, "min": 0.4, "max": 2, "label_vi": "Thời lượng (giây)" },
+    "blobs": { "type": "integer", "default": 7, "min": 1, "max": 16, "label_vi": "Số vệt mực" },
+    "ox": { "type": "number", "default": 0.5, "min": 0, "max": 1, "label_vi": "Điểm loang, ngang (0–1)" },
+    "oy": { "type": "number", "default": 0.5, "min": 0, "max": 1, "label_vi": "Điểm loang, dọc (0–1)" },
+    "rough": { "type": "number", "default": 80, "min": 0, "max": 200, "label_vi": "Độ sần mép (px)" },
+    "seed": { "type": "integer", "default": 11, "min": 1, "max": 99999, "label_vi": "Hạt ngẫu nhiên" }
+  },
+  "source": "Studio. Ý tưởng mép nhiễu từ gl-transitions luminance_melt.glsl và burn.glsl (MIT); làm bằng SVG feTurbulence vì gói shader-transitions đang ghim không nhận GLSL tuỳ biến."
+}

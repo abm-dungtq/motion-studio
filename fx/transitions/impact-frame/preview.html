@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Xem thử: impact-frame</title>
+  <style>
+    html, body { margin: 0; background: #111; color: #ddd; font: 13px system-ui, sans-serif; }
+    #view { position: relative; width: 100vw; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
+    #root { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; }
+    #stage { position: absolute; inset: 0; }
+    .scene { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 900 170px/1 system-ui, sans-serif; color: #fff; }
+    #scene1 { background: radial-gradient(circle at 30% 40%, #3a86ff, #0b1d3a); }
+    #scene2 { background: radial-gradient(circle at 60% 55%, #ff006e, #3a0016); opacity: 0; }
+    .bar { display: flex; gap: 8px; align-items: center; padding: 8px; }
+    .bar input[type=range] { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="view">
+    <div id="root" data-composition-id="main" data-width="1920" data-height="1080" data-start="0" data-duration="3">
+      <div id="stage">
+        <div id="scene1" class="scene">CẢNH 1</div>
+        <div id="scene2" class="scene">ĐÒN!</div>
+      </div>
+      <div id="ms-impact-card" style="position: absolute; inset: 0; background: #fff; visibility: hidden; z-index: 40; pointer-events: none"></div>
+      <svg id="ms-impact-lines" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true"
+           style="position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; z-index: 50; pointer-events: none">
+        <g fill="#000"></g>
+      </svg>
+    </div>
+  </div>
+  <div class="bar">
+    <button id="play" type="button">Phát</button>
+    <button id="prev" type="button">◀ khung</button>
+    <button id="next" type="button">khung ▶</button>
+    <input id="t" type="range" min="0" max="3" step="0.033333" value="0" />
+    <span id="lab">0.000 s</span>
+  </div>
+  <script src="../../vendor/gsap.min.js"></script>
+  <script src="snippet.js"></script>
+  <script>
+    var FPS = 30, CUT = 1.5;
+    var tl = gsap.timeline({ paused: true });
+    tl.set("#scene2", { opacity: 1 }, CUT);
+    tl.set("#scene1", { opacity: 0 }, CUT);
+    var fx = window.MotionFx["impact-frame"];
+    var opts = { at: CUT, fps: FPS, frames: 2, mode: "invert", count: 44, cx: 0.55, cy: 0.5, seed: 7 };
+    var g = document.querySelector("#ms-impact-lines g"), polys = [];
+    for (var i = 0; i < opts.count; i++) { var p = document.createElementNS("http://www.w3.org/2000/svg", "polygon"); g.appendChild(p); polys.push(p); }
+    fx.attach(tl, { target: document.getElementById("stage"), overlay: document.getElementById("ms-impact-lines"), polys: polys }, opts);
+    tl.set({}, {}, 3);
+    window.__timelines = { main: tl };
+
+    var range = document.getElementById("t"), lab = document.getElementById("lab");
+    var show = function () { range.value = tl.time(); lab.textContent = tl.time().toFixed(3) + " s · khung " + Math.round(tl.time() * FPS); };
+    var seek = function (t) { tl.pause(); tl.seek(Math.max(0, Math.min(3, t))); show(); };
+    tl.eventCallback("onUpdate", show);
+    range.addEventListener("input", function () { seek(Number(range.value)); });
+    document.getElementById("play").addEventListener("click", function () { tl.play(tl.time() >= 3 ? 0 : tl.time()); });
+    document.getElementById("prev").addEventListener("click", function () { seek(Math.round(tl.time() * FPS - 1) / FPS); });
+    document.getElementById("next").addEventListener("click", function () { seek(Math.round(tl.time() * FPS + 1) / FPS); });
+    var fit = function () { document.getElementById("root").style.transform = "scale(" + document.getElementById("view").clientWidth / 1920 + ")"; };
+    window.addEventListener("resize", fit); fit();
+    seek(CUT);
+  </script>
+</body>
+</html>

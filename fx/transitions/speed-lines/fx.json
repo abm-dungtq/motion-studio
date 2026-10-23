@@ -1,0 +1,19 @@
+{
+  "id": "speed-lines",
+  "name_vi": "Tia tốc độ tỏa tâm",
+  "kind": "canvas",
+  "description_vi": "Chùm tia mảnh tỏa từ một tâm, đổi hình mỗi hai khung như hoạt hình Nhật, rồi lùi ra mép và tắt. Dùng ở điểm cắt hoặc chồng lên cú đánh để nhấn tốc độ.",
+  "duration": 0.6,
+  "energy": ["vua", "don-dap"],
+  "pair_seam": "cinematic-zoom",
+  "params": {
+    "duration": { "type": "number", "default": 0.6, "min": 0.2, "max": 2, "label_vi": "Thời lượng (giây)" },
+    "hold": { "type": "integer", "default": 2, "min": 1, "max": 4, "label_vi": "Giữ mỗi hình bao nhiêu khung" },
+    "count": { "type": "integer", "default": 90, "min": 20, "max": 300, "label_vi": "Số tia" },
+    "cx": { "type": "number", "default": 0.5, "min": 0, "max": 1, "label_vi": "Tâm, ngang (0–1)" },
+    "cy": { "type": "number", "default": 0.5, "min": 0, "max": 1, "label_vi": "Tâm, dọc (0–1)" },
+    "color": { "type": "string", "default": "#ffffff", "label_vi": "Màu tia" },
+    "seed": { "type": "integer", "default": 3, "min": 1, "max": 99999, "label_vi": "Hạt ngẫu nhiên" }
+  },
+  "source": "Studio. PRNG mulberry32 (public domain)."
+}

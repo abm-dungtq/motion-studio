@@ -1,0 +1,17 @@
+{
+  "id": "smear-cut",
+  "name_vi": "Cắt có khung nhoè kéo giãn",
+  "kind": "svg",
+  "description_vi": "Khung cuối của cảnh cũ và khung đầu của cảnh mới bị kéo giãn và nhoè theo hướng chuyển động, mạnh nhất đúng điểm cắt. Giống smear frame của hoạt hình vẽ tay.",
+  "duration": 0.07,
+  "energy": ["vua", "don-dap"],
+  "pair_seam": "whip-pan",
+  "params": {
+    "frames": { "type": "integer", "default": 2, "min": 1, "max": 4, "label_vi": "Số khung nhoè (chia hai bên điểm cắt)" },
+    "dir": { "type": "string", "default": "right", "enum": ["right", "left", "up", "down"], "label_vi": "Hướng chuyển động" },
+    "stretch": { "type": "number", "default": 1.35, "min": 1, "max": 2, "label_vi": "Độ kéo giãn" },
+    "blur": { "type": "number", "default": 18, "min": 0, "max": 60, "label_vi": "Độ nhoè theo trục (px)" },
+    "shift": { "type": "number", "default": 60, "min": 0, "max": 300, "label_vi": "Độ dịch theo hướng (px)" }
+  },
+  "source": "Studio. Ý tưởng mép nhoè theo hướng từ gl-transitions directionalwarp.glsl (MIT); làm lại bằng CSS và SVG."
+}
