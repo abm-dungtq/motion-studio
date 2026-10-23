@@ -8,3 +8,4 @@
 - lemo: `docs/lemo-styles.md` dòng 1 và 3 đổi tên tab "Phong cách code" thành "Phong cách"; bấm shot s2 trên timeline rồi chụp lại `inspector-lemo` (INSP-19).
 - director: bấm lại trên timeline thật các khối beat, word, line, music, event (bản 4d thử bằng hook trình duyệt); `docs/extensions.md` đổi `addInspectorSection` thành `registerInspectorSection`, thêm mục thẻ cổng.
 - anime: job xong khi tab đóng thì toast chỉ hiện lúc mở lại tab (bản cũ hiện ngay), cân nhắc chuyển toast lên cấp shell; `docs/anime-motion-comic.md` thêm một câu về vị trí tab trên rail và hộp xác nhận.
+- export: thử trực tiếp INSP-18 (biên nhận trong inspector) khi đã có timeline; sửa chữ "tab Xuất bản" ở `docs/receipts.md:15` và `docs/nle-export.md:3` thành menu Xuất bản trên thanh trên.
