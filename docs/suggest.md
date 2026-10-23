@@ -15,10 +15,12 @@ Thẻ không chọn thay bạn. Bạn bấm một hướng, đổi style hay ch�
 | Nguồn | Thẻ hiện gì |
 |---|---|
 | `deterministic` | Một cột tất định. Studio dùng lệnh `directions pick` và `styles suggest` của provider, không gọi mạng |
-| `observe` | Hai cột ngang nhau, **Jev** và **Tất định**. Không hướng nào được chọn sẵn, và có một dòng so sánh hạng 1 của hai bên |
+| `observe` | Hai cột ngang nhau, **Jev** và **Tất định**. Không hướng nào được chọn sẵn, và có một dòng so sánh hạng 1 của hai bên. Thứ tự hai cột suy từ hash của brief (xem dưới) |
 | `jev` | Một cột Jev. Khi Jev lỗi, thẻ dùng cột tất định và ghi lý do |
 
 Nguồn mặc định hiện tại là `observe`. Chip cạnh tiêu đề thẻ ghi "Jev và tất định, chưa chọn nguồn mặc định", để thẻ không nghiêng về bên nào trước khi có số liệu thật.
+
+**Thứ tự cột.** Người dùng hay nghiêng về cột đọc trước. Vì vậy ở `observe`, Studio lấy chữ số hex cuối của hash brief: chẵn thì Jev bên trái, lẻ thì tất định bên trái. Một brief luôn có cùng một thứ tự. Trên nhiều brief, mỗi nguồn đứng bên trái khoảng một nửa số lần. Server tính thứ tự này (`columnsOf` trong `lib/suggest.mjs`) và trả trong trường `columns` của `GET` và `POST /api/suggest`. Thẻ xếp cột theo đúng trường đó, và log lựa chọn ghi lại cùng giá trị. Khi hướng bạn bấm có ở cả hai cột, style và chế độ đi theo cột bên trái.
 
 Đặt nguồn khác trong `studio.json` (mặc định `~/.config/motion-studio/studio.json`, hoặc file ở `MOTION_STUDIO_STATE`):
 
@@ -67,13 +69,16 @@ Mỗi lần nút chọn trả 200 trên dự án đã có bản ghi gợi ý, St
 | `at`, `project` | Giờ bấm và tên dự án |
 | `hash`, `record_at`, `record_source` | Hash của brief đã gợi ý, giờ tạo bản ghi gợi ý, và nguồn lúc đó |
 | `jev`, `det` | Top 3 hướng, top 3 style và chế độ của mỗi bên; `jev` là `null` khi Jev không chạy |
+| `columns` | Thứ tự cột bạn thấy, từ trái sang phải, ví dụ `["det","jev"]`; một phần tử khi thẻ chỉ có một cột |
 | `chosen` | Hướng, style và chế độ bạn đã bấm; style và chế độ là `null` khi không chọn |
 | `direction_from`, `style_from` | Hướng hay style bạn chọn nằm trong top 3 của bên nào: `jev`, `det`, `both` hoặc `none` |
 | `outcome` | `chosen`, `not_in_pitch` hoặc `queued` |
 
 Thư mục `.opus/` đã nằm trong `.gitignore` của dự án.
 
-**Một lượt** là một cặp (dự án, hash của brief) có dòng mang thứ hạng của Jev. Bấm nhiều lần trên cùng một brief chỉ tính dòng cuối. Dòng không có Jev bị bỏ, vì không so được hai bên trên cùng một brief.
+Route ghi một dòng cho cả ba kết cục, `chosen`, `not_in_pitch` và `queued`. Dòng nào cũng có hướng bạn đã bấm trong `chosen.direction`. Lệnh chọn lỗi (422) hay yêu cầu sai (400, 409) không ghi dòng nào.
+
+**Một lượt** là một cặp (dự án, hash của brief), và chỉ tính **lượt bấm đầu tiên** của cặp đó, bất kể kết cục. Lý do: lượt đầu là ý định thật của bạn. Nếu bạn bấm một hướng Jev mà pitch chưa có, kết cục là `not_in_pitch` và thẻ mời bạn bấm lại một hướng trong pitch. Các hàng pitch đến từ chính bên tất định, nên lượt bấm sau gần như luôn trúng tất định. Nếu đếm lượt cuối, log sẽ lệch có hệ thống về tất định. Khi hai dòng cùng giờ, dòng ghi trước được giữ. Nếu dòng đầu tiên không có Jev (Jev lỗi lúc đó, thẻ chỉ có cột tất định), cả lượt bị bỏ, vì bạn chưa thấy hai bên cạnh nhau khi chọn.
 
 **Quyết định sau 30 lượt.** Chạy:
 
@@ -87,7 +92,9 @@ Lệnh in đúng một dòng `decision: jev|deterministic|wait (<n>/30 …)` và
 - Đủ 30 lượt và Jev hơn tất định ít nhất 10 điểm hit@3 thì nguồn mặc định thành `jev`.
 - Đủ 30 lượt mà Jev hơn dưới 10 điểm thì nguồn mặc định thành `deterministic`. Đường Jev vẫn giữ trong code, và bạn bật lại được bằng `"suggest": { "source": "jev" }` hoặc `"observe"` trong `studio.json`.
 
-Báo cáo đếm thêm `from`, tức hướng đã chọn đến từ cột nào, vì người dùng có thể nghiêng về cột đọc trước.
+Báo cáo đếm thêm `from`, tức hướng đã chọn đến từ nguồn nào. Dòng `picks position` đếm, trên các lượt có hai cột, hướng đã chọn nằm ở cột trái, cột phải, cả hai hay không cột nào, kèm số lượt Jev đứng bên trái và số lượt tất định đứng bên trái. Nếu cột trái thắng rõ dù hai nguồn đổi chỗ đều nhau, người dùng đang chọn theo vị trí. Dòng ghi trước khi có trường `columns` được đọc theo bố cục cũ: Jev bên trái khi `record_source` là `observe`.
+
+Thẻ chọn sẵn style đầu tiên hợp với hướng đã bấm. Vì vậy cột style trong báo cáo phần lớn phản ánh mặc định đó, không hẳn là lựa chọn của bạn. Style không quyết nguồn mặc định.
 
 ## Lần đo đầu trên nhãn (chỉ để tham khảo)
 
@@ -103,10 +110,10 @@ Trên tập vàng, Jev hơn tất định 7,1 điểm hit@3, dưới ngưỡng 1
 
 ## Route và tool
 
-- `GET /api/suggest?name=<dự án>`: bản ghi gợi ý đã lưu, các hàng pitch, nguồn đang dùng, các chế độ của provider, và hai cờ `can_save_mode`, `can_init_pitch`.
+- `GET /api/suggest?name=<dự án>`: bản ghi gợi ý đã lưu, thứ tự cột `columns` (`null` khi chưa có bản ghi), các hàng pitch, nguồn đang dùng, các chế độ của provider, và hai cờ `can_save_mode`, `can_init_pitch`.
 - `POST /api/suggest` với `{ name, refresh? }`: xếp hạng, hoặc dùng lại bản ghi khi brief không đổi. Trả 409 khi dự án chưa có `BRIEF.md`.
-- `POST /api/suggest/choose` với `{ name, direction, style?, mode? }`: lần bấm chọn của bạn, trả một trong ba kết cục ở trên.
-- Tool MCP `style_suggest` với `{ project, refresh? }`: dùng chung phần xếp hạng với các route, ghi bản ghi vào `<dự án>/.opus/suggest/latest.json` để thẻ hiện, và trả top 3 của mỗi loại. Tool không chạy lệnh chọn và không ghi `BRIEF.md`. Xem [`mcp.md`](mcp.md).
+- `POST /api/suggest/choose` với `{ name, direction, style?, mode? }`: lần bấm chọn của bạn, trả một trong ba kết cục ở trên. Chế độ vận hành chỉ được ghi sau khi biết kết cục, với `chosen` hoặc `queued`. Kết cục `not_in_pitch` và lệnh chọn lỗi không ghi chế độ.
+- Tool MCP `style_suggest` với `{ project, refresh? }`: dùng chung phần xếp hạng với các route, ghi bản ghi vào `<dự án>/.opus/suggest/latest.json` để thẻ hiện, và trả `sources`: mỗi nguồn một mục có `source`, nhãn (`Jev` hoặc `Tất định`) và top 3 hướng, top 3 style cùng quy trình. Ở `observe` có cả hai nguồn, xếp theo thứ tự cột của thẻ, kèm câu `compare` nhắc đạo diễn nêu hai nguồn ngang nhau. Ở `deterministic`, `jev`, hay khi Jev lỗi, `sources` chỉ có nguồn đang hiện. Tool không chạy lệnh chọn và không ghi `BRIEF.md`. Xem [`mcp.md`](mcp.md).
 
 ## Chi phí
 

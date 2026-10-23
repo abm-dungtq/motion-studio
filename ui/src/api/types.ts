@@ -120,10 +120,11 @@ export interface SuggestRecord {
   det: SuggestSide; jev: SuggestSide | null; ms: number; questions: number;
 }
 // GET and POST /api/suggest (routes/suggest.mjs): the record, the rows of pitch/PICK.json and what
-// the provider can do.
+// the provider can do. columns is the card's left-to-right column order (lib/suggest.mjs
+// columnsOf), the same order the pick log records; null without a record.
 export interface SuggestPick { n: number; id: string; style_profile: string | null; dir: string | null }
 export interface SuggestResponse {
-  record: SuggestRecord | null; picks: SuggestPick[] | null; source: SuggestRecord["source"]; source_setting: string | null;
+  record: SuggestRecord | null; columns: ("jev" | "det")[] | null; picks: SuggestPick[] | null; source: SuggestRecord["source"]; source_setting: string | null;
   modes: { id: string; label: string }[]; can_save_mode: boolean; can_init_pitch: boolean;
 }
 // POST /api/suggest/choose (routes/suggest.mjs): one of three outcomes.

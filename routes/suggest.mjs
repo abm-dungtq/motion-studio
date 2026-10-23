@@ -11,11 +11,13 @@
 //                      provider declares pitchInit, the pitch is built from it and the outcome is chosen)
 // BRIEF.md is only written by the provider's choose command, never here. The operating mode is
 // written through the gateway with actor "human" when the provider has the op; otherwise it goes in
-// the request text and mode.saved is false. Every 200 of choose appends a line to the pick log
-// (<project>/.opus/suggest/picks.jsonl) when a suggestion was stored for the project.
+// the request text and mode.saved is false. The mode is written only once the outcome is known
+// (chosen or queued), never for not_in_pitch or a failed command. Every 200 of choose, whatever the
+// outcome, appends a line to the pick log (<project>/.opus/suggest/picks.jsonl) with the direction
+// the user clicked and the card's column order, when a suggestion was stored for the project.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { appendPick, effectiveSource, frontmatterOf, pickEntry, readRecord, suggestCached } from "../lib/suggest.mjs";
+import { appendPick, columnsOf, effectiveSource, frontmatterOf, pickEntry, readRecord, suggestCached } from "../lib/suggest.mjs";
 import { runFile } from "../create.mjs";
 import { suggestSetting } from "../lib/config.mjs";
 import { answerCard, writeDirection } from "../gates.mjs";
@@ -36,8 +38,10 @@ function dirOf(c, name) {
 
 function view(P, dir) {
   const setting = suggestSetting();
+  const record = readRecord(dir);
   return {
-    record: readRecord(dir),
+    record,
+    columns: columnsOf(record),
     picks: P.suggest?.readPicks?.(dir) ?? null,
     source: effectiveSource(setting),
     source_setting: setting,
@@ -47,8 +51,10 @@ function view(P, dir) {
   };
 }
 
+const NOT_SAVED = { saved: false, reason: null };
+
 function saveMode(P, dir, mode) {
-  if (!mode) return { saved: false, reason: null };
+  if (!mode) return NOT_SAVED;
   if (!P.suggest?.canSetWorkflowMode) return { saved: false, reason: "Chế độ vận hành chưa lưu vào project.json vì provider chưa có lệnh ghi trường này. Đạo diễn vẫn nhận chế độ trong lời yêu cầu." };
   if (!existsSync(join(dir, "project.json"))) return { saved: false, reason: "Dự án chưa có project.json nên chưa lưu được chế độ vận hành." };
   try {
@@ -88,11 +94,13 @@ async function choose(c) {
   let initialized = false;
   const dir = dirOf(c, b.name);
   let picks = P.suggest.readPicks(dir);
-  const mode = saveMode(P, dir, b.mode);
-  const done = (outcome, body) => {
+  // Called once the outcome is known: the mode is saved only for a direction that was chosen or
+  // handed to the director, and every outcome is logged. Where the director runs next (a queued
+  // request, an answered card), the mode is saved before it starts, so it reads the saved mode.
+  const done = (outcome, body, mode = outcome === "not_in_pitch" ? NOT_SAVED : saveMode(P, dir, b.mode)) => {
     logPick(dir, b.name, b, outcome);
     console.log(`${new Date().toISOString()} suggest-choose ${b.name} ${b.direction} ${outcome}`);
-    return { outcome, ...body };
+    return { outcome, ...body, mode };
   };
 
   if (picks === null && P.suggest.pitchInit) {
@@ -116,34 +124,37 @@ async function choose(c) {
   if (picks === null) {
     if (!existsSync(join(dir, "project.json"))) throw err(409, "Dự án chưa có project.json nên chưa giao việc cho đạo diễn được. Nhập dự án vào Studio trước.");
     const text = `Tạo pitch cho dự án này, rồi hỏi thẻ chọn hướng như thường lệ. Người dùng nghiêng về hướng ${b.direction}${b.style ? ` với style ${b.style}` : ""}${b.mode ? `, chế độ vận hành ${b.mode}` : ""}, chọn từ thẻ gợi ý. Không tự chọn thay người dùng.`;
-    return done("queued", { ...queueRequest(P, b.name, dir, { scope: "project", text }), mode });
+    const mode = saveMode(P, dir, b.mode);
+    return done("queued", queueRequest(P, b.name, dir, { scope: "project", text }), mode);
   }
 
   const row = picks.find((r) => r.id === b.direction);
-  if (!row) return done("not_in_pitch", { picks, mode });
+  if (!row) return done("not_in_pitch", { picks });
 
   const extra = b.style ? P.suggest.styleArgs.map((a) => a.replaceAll("{style}", b.style)) : [];
   const waiting = (P.requests.list(dir) ?? []).find((r) => r.status === "waiting_user" && r.ask?.gate === "direction" && r.ask?.kind === "choice"
     && (r.ask.options ?? []).some((o) => o.id === String(row.n)));
   const requested = b.style ?? row.style_profile;
-  // The plugin's choose has the last word on style_profile (a lemo_style in the brief keeps its own
-  // style, for one), so report what BRIEF.md says after the write, and the requested style when it differs.
-  const result = (rest) => {
+  // The plugin's choose has the last word on style_profile: a --style-profile argument wins over the
+  // brief's lemo_style, which keeps its own style only when no style is sent. So report what BRIEF.md
+  // says after the write, and the requested style when it differs.
+  const result = (rest, mode) => {
     let written = null;
     try { written = frontmatterOf(readFileSync(join(dir, "BRIEF.md"), "utf8")).style_profile || null; } catch { /* no brief */ }
     const style = written ?? requested;
-    return done("chosen", { direction: b.direction, pick: row.n, style, ...(requested && style !== requested ? { requested_style: requested } : {}), ...rest });
+    return done("chosen", { direction: b.direction, pick: row.n, style, ...(requested && style !== requested ? { requested_style: requested } : {}), ...rest }, mode);
   };
 
   if (waiting) {
     const r = await answerCard(dir, { id: waiting.id, value: String(row.n) }, { extra });
     if (r.status !== 200) return c.send(r.status, r.body);
+    const mode = saveMode(P, dir, b.mode);
     startIdle(P, b.name, dir);
-    return result({ answered: waiting.id, next: r.body.next, initialized, mode });
+    return result({ answered: waiting.id, next: r.body.next, initialized }, mode);
   }
   const r = await writeDirection(dir, row.n, { extra });
   if (r.code !== 0) return c.send(422, { error: `Lệnh chọn hướng lỗi (exit ${r.code})`, stderr: tail(r) });
-  return result({ answered: null, next: null, initialized, mode });
+  return result({ answered: null, next: null, initialized });
 }
 
 export const ROUTES = [

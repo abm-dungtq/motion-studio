@@ -34,11 +34,11 @@ const record = (over: Partial<SuggestRecord> = {}): SuggestRecord => ({
   v: 1, at: "2026-10-23T09:00:00.000Z", project: NAME, hash: "h1", source: "observe", shown: "jev", error: null, det, jev, ms: 900, questions: 13, ...over,
 });
 const resp = (over: Partial<SuggestResponse> = {}): SuggestResponse => ({
-  record: record(), picks: [{ n: 1, id: "A6", style_profile: "data-editorial", dir: "pitch/1" }], source: "observe", source_setting: null,
+  record: record(), columns: ["jev", "det"], picks: [{ n: 1, id: "A6", style_profile: "data-editorial", dir: "pitch/1" }], source: "observe", source_setting: null,
   modes: [{ id: "dao-dien", label: "Đạo diễn" }, { id: "nhanh", label: "Nhanh" }, { id: "tu-nhac", label: "Từ nhạc" }, { id: "timeline", label: "Timeline" }],
   can_save_mode: false, can_init_pitch: false, ...over,
 });
-const detOnly = (over: Partial<SuggestResponse> = {}) => resp({ record: record({ source: "deterministic", shown: "det", jev: null }), source: "deterministic", ...over });
+const detOnly = (over: Partial<SuggestResponse> = {}) => resp({ record: record({ source: "deterministic", shown: "det", jev: null }), columns: ["det"], source: "deterministic", ...over });
 
 const card = () => screen.getByRole("region", { name: "Gợi ý cho dự án" });
 const dirs = (source: string) => [...card().querySelectorAll(`[data-role="suggest-direction"][data-source="${source}"]`)];
@@ -56,6 +56,12 @@ beforeEach(() => {
 });
 
 describe("SuggestCard", () => {
+  it("lays the columns out in the order the server gives", () => {
+    show(resp({ columns: ["det", "jev"] }));
+    const heads = [...card().querySelectorAll('[data-role="suggest-columns"] > [role="radiogroup"]')].map((g) => g.getAttribute("aria-label"));
+    expect(heads).toEqual(["Hướng theo Tất định", "Hướng theo Jev"]);
+  });
+
   it("observe shows both columns, picks nothing, and compares rank one", () => {
     show(resp());
     expect(card().querySelector('[data-role="suggest-columns"]')).not.toBeNull();

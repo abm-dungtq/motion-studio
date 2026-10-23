@@ -2,7 +2,9 @@
 // direction picked, and the way of working (the steps it runs and the ones it skips). The data comes
 // from /api/suggest (routes/suggest.mjs, ranked by lib/suggest.mjs). While the source is "observe"
 // the Jev and deterministic rankings stand side by side as two equal columns and nothing is picked
-// in advance, because every click is logged to compare the two sources. Only the user chooses:
+// in advance, because every click is logged to compare the two sources. The server orders the
+// columns from the brief hash (resp.columns), so each source stands on the left for about half the
+// briefs and the log records the order the user saw. Only the user chooses:
 // "Chọn và tạo pitch" posts /api/suggest/choose, and BRIEF.md is written by the provider's choose
 // command, never by this card. What the provider can do (save the mode, build a pitch) is read from
 // the answers, so a newer provider changes the sentences without a change here.
@@ -85,9 +87,11 @@ function chooseNotice(d: SuggestChooseResult): Notice {
 function Choices({ name, resp, record }: { name: string; resp: SuggestResponse; record: SuggestRecord }) {
   const observe = record.source === "observe" && record.jev !== null;
   const single: SuggestSide = record.shown === "jev" && record.jev ? record.jev : record.det;
-  const columns: Column[] = observe && record.jev
-    ? [{ key: "jev", side: record.jev }, { key: "det", side: record.det }]
-    : [{ key: single === record.det ? "det" : "jev", side: single }];
+  const order: ColumnKey[] = resp.columns?.length ? resp.columns : [single === record.det ? "det" : "jev"];
+  const columns: Column[] = order.flatMap((key): Column[] => {
+    const side = key === "jev" ? record.jev : record.det;
+    return side ? [{ key, side }] : [];
+  });
 
   const [dirSel, setDirSel] = useState<string | null>(observe ? null : (single.directions[0]?.id ?? null));
   const [styleOverride, setStyleOverride] = useState<string | null>(null);
@@ -95,7 +99,7 @@ function Choices({ name, resp, record }: { name: string; resp: SuggestResponse; 
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  // Style and mode follow the column holding the direction; Jev's when both hold it.
+  // Style and mode follow the column holding the direction; the left one when both hold it.
   const active: SuggestSide | null = dirSel === null ? null
     : observe ? (columns.find((c) => c.side.directions.some((x) => x.id === dirSel))?.side ?? record.det)
     : single;

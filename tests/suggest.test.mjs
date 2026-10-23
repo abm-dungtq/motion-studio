@@ -1,4 +1,5 @@
 import { test, before, after } from "node:test";
+import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -203,6 +204,7 @@ test("a pick entry records both rankings and where the choice came from", () => 
   assert.equal(e.style_from, null);
   assert.deepEqual(e.chosen, { direction: "A7", style: null, mode: "dao-dien" });
   assert.equal(e.outcome, "queued");
+  assert.deepEqual(e.columns, S.columnsOf(observed));
   const both = S.pickEntry({ record: observed, project: "demo", chosen: { direction: "A6", style: observed.det.styles[0].id }, outcome: "chosen" });
   assert.equal(both.direction_from, "both");
   assert.ok(["det", "both"].includes(both.style_from));
@@ -226,4 +228,26 @@ test("the pick log appends one line per choice and skips broken lines", () => {
 test("the key never reaches the record", async () => {
   assert.ok(!JSON.stringify(observed).includes("test-key"));
   assert.ok(!readFileSync(S.recordPath(dir), "utf8").includes("test-key"));
+});
+
+test("columnsOf orders the two columns by the brief hash while observing", () => {
+  const rec = (hash, over = {}) => ({ hash, source: "observe", shown: "jev", jev: observed.jev, det: observed.det, ...over });
+  assert.deepEqual(S.columnsOf(rec("abc0")), ["jev", "det"]);
+  assert.deepEqual(S.columnsOf(rec("abc1")), ["det", "jev"]);
+  assert.deepEqual(S.columnsOf(rec("abcf")), ["det", "jev"]);
+  assert.deepEqual(S.columnsOf(rec("abc1")), S.columnsOf(rec("abc1")), "one brief always gets the same order");
+  assert.deepEqual(S.columnsOf(rec("abc1", { jev: null, shown: "det" })), ["det"]);
+  assert.deepEqual(S.columnsOf(rec("abc1", { source: "jev" })), ["jev"]);
+  assert.deepEqual(S.columnsOf(rec("abc1", { source: "deterministic", shown: "det" })), ["det"]);
+  assert.equal(S.columnsOf(null), null);
+});
+
+test("columnsOf puts each source on the left for about half of many briefs", () => {
+  let jevLeft = 0;
+  const N = 1000;
+  for (let i = 0; i < N; i++) {
+    const hash = createHash("sha256").update(`brief ${i}`).digest("hex").slice(0, 12);
+    if (S.columnsOf({ hash, source: "observe", shown: "jev", jev: observed.jev, det: observed.det })[0] === "jev") jevLeft++;
+  }
+  assert.ok(jevLeft > N * 0.45 && jevLeft < N * 0.55, `Jev on the left ${jevLeft}/${N}`);
 });

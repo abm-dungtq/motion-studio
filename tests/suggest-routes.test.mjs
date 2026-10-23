@@ -7,7 +7,7 @@ import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { createServer } from "../server.mjs";
 import { adapterFor, loadProvider } from "../lib/provider.mjs";
-import { readPickLog } from "../lib/suggest.mjs";
+import { columnsOf, readPickLog, readRecord } from "../lib/suggest.mjs";
 import { callTool, toolEnv } from "../lib/tools.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
 
@@ -181,6 +181,7 @@ describe("with the provider as it is today", () => {
     const r = await get("/api/suggest?name=demo");
     assert.equal(r.status, 200);
     assert.equal(r.json.record, null);
+    assert.equal(r.json.columns, null);
     assert.equal(r.json.picks.length, 2);
     assert.equal(r.json.source, "observe");
     assert.equal(r.json.source_setting, "observe");
@@ -196,6 +197,8 @@ describe("with the provider as it is today", () => {
     assert.notEqual(r.json.record.jev, null);
     assert.equal(r.json.record.det.directions.length, 3);
     assert.equal(r.json.record.shown, "jev");
+    assert.deepEqual(r.json.columns, columnsOf(r.json.record));
+    assert.equal(r.json.columns.length, 2);
     assert.equal(globalThis.fetch.calls, 2);
     assert.ok(existsSync(join(dir(), ".opus", "suggest", "latest.json")));
   });
@@ -366,12 +369,35 @@ describe("with the provider as it is today", () => {
   test("style_suggest through callTool returns the compact result", async () => {
     const r = await callTool("style_suggest", { project: "demo" }, toolEnv({ root, P: await loadProvider() }));
     assert.equal(r.ok, true, r.error);
-    assert.equal(r.result.directions.length, 3);
     assert.equal(r.result.shown, "det");
     assert.match(r.result.error, /khoá TypeSafe/);
     assert.match(r.result.card, /tab Đạo diễn/);
-    assert.deepEqual(Object.keys(r.result.directions[0]).sort(), ["id", "label", "reason", "score", "source"]);
+    assert.equal(r.result.sources.length, 1);
+    const [only] = r.result.sources;
+    assert.equal(only.source, "det");
+    assert.equal(only.label, "Tất định");
+    assert.equal(only.directions.length, 3);
+    assert.equal(r.result.compare, undefined);
+    assert.deepEqual(Object.keys(only.directions[0]).sort(), ["id", "label", "reason", "score", "source"]);
     assert.equal(readFileSync(join(dir(), "BRIEF.md"), "utf8"), BRIEF);
+  });
+
+  test("style_suggest while observing returns both sources, labelled, in the card's order", async () => {
+    process.env.TYPESAFE_API_KEY = KEY;
+    const r = await callTool("style_suggest", { project: "demo" }, toolEnv({ root, P: await loadProvider() }));
+    assert.equal(r.ok, true, r.error);
+    assert.equal(r.result.source, "observe");
+    assert.deepEqual(r.result.sources.map((x) => x.source), columnsOf(readRecord(dir())));
+    const by = Object.fromEntries(r.result.sources.map((x) => [x.source, x]));
+    assert.equal(by.jev.label, "Jev");
+    assert.equal(by.det.label, "Tất định");
+    assert.equal(by.jev.directions[0].id, "A6");
+    assert.equal(by.jev.directions[0].source, "jev");
+    assert.equal(by.det.directions.length, 3);
+    assert.ok(by.det.directions.every((d) => d.source === "det"));
+    assert.ok(by.jev.styles.length > 0 && by.det.styles.length > 0);
+    assert.ok(by.jev.workflow && by.det.workflow);
+    assert.match(r.result.compare, /cả hai nguồn ngang nhau/);
   });
 
   test("style_suggest without BRIEF.md is an error", async () => {
@@ -394,10 +420,21 @@ describe("with the provider as it is today", () => {
     assert.notEqual(log[0].jev, null);
     assert.notEqual(log[0].det, null);
     assert.ok(["jev", "det", "both", "none"].includes(log[0].direction_from));
+    const shown = (await get("/api/suggest?name=demo")).json.columns;
+    assert.equal(shown.length, 2);
+    assert.deepEqual(log[0].columns, shown, "the log records the column order the card shows");
     assert.equal((await post("/api/suggest/choose", { name: "demo", direction: "A1" })).json.outcome, "not_in_pitch");
     log = readPickLog(dir());
     assert.equal(log.length, 2);
     assert.equal(log[1].outcome, "not_in_pitch");
+    assert.equal(log[1].chosen.direction, "A1");
+    assert.deepEqual(log[1].columns, shown);
+    rmSync(join(dir(), "pitch"), { recursive: true, force: true });
+    assert.equal((await post("/api/suggest/choose", { name: "demo", direction: "A8" })).json.outcome, "queued");
+    log = readPickLog(dir());
+    assert.equal(log.length, 3);
+    assert.equal(log[2].outcome, "queued");
+    assert.equal(log[2].chosen.direction, "A8");
   });
 
   test("a choice without any stored suggestion writes no log line", async () => {
@@ -451,6 +488,27 @@ describe("when the provider declares pitchInit and set_workflow_mode", () => {
     const last = lines(patchLog).at(-1);
     assert.ok(last.includes('"actor":"human"'), last);
     assert.ok(last.includes('{"op":"set_workflow_mode","mode":"nhanh"}'), last);
+  });
+
+  test("a direction missing from the pitch does not save the operating mode", async () => {
+    writePitch([{ n: 1, id: "A6" }]);
+    const before = lines(patchLog).length;
+    const r = await post("/api/suggest/choose", { name: "demo", direction: "A1", mode: "nhanh" });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.outcome, "not_in_pitch");
+    assert.deepEqual(r.json.mode, { saved: false, reason: null });
+    assert.equal(lines(patchLog).length, before);
+  });
+
+  test("a failing choose command does not save the operating mode", async () => {
+    writePitch([{ n: 1, id: "A6" }]);
+    const before = lines(patchLog).length;
+    const keep = process.env.FAKE_CHOOSE_LOG;
+    process.env.FAKE_CHOOSE_LOG = join(tmp, "no-such-dir", "x.log");
+    try {
+      assert.equal((await post("/api/suggest/choose", { name: "demo", direction: "A6", mode: "nhanh" })).status, 422);
+    } finally { process.env.FAKE_CHOOSE_LOG = keep; }
+    assert.equal(lines(patchLog).length, before);
   });
 
   test("a brief without topic still queues instead of building a pitch", async () => {
