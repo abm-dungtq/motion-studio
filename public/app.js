@@ -4,10 +4,13 @@
 // inspector ({ kind: shot | line | music | event, id }); ctx.state.sel stays the shot it belongs to.
 // ctx.state.audio is the player's mute/solo rule per audio group; ctx.state.gates the last
 // GET /api/gates answer, which drives the top bar's gate chip and the Xuất bản tab's FAIL lines.
+// ctx.markers holds the beat and word markers of the timeline (timeline-markers.js); a pick of kind
+// beat (id: music id) or word (id: "<line id>#<index>") shows that marker in the inspector.
 // Once everything is mounted, ext.js loads the UI extensions with the studio object below.
 import { h, toast } from "/dom.js";
 import { mountPlayer } from "/player.js";
 import { mountTimeline } from "/timeline.js";
+import { createMarkers } from "/timeline-markers.js";
 import { mountInspector } from "/inspector.js";
 import { mountPanels } from "/panels.js";
 import { mountNewProject } from "/new-project.js";
@@ -185,17 +188,30 @@ const ctx = {
     if (kind === "shot") ctx.state.sel = id;
     else if (kind === "line") ctx.state.sel = m?.lines.find((l) => l.id === id)?.shot ?? ctx.state.sel;
     else if (kind === "event") ctx.state.sel = m?.events?.find((e) => e.id === id)?.shot ?? ctx.state.sel;
+    else if (kind === "word") ctx.state.sel = m?.lines.find((l) => l.id === String(id).split("#")[0])?.shot ?? ctx.state.sel;
     ctx.emit("select", id);
   },
   select(id) { ctx.pick("shot", id); },
+  reload: () => reload(),
   seek(t) { player.seek(t); },
   toast,
 };
 
 const player = mountPlayer(ctx, $("player"), { playBtn: $("play-btn"), timeEl: $("time") });
 ctx.transport = player;
-const timeline = mountTimeline(ctx, $("timeline"), { zoomIn: $("zoom-in"), zoomOut: $("zoom-out"), zoomFit: $("zoom-fit"), snapBtn: $("snap-btn") });
+const markers = createMarkers(ctx, { onChange: () => { timeline.render(); inspector.render(); showTimingUndo(); } });
+ctx.markers = markers;
+const timeline = mountTimeline(ctx, $("timeline"), { zoomIn: $("zoom-in"), zoomOut: $("zoom-out"), zoomFit: $("zoom-fit"), snapBtn: $("snap-btn"), modeBtn: $("mode-btn"), markers });
 const inspector = mountInspector(ctx, $("inspector"));
+function showTimingUndo() {
+  const d = markers.get();
+  const btn = $("timing-undo-btn");
+  btn.disabled = !ctx.editable || !(d?.undo > 0);
+  btn.title = d?.undo > 0 ? `Trả lại lần sửa mốc gần nhất (còn ${d.undo})` : "Chưa sửa mốc phách hay mốc từ nào";
+}
+$("timing-undo-btn").addEventListener("click", () => markers.undo());
+ctx.on("manifest", (m) => { if (m) markers.load(); else showTimingUndo(); });
+ctx.on("retimed", () => { clearTimeout(gateTimer); gateTimer = setTimeout(refreshGates, 500); });
 const panels = mountPanels(ctx, document.querySelector(".rail"), $("panel"));
 ctx.openTab = (id) => panels.select(id, true);
 const agent = mountAgent(ctx, $("agent-chip"));
@@ -213,7 +229,9 @@ function setManifest(m) {
   if (m && !m.shots.some((s) => s.id === ctx.state.sel)) ctx.state.sel = m.shots[0]?.id ?? null;
   const p = ctx.state.pick;
   const lists = { shot: m?.shots, line: m?.lines, music: m?.music, event: m?.events };
-  if (!p || !(lists[p.kind] ?? []).some((x) => x.id === p.id)) ctx.state.pick = ctx.state.sel ? { kind: "shot", id: ctx.state.sel } : null;
+  // A beat or word marker stays picked while the project is open; the inspector says when it is gone.
+  const marker = m && (p?.kind === "beat" || p?.kind === "word");
+  if (!marker && (!p || !(lists[p.kind] ?? []).some((x) => x.id === p.id))) ctx.state.pick = ctx.state.sel ? { kind: "shot", id: ctx.state.sel } : null;
   const banner = $("banner");
   if (m && !m.capabilities?.editable) { banner.replaceChildren("Dự án nhập từ bản cũ: chỉ xem, sửa qua đạo diễn"); banner.hidden = false; }
   else if (m) banner.hidden = true;
@@ -430,6 +448,7 @@ function runKey(a) {
     case "zoomOut": return timeline.zoomBy(1 / 1.25);
     case "fit": return timeline.fit();
     case "snap": return timeline.toggleSnap?.();
+    case "mode": return timeline.toggleMode();
   }
 }
 

@@ -5,6 +5,10 @@
 // - line: the text and time; the text is edited in the "Lời & giọng" tab (viet-pro gate there).
 // - music: start, end, head trim, volume, fades → one update_music with the changed fields.
 // - event: label, sound, time (→ move_event); delete only for SFX added in Studio.
+// - beat / word: a marker of the timeline (ctx.markers): its time now and before Studio first
+//   moved it, a field to set it, "Về gốc", "Hoàn tác mốc" and, for words, "Kiểm khớp lời".
+// After a marker change rebuilt TIMING (ctx.state.retimed), every view starts with the note that
+// the animatic needs approving again.
 // Read-only projects show every field disabled.
 // Extensions add sections at the end (addSection({ kinds, view(pick, m) }), see docs/extensions.md).
 import { fmt, fmtS, h, round1, thumb } from "/dom.js";
@@ -21,10 +25,11 @@ export function mountInspector(ctx, el) {
     const m = ctx.state.m;
     if (!m) { el.replaceChildren(); return; }
     const p = ctx.state.pick ?? { kind: "shot", id: ctx.state.sel };
-    const view = { line: lineView, music: musicView, event: eventView }[p.kind];
+    const view = { line: lineView, music: musicView, event: eventView, beat: beatView, word: wordView }[p.kind];
     const node = view?.(m, p.id);
-    if (node) el.replaceChildren(...node);
+    if (node) el.replaceChildren(...node.filter(Boolean));
     else shotView(m);
+    if (ctx.state.retimed) el.prepend(h("div", { class: "note", "data-role": "retimed" }, "Mốc đã đổi, TIMING đã dựng lại: animatic cần duyệt lại trước khi xuất"));
     for (const x of extra) {
       if (!x.kinds.has(p.kind)) continue;
       try { el.append(...[x.view(p, m)].flat(Infinity).filter(Boolean)); } catch (e) { console.error("inspector section", e); el.append(h("p", { class: "form-error" }, `Mục mở rộng lỗi: ${e.message}`)); }
@@ -166,8 +171,74 @@ export function mountInspector(ctx, el) {
     ];
   }
 
+  const t3 = (x) => (Number.isFinite(x) ? `${x.toFixed(3)}s` : "—");
+  const gone = (what) => [h("h3", {}, what), h("div", { class: "muted" }, "Mốc này không còn (file đã đổi). Chọn lại trên timeline.")];
+  const busyNote = (d) => (d?.busy ? h("div", { class: "note" }, `Chưa sửa được: ${d.busy}`) : null);
+  const undoBtn = (d) => h("button", { class: "btn", disabled: !ctx.editable || !(d?.undo > 0), onclick: () => ctx.markers.undo() }, `Hoàn tác mốc${d?.undo > 0 ? ` (${d.undo})` : ""}`);
+
+  function beatView(m, id) {
+    const d = ctx.markers?.get();
+    const g = d?.grid;
+    if (!g || g.music_id !== id) return gone("MỐC PHÁCH");
+    const ro = !ctx.markers.editable();
+    const input = num(g.beat0, { step: "0.001", min: "0", max: String(Math.max(0, g.beatLen - 0.001)) });
+    input.disabled = ro;
+    const bpm = g.beatLen > 0 ? Math.round((60 / g.beatLen) * 10) / 10 : null;
+    return [
+      h("h3", {}, `MỐC PHÁCH · ${g.file.split("/").pop()}`),
+      h("div", { class: "muted" }, `${g.file}${bpm ? ` · ${bpm} BPM · một phách ${t3(g.beatLen)}` : ""}`),
+      h("label", {}, "Phách đầu (beat0, giây)", input),
+      h("div", { class: "kv" }, h("span", {}, "Giờ gốc"), h("strong", {}, t3(g.original))),
+      busyNote(d),
+      h("div", { class: "row" },
+        h("button", { class: "btn primary", disabled: ro, onclick: () => ctx.markers.setBeat(Number(input.value)) }, "Áp dụng"),
+        h("button", { class: "btn", disabled: ro || Math.abs(g.original - g.beat0) < 1e-6, onclick: () => ctx.markers.setBeat(g.original) }, "Về gốc")),
+      undoBtn(d),
+      h("div", { class: "muted" }, "Kéo một vạch phách trên thước để dời cả lưới. B(n) trong cảnh dời theo sau khi dựng lại TIMING."),
+    ];
+  }
+
+  function wordView(m, id) {
+    const [lineId, k] = String(id).split("#");
+    const i = Number(k);
+    const d = ctx.markers?.get();
+    const l = ctx.markers?.line(lineId);
+    const w = l?.words?.[i];
+    if (!w) return gone("MỐC TỪ");
+    const ro = !ctx.markers.editable();
+    const o = l.original?.[i] ?? { start: w.start, end: w.end };
+    const start = num(w.start, { step: "0.001", min: "0" }), end = num(w.end, { step: "0.001", min: "0" });
+    start.disabled = ro; end.disabled = ro;
+    const apply = () => {
+      const s = Number(start.value), e = Number(end.value);
+      if (!Number.isFinite(s) || !Number.isFinite(e)) return ctx.toast("Nhập số hợp lệ", true);
+      const f = {};
+      if (Math.abs(s - w.start) > 1e-6) f.start = s;
+      if (Math.abs(e - w.end) > 1e-6) f.end = e;
+      if (!Object.keys(f).length) return ctx.toast("Không có gì thay đổi");
+      ctx.markers.setWord(lineId, i, f);
+    };
+    const same = Math.abs(o.start - w.start) < 1e-6 && Math.abs(o.end - w.end) < 1e-6;
+    return [
+      h("h3", {}, `MỐC TỪ · "${w.text}"`),
+      h("div", { class: "muted" }, `${lineId} · từ #${i + 1}/${l.words.length} · ${l.file}`),
+      h("div", { class: "kv" }, h("span", {}, "Trên video"), h("strong", {}, `${t3(l.offset + w.start)} – ${t3(l.offset + w.end)}`)),
+      h("label", {}, "Đầu từ (giây trong file giọng)", start),
+      h("label", {}, "Cuối từ (giây trong file giọng)", end),
+      h("div", { class: "kv" }, h("span", {}, "Giờ gốc"), h("strong", {}, `${t3(o.start)} – ${t3(o.end)}`)),
+      busyNote(d),
+      h("div", { class: "row" },
+        h("button", { class: "btn primary", disabled: ro, onclick: apply }, "Áp dụng"),
+        h("button", { class: "btn", disabled: ro || same, onclick: () => ctx.markers.setWord(lineId, i, { start: o.start, end: o.end }) }, "Về gốc")),
+      undoBtn(d),
+      h("button", { class: "btn", onclick: () => ctx.markers.wordSync() }, "Kiểm khớp lời"),
+      h("div", { class: "muted" }, "Chữ chốt bám lời (W()) dời theo. Sau khi sửa, bấm Kiểm khớp lời để xem chữ còn khớp giọng không."),
+    ];
+  }
+
   ctx.on("manifest", render);
   ctx.on("select", render);
+  ctx.on("retimed", render);
   ctx.on("focus-note", () => el.querySelector('[data-role="motion-note"]')?.focus());
   return { render, addSection };
 }
