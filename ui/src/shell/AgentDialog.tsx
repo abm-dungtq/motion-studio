@@ -9,6 +9,10 @@ import { useStudio } from "@/store/studio.ts";
 import { ErrorBoundary } from "./ErrorBoundary.tsx";
 import { Loading } from "./states.tsx";
 
+// The chip opens the dialog through the store, not a DialogTrigger, so Radix has nothing to give
+// focus back to on close: give it to the chip.
+const chipFocus = (e: Event) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-agent-chip]")?.focus(); };
+
 export function AgentDialog() {
   const open = useStudio((s) => s.dialog === "agent");
   const name = useStudio((s) => s.name);
@@ -18,7 +22,11 @@ export function AgentDialog() {
   const reload = () => { void reloadAgent(); };
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) useStudio.getState().openDialog(null); }}>
-      <DialogContent aria-describedby={undefined} style={width ? { width, maxWidth: width } : undefined}>
+      <DialogContent
+        aria-describedby={undefined}
+        onCloseAutoFocus={chipFocus}
+        style={width ? { width, maxWidth: width } : undefined}
+      >
         <DialogTitle>Agent trên máy</DialogTitle>
         <ScrollArea className="max-h-[70vh]">
           <div data-slot="agent" className="flex flex-col gap-2 pr-2 text-sm">
