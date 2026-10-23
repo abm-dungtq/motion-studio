@@ -45,7 +45,7 @@ export function ShotStyle({ pick, m }: InspectorSectionProps) {
             </select>
             <div><Button variant="primary" disabled={!m || busy} onClick={apply}>Áp</Button></div>
           </div>
-        ) : <p className="m-0 mt-2 text-sm text-muted-foreground">Chưa có phong cách nào: mở tab Phong cách code và tải thư viện.</p>}
+        ) : <p className="m-0 mt-2 text-sm text-muted-foreground">Chưa có phong cách nào: mở tab Phong cách và tải thư viện.</p>}
       </details>
     </div>
   );
