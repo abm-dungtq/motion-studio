@@ -114,7 +114,7 @@ function ProbeLine({ probe: p }: { probe: Probe | null }) {
 }
 
 export function AgentTable(_props: AgentRowProps) {
-  const { data: scan, error: readError, refetch } = useQuery({ ...agentsQuery(), staleTime: Infinity, refetchInterval: (q) => probeInterval(q.state.data) });
+  const { data: scan, error: readError, refetch: reread } = useQuery({ ...agentsQuery(), staleTime: Infinity, refetchInterval: (q) => probeInterval(q.state.data) });
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -141,7 +141,7 @@ export function AgentTable(_props: AgentRowProps) {
     const r = await agentsProbe({ id, cap });
     setBusy(false);
     if (r.status !== 200) setNote(r.error ?? `Lỗi ${r.status}`);
-    await refetch();
+    await reread();
   }
 
   const head = <h3 className="m-0 mt-3 text-sm font-semibold">Agent CLI</h3>;

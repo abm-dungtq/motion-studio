@@ -42,14 +42,14 @@ export function ReceiptRows({ rows }: { rows: ReceiptRow[] }) {
 
 export function ReceiptList() {
   const name = useStudio((s) => s.name);
-  const { data, error, isPending, refetch } = useReceipts(name);
+  const { data, error, isPending, refetch: reread } = useReceipts(name);
   if (!name) return null;
   const rows = receiptRows(data);
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <h3 className="m-0 text-sm font-semibold">Biên nhận</h3>
-        <Button onClick={() => { void refetch(); }}>Làm mới</Button>
+        <Button onClick={() => { void reread(); }}>Làm mới</Button>
       </div>
       {isPending && !error ? <Loading /> : (
         <>

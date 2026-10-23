@@ -33,10 +33,10 @@ export function exportRows(name: string, fs: FileEntry[]): ExportRow[] {
 export function Exported() {
   const name = useStudio((s) => s.name);
   const { data: m } = useProject(name);
-  const { data: fs, error, isPending, refetch } = useFiles(name, "renders");
+  const { data: fs, error, isPending, refetch: reread } = useFiles(name, "renders");
   const { data: jobs } = useJobs(name);
   const ended = (jobs ?? []).filter((j) => !isLive(j)).map((j) => j.id).join(",");
-  useEffect(() => { if (ended) void refetch(); }, [ended, refetch]);
+  useEffect(() => { if (ended) void reread(); }, [ended, reread]);
   if (!name || !m) return null;
   const rows = fs ? exportRows(name, fs) : [];
   return (
