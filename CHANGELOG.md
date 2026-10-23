@@ -2,6 +2,7 @@
 
 ## Chưa phát hành
 
+- Tab Anime cho video anime motion-comic: board shot đọc `assets/anim/manifest.json`, sinh biến thể tư thế qua agent ảnh (tách nền xanh, có biên nhận), sửa track lipsync/blink/wind/keys trên UI rồi build ra `anim-data.js` tất định. Mẫu `templates/anim/`, tool `anime_*`. Xem `docs/anime-motion-comic.md`.
 - Bộ lớp dựng ghi thêm `timeline.fcpxml` (FCPXML 1.10, `--fcpxml-version 1.8`), `timeline.xml` (xmeml v5) và `timeline.otio` (OpenTimelineIO), mở thẳng trong Final Cut Pro, Premiere và DaVinci Resolve. `manifest.json` giữ schema `motion-studio/bundle@1`, thêm trường `nle`. Cờ `--nle fcpxml,xmeml,otio | none`; tool `nle_export`. Xem `docs/nle-export.md`.
 - `npm run setup` (`node bin/motion-studio.mjs setup [--yes] [--ref <ref>] [--host claude|codex|all]`): kiểm provider mặc định so với bản mới nhất trên GitHub (`git ls-remote` + `plugin.json`), báo chưa cài / cũ / đã mới nhất, hỏi [Y/n] rồi cài hoặc cập nhật. Git checkout được `pull --ff-only` (từ chối khi bẩn hay khác nhánh); bản sao thì chạy `install.sh` chính thức. Sau khi cài, Studio kiểm lại `STUDIO_API`. `start` và banner "chưa có provider" nhắc lệnh này; `/api/status` có trường `setup`.
 - Với `STUDIO_API` 4, Studio dùng `COMMANDS` (đường lệnh; `COMMANDS.choose = { file, args }` với `{project}`, `{pick}` cho thẻ chọn hướng) và `SKILLS` (dòng skill trong prompt đạo diễn) do plugin khai. Không có thì dùng tên file và cú pháp `make-pitch choose` như trước.
