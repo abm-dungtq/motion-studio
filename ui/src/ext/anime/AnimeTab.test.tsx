@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { bus } from "@/core/bus.ts";
 import { useStudio } from "@/store/studio.ts";
-import { AnimeTab, LEAD } from "./AnimeTab.tsx";
+import { AnimeTab, LEAD, useJobEndsBadge } from "./AnimeTab.tsx";
 import { useAnimeStore } from "./store.ts";
 import { register } from "./index.ts";
 import { createStudio, getTabs } from "@/ext/registry.ts";
@@ -35,9 +35,12 @@ function routes(over: Record<string, unknown> = {}) {
   });
 }
 
+// The rail renders the tab's badge whether the tab is open or not; it follows the jobs.
+function RailBadge() { useJobEndsBadge(); return null; }
+
 function open(name: string | null, sub: "board" | "chars" | "anim" = "board") {
   act(() => { useStudio.setState({ name }); useAnimeStore.getState().setSub(sub); });
-  return renderUi(<AnimeTab />);
+  return renderUi(<><RailBadge /><AnimeTab /></>);
 }
 
 beforeEach(() => {
@@ -49,7 +52,7 @@ describe("Anime tab", () => {
   test("registers in the assets group with the old lead", () => {
     register(createStudio());
     const t = getTabs().find((x) => x.id === "anime");
-    expect(t).toMatchObject({ label: "Anime", group: "assets", order: 30, lead: LEAD });
+    expect(t).toMatchObject({ label: "Anime", group: "assets", order: 30, lead: LEAD, badge: useJobEndsBadge });
     expect(LEAD).toBe("Motion comic: nhân vật, shot board, biến thể tư thế và hoạt hình lật ảnh");
   });
 
@@ -125,6 +128,14 @@ describe("Anime tab", () => {
     await waitFor(() => expect(h.variant).toHaveBeenCalledWith(expect.objectContaining({ name: "demo", shot: "s2", base: "assets/plates/s2-a.png", change: "mouth open", out_name: "s2-v1", sim: 0.18, blend: 0.06 })));
     await waitFor(() => expect(h.say).toHaveBeenCalledWith("Đã có s2-v1.png (1024px, nền #0047FF)", false)); // token-exempt: test data
   });
+});
+
+test("a job that ends while the tab is closed says so at once", async () => {
+  routes({ "/api/anime/job": { job: { id: "j2", status: "done", code: 0 }, log: [] } });
+  act(() => { useStudio.setState({ name: "demo" }); useAnimeStore.getState().follow("sheet", { id: "j2", name: "demo", kind: "anime-sheet", status: "running", code: null, started: "2026-10-23T05:00:00.000Z" }, "Tèo"); });
+  renderUi(<RailBadge />);
+  await waitFor(() => expect(h.say).toHaveBeenCalledWith("Đã có sheet của Tèo", false));
+  expect(h.say).toHaveBeenCalledTimes(1);
 });
 
 describe("Hoạt hình (manifest editor)", () => {

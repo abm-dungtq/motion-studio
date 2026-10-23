@@ -22,6 +22,8 @@ export const LEAD = "Motion comic: nhân vật, shot board, biến thể tư th�
 const VIEWS: Record<Sub, ComponentType> = { board: Board, chars: Chars, anim: Manifest };
 
 // The end of each followed job, whatever sub-tab is open (the onEnd of the old A.follow calls).
+// It runs from the rail badge of the tab (below), which renders whether the tab is open or not,
+// so the end toast shows as soon as the job ends, as in the old UI, even with another tab open.
 function useJobEnds(name: string | null): void {
   useFollow("variant", (j) => {
     const line = [...(j.log ?? [])].reverse().find((l) => l.startsWith("RESULT "));
@@ -37,6 +39,12 @@ function useJobEnds(name: string | null): void {
   useFollow("build", () => { void reload(name, "board"); });
 }
 
+// The tab's badge: follows the jobs and never shows a count.
+export function useJobEndsBadge(): number {
+  useJobEnds(useStudio((s) => s.name));
+  return 0;
+}
+
 export function AnimeTab() {
   const name = useStudio((s) => s.name);
   const sub = useAnimeStore((s) => s.sub);
@@ -44,7 +52,6 @@ export function AnimeTab() {
   useAnime("board", name);
   useAnime("chars", name);
   useAnime("manifest", name);
-  useJobEnds(name);
 
   if (!name) return <Empty text="Chưa mở dự án nào. Chọn một dự án ở thanh trên cùng." />;
   return (

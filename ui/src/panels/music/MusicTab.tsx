@@ -24,9 +24,9 @@ function Track({ mu, editable, version }: { mu: Music; editable: boolean; versio
   return (
     <div className={CARD}>
       <strong className="text-sm">{base(file)}</strong>
-      {/* The shadcn Slider passes no aria-label to its role="slider" thumb, so the group carries the old label. */}
-      <div role="group" aria-label={`Âm lượng ${file}`} className="flex items-center gap-3">
+      <div className="flex items-center gap-3">
         <Slider
+          aria-label={`Âm lượng ${file}`}
           min={0}
           max={100}
           step={1}

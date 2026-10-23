@@ -53,8 +53,7 @@ describe("music tab", () => {
   test("a background music card with its file name and volume", () => {
     renderUi(<MusicTab />);
     expect(screen.getByText("bgm.mp3")).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Âm lượng assets/bgm/bgm.mp3" })).toBeInTheDocument();
-    const thumb = screen.getByRole("slider");
+    const thumb = screen.getByRole("slider", { name: "Âm lượng assets/bgm/bgm.mp3" });
     expect(thumb).toHaveAttribute("aria-valuemin", "0");
     expect(thumb).toHaveAttribute("aria-valuemax", "100");
     expect(thumb).toHaveAttribute("aria-valuenow", "52");
