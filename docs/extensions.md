@@ -65,8 +65,8 @@ export function register(studio) {
     view: ({ h, empty, needManifest }) => (ctx.state.m ? h("p", {}, `Dự án: ${ctx.state.name}`) : needManifest()),
   });
 
-  // Mục ở cuối một tab có sẵn (director, footage, lines, music, library, export) hoặc tab mở rộng.
-  studio.addSection("footage", { id: "hello-note", order: 50, view: ({ h }) => h("p", { class: "note" }, "Mục thêm vào tab Footage") });
+  // Mục ở cuối một tab có sẵn (director, media (tab Footage), lines, music, library, export) hoặc tab mở rộng.
+  studio.addSection("media", { id: "hello-note", order: 50, view: ({ h }) => h("p", { class: "note" }, "Mục thêm vào tab Footage") });
 
   // Mục ở cuối inspector khi chọn shot, line, music hoặc event.
   studio.addInspectorSection({ kinds: ["shot"], view: (pick, m) => h("p", { class: "muted" }, `Shot ${pick.id}`) });
