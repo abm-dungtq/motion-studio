@@ -10,7 +10,7 @@ Studio gom mọi chuyển cảnh dùng được vào một thư viện, và thê
 | LUT `.cube` | `lib/fx/lut.mjs` |
 | Route HTTP | `routes/fx.mjs` |
 | Tool cho đạo diễn và MCP | `lib/tools/fx.mjs` (`fx_catalog`, `fx_footage_edit`) |
-| Giao diện | `public/ext-fx.js`, `public/fx-gallery.js`, `public/fx-footage.js`, `public/ext-fx.css` |
+| Giao diện | `ui/src/ext/fx/` (`index.ts` đăng ký tab và mục inspector; `FxTab.tsx`, `Gallery.tsx`, `Footage.tsx`, `ClipEditor.tsx`, `ShotClips.tsx`) |
 | GSAP cho trang xem thử | `fx/vendor/gsap.min.js` (3.14.2, GSAP Standard No-Charge License, sha256 ghi ở đầu file) |
 
 ## Thư viện chuyển cảnh
@@ -123,7 +123,7 @@ Studio không sửa skill hay plugin đã cài. Thay đổi phía provider đi b
 
 ## Áp dụng chuyển cảnh cho shot
 
-Trong inspector của shot, mục "Thư viện chuyển cảnh": tìm, lọc theo nguồn, bấm một mục để xem (gói Studio phát trang xem thử trong iframe sandbox), rồi bấm "Áp dụng cho shot".
+Thư viện chuyển cảnh nằm ở tab **Chuyển cảnh & hiệu ứng** trên rail trái và áp cho shot đang chọn trên timeline. Chưa chọn shot thì tab nhắc chọn một shot trước. Tìm, lọc theo nguồn, bấm một mục để xem (gói Studio phát trang xem thử trong iframe sandbox), rồi bấm "Áp dụng cho shot". Inspector của shot giữ ô "Chuyển cảnh vào" và có nút "Mở thư viện chuyển cảnh" để mở tab này.
 
 `POST /api/fx/apply-transition { name, shot, id, base, duration? }`:
 
@@ -135,7 +135,7 @@ Trong inspector của shot, mục "Thư viện chuyển cảnh": tìm, lọc the
 
 ## Sửa footage
 
-`POST /api/fx/footage { name, src, op, params, actor? }` chạy một job `fx` (mỗi lúc một job; đang bận thì trả 409). `src` là id hoặc đường dẫn của clip đã đăng ký ở tab Footage, hoặc đường dẫn tương đối trong `footage/`, `shared-assets/` hay trong dự án. Đường thật của file phải nằm trong ba chỗ đó.
+`POST /api/fx/footage { name, src, op, params, actor? }` chạy một job `fx` (mỗi lúc một job; đang bận thì trả 409). `src` là id hoặc đường dẫn của clip đã đăng ký ở tab Chất liệu, hoặc đường dẫn tương đối trong `footage/`, `shared-assets/` hay trong dự án. Đường thật của file phải nằm trong ba chỗ đó.
 
 | op | params | Đầu ra |
 |---|---|---|
@@ -151,7 +151,7 @@ Lệnh ffmpeg cố định: `libx264 -crf 14 -preset slow -pix_fmt yuv420p`, gi�
 
 `GET /api/fx/luts?name=` liệt kê LUT: `identity`, `shared:<file>.cube` trong `shared-assets/luts/`, `project:<file>.cube` trong `assets/luts/` của dự án, và các look trong `media-use/luts/index.json` của HyperFrames (dựng thành `.cube` bằng `buildCube`). LUT luôn được chép hoặc dựng vào `$MOTION_STUDIO_CACHE/luts` (mặc định `~/.cache/motion-studio/luts`) trước khi đưa cho ffmpeg.
 
-Trong giao diện: tab Footage có mục "Sửa clip" cho mọi video đã đăng ký; inspector của shot có "Sửa clip của shot" cho video trong `assets` của shot. Mỗi mục có xem trước và sau, dòng biên nhận, và nút "Dùng trong shot" (`POST /api/fx/use-clip`): chép clip vào `assets/footage/` của dự án (không ghi đè; file cùng nội dung thì dùng lại), cập nhật `assets` của shot, rồi nhờ đạo diễn thay clip trong HTML.
+Trong giao diện: tab Chuyển cảnh & hiệu ứng có mục "Sửa clip" cho mọi video đã đăng ký; inspector của shot có "Sửa clip của shot" cho video trong `assets` của shot. Mỗi mục có xem trước và sau, dòng biên nhận, và nút "Dùng trong shot" (`POST /api/fx/use-clip`): chép clip vào `assets/footage/` của dự án (không ghi đè; file cùng nội dung thì dùng lại), cập nhật `assets` của shot, rồi nhờ đạo diễn thay clip trong HTML.
 
 Đạo diễn và MCP client dùng tool `fx_footage_edit` (gọi route trên, chờ job xong, trả `RESULT`). Dòng lệnh: `node lib/fx/footage.mjs run '<json>'`.
 

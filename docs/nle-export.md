@@ -1,6 +1,6 @@
 # Mở bộ lớp dựng trong phần mềm dựng
 
-"Bộ lớp dựng" (`bundle.mjs`, nút **Xuất bộ lớp dựng** ở tab Xuất bản) ghi thêm ba file timeline cạnh các lớp:
+"Bộ lớp dựng" (`bundle.mjs`, mục **Xuất bộ lớp dựng** trong menu Xuất bản trên thanh trên) ghi thêm ba file timeline cạnh các lớp:
 
 | File | Định dạng | Mở bằng |
 |---|---|---|

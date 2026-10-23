@@ -1,12 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
 import { createServer } from "../server.mjs";
 import { listExtensions } from "../routes/extensions.mjs";
-import { PUBLIC_FILE } from "../lib/routes.mjs";
 
 const get = (port, path) => new Promise((res, rej) => {
   const req = request({ host: "127.0.0.1", port, path, headers: { host: `127.0.0.1:${port}` } }, (r) => {
@@ -25,7 +24,7 @@ test("listExtensions keeps only ext-*.js / ext-*.css names the static route serv
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
-test("GET /api/extensions answers without a provider and every listed file is served", async () => {
+test("GET /api/extensions answers an empty list without a provider, and the old loader is gone", async () => {
   const saved = process.env.OPUS_VIDEO_HOME;
   process.env.OPUS_VIDEO_HOME = "/nonexistent";
   const root = mkdtempSync(join(tmpdir(), "ms-ext-root-"));
@@ -35,24 +34,12 @@ test("GET /api/extensions answers without a provider and every listed file is se
   try {
     const r = await get(port, "/api/extensions");
     assert.equal(r.status, 200);
-    assert.ok(r.json.scripts.includes("/ext-agents.js"), JSON.stringify(r.json));
-    assert.ok(!r.json.scripts.includes("/ext.js"), "the loader itself is not an extension");
-    for (const f of [...r.json.scripts, ...r.json.styles]) {
-      assert.match(f, PUBLIC_FILE);
-      assert.equal((await get(port, f)).status, 200, f);
-    }
-    const loader = await get(port, "/ext.js");
-    assert.equal(loader.status, 200);
-    assert.match(loader.text, /export async function loadExtensions/);
+    assert.deepEqual(r.json, { scripts: [], styles: [] });
+    assert.equal((await get(port, "/ext.js")).status, 404);
   } finally {
     server.closeAllConnections?.(); server.close(); rmSync(root, { recursive: true, force: true });
     if (saved === undefined) delete process.env.OPUS_VIDEO_HOME; else process.env.OPUS_VIDEO_HOME = saved;
   }
-});
-
-test("every public/ file name is one the static route serves", () => {
-  const dir = new URL("../public/", import.meta.url);
-  for (const f of readdirSync(dir).filter((x) => /\.(js|css)$/.test(x))) assert.match(`/${f}`, PUBLIC_FILE, f);
 });
 
 test("the agent table shows codex-pool quota per account and the next account, never more", async () => {

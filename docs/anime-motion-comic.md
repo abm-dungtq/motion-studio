@@ -2,6 +2,8 @@
 
 Tab **Anime** của Studio làm video kiểu anime "motion comic": ảnh tĩnh ghép lớp, cộng hoạt hình giới hạn (lật ảnh biến thể, nhép miệng, chớp mắt, gió, chuỗi tư thế có khung nhoè, khung impact). Không dùng image-to-video. Cách làm này lấy từ dự án `zoro-vs-mihawk`.
 
+Trên rail trái, tab nằm trong nhóm đầu (nhóm chất liệu), sau tab Chất liệu và Phong cách. Các câu hỏi xác nhận (sinh ảnh tốn quota, bỏ nhân vật, xoá stack, vẫn lưu hay vẫn build khi server cảnh báo) hiện thành hộp thoại có nút "Đồng ý" và "Huỷ".
+
 ## Học từ AIComicBuilder
 
 Nguồn: [LingyiChen-AI/AIComicBuilder](https://github.com/LingyiChen-AI/AIComicBuilder), commit `e01e7dd`, giấy phép Apache-2.0. Chỉ đọc mã, không chạy.

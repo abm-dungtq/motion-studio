@@ -49,10 +49,9 @@ import { browse, register, readMedia, BROWSE_ROOTS, AUDIO_EXT } from "./media.mj
 import { agentStatus } from "./agent.mjs";
 import { answerCard } from "./gates.mjs";
 import { query as libraryQuery, thumbFile } from "./lib/library.mjs";
-import { checkRoutes, findRoute, loadRoutes, PUBLIC_FILE } from "./lib/routes.mjs";
+import { checkRoutes, findRoute, loadRoutes } from "./lib/routes.mjs";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
-const PUBLIC = join(HERE, "public");
 const UI_DIST = join(HERE, "ui", "dist");
 const ASSET = /^[A-Za-z0-9._-]+$/;
 const BUNDLE = join(HERE, "bundle.mjs");
@@ -324,7 +323,6 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         } catch { file = null; }
         return file ? serveFile(req, res, file) : send(res, 404, "không có");
       }
-      if (PUBLIC_FILE.test(p) && existsSync(join(PUBLIC, p.slice(1)))) return serveFile(req, res, join(PUBLIC, p.slice(1)));
       if (p === "/hf/runtime.js") {
         const name = q("name");
         const pd = name ? projectDir(name) : {};
