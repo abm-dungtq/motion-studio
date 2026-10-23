@@ -60,7 +60,7 @@ test("a wrong answer is asked once of the next agent, then the shots get describ
     assert.equal(r.calls, 2);
     assert.equal(r.describe_errors, 2);
     const c = readClip((await hashFile(a, { env: f.env })).sha256, f.env);
-    assert.ok(c.describe.every((d) => /sai schema/.test(d.describe_error)));
+    assert.ok(c.describe.length === 2 && c.describe.every((d) => /schema|JSON/.test(d.describe_error)), JSON.stringify(c.describe));
     // Errors are not retried by the next run (that would spend quota again).
     await runIndex({ root, env: f.env, log: () => {} });
     assert.equal(f.lines().length, 2);
@@ -81,4 +81,18 @@ test("cells carry different number labels", async () => {
     assert.notDeepEqual(one, two, "label 1 differs from label 2");
     assert.ok(Math.max(...one) > 200 && Math.max(...body) < 200, "a white digit on the label, plain frame elsewhere");
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("each try is one CLI run: a budget of 1 makes one call and leaves the shots pending", async () => {
+  const f = fakeVision({ describe: "junk" });
+  try {
+    const root = join(f.dir, "ws");
+    mkdirSync(join(root, "footage"), { recursive: true });
+    const a = colorClip(join(root, "footage", "a.mp4"), [["red", 2]]);
+    const r = await runIndex({ root, env: f.env, log: () => {}, maxCalls: 1 });
+    assert.equal(f.lines().length, 1);
+    assert.equal(r.calls, 1);
+    assert.equal(r.left, 1);
+    assert.deepEqual(readClip((await hashFile(a, { env: f.env })).sha256, f.env).describe, []);
+  } finally { f.rm(); }
 });
