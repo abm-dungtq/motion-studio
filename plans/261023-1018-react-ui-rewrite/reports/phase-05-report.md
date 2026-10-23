@@ -18,7 +18,7 @@ PR này thay giao diện JavaScript thuần trong `public/` bằng giao diện R
 
 ## Breaking
 
-- Cần **Node.js 22.18** trở lên, vì server chạy thẳng file `.ts` và Vite 8 đòi bản này.
+- Cần **Node.js 22.18** trở lên (`engines` trong `package.json`).
 - File `public/ext-*.js` không còn được nạp. `GET /api/extensions` vẫn còn và luôn trả `{ scripts: [], styles: [] }`. Extension giao diện giờ là thư mục `ui/src/ext/<tên>/index.ts`.
 - Lần cài đầu cần mạng để `npm ci` trong `ui/`.
 
