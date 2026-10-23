@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sheet", "cell", "caption_vi", "tags"],
+        "properties": {
+          "sheet": { "type": "integer", "minimum": 1, "maximum": 4 },
+          "cell": { "type": "integer", "minimum": 1, "maximum": 9 },
+          "caption_vi": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "shot_type": { "type": "string", "enum": ["toàn", "trung", "cận", "đặc tả", "flycam", "khác"] },
+          "camera": { "type": "string", "enum": ["tĩnh", "lia", "đi theo", "zoom", "rung tay", "khác"] },
+          "subjects": { "type": "array", "items": { "type": "string" } },
+          "place": { "type": "string" },
+          "time_of_day": { "type": "string", "enum": ["ngày", "đêm", "bình minh", "hoàng hôn", "trong nhà", "không rõ"] },
+          "text_on_screen": { "type": "string" },
+          "quality": { "type": "string", "enum": ["tốt", "được", "kém"] }
+        }
+      }
+    }
+  }
+}
