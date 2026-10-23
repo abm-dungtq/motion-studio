@@ -22,13 +22,17 @@
 // With 14 gold items one item is 7.1 points: when the deterministic side hits 13 or 14 of them,
 // Jev cannot lead by 10 points (`reachable` says so).
 //
-// The pick log: one turn is a (project, state hash) pair whose line has a Jev ranking; several
-// clicks on one brief keep the latest line only, lines without Jev are left out (no comparison on
-// the same brief). A side hits @k when the chosen direction is in its first k directions. With at
-// least --min turns (default 30) Jev becomes the default when it leads the deterministic side by
-// at least 10 points of hit@3, else the deterministic side does; fewer turns print `wait`. Styles
-// are reported but do not decide. Users may lean toward the column they read first: the report
-// counts where each chosen direction came from (`from`).
+// The pick log: one turn is a (project, state hash) pair, measured on its first click whatever the
+// outcome (chosen, not_in_pitch or queued). The first click is the user's own intent; a later click
+// on the same brief often only follows the pitch rows a not_in_pitch answer offered, and those rows
+// come from the deterministic side, so keeping the last click would lean the log towards it. A
+// turn whose first line has no Jev ranking is left out (no comparison on the same brief). A side
+// hits @k when the chosen direction is in its first k directions. With at least --min turns
+// (default 30) Jev becomes the default when it leads the deterministic side by at least 10 points
+// of hit@3, else the deterministic side does; fewer turns print `wait`. Styles are reported but do
+// not decide. Users may lean toward the column they read first: the report counts where each
+// chosen direction came from (`from`) and, on two-column turns, its position (`position`: left,
+// right, both or none, from the line's `columns`).
 //
 // Exit codes: 0 done (including `decision: wait`), 2 bad arguments, 3 Jev unusable in the labelled
 // mode without --no-jev (no key, or more than 20% of the Jev calls failed). --picks never calls
@@ -114,28 +118,47 @@ function sideHits(turns, key, pickOf) {
   return out;
 }
 
+// Lines written before the card ordered its columns by the brief hash showed Jev on the left
+// while observing, and one column otherwise.
+const columnsOfLine = (e) => (Array.isArray(e.columns) && e.columns.length ? e.columns : e.record_source === "observe" ? ["jev", "det"] : ["jev"]);
+
+// Where the chosen direction stood on a two-column card: in the top 3 of the left column, the
+// right one, both, or neither.
+export function positionOf(e) {
+  const [left, right] = columnsOfLine(e);
+  const id = e.chosen?.direction;
+  const inL = hitAt(ids(e[left], "directions"), [id], 3), inR = hitAt(ids(e[right], "directions"), [id], 3);
+  return inL && inR ? "both" : inL ? "left" : inR ? "right" : "none";
+}
+
 export function pickStats(entries, { min = MIN_PICKS } = {}) {
-  const latest = new Map();
+  const first = new Map();
   for (const e of entries ?? []) {
-    if (!e || !e.jev) continue;
+    if (!e) continue;
     const k = `${e.project}\u0000${e.hash}`;
-    const seen = latest.get(k);
-    if (!seen || String(e.at ?? "") > String(seen.at ?? "")) latest.set(k, e);
+    const seen = first.get(k);
+    if (!seen || String(e.at ?? "") < String(seen.at ?? "")) first.set(k, e);
   }
-  const turns = [...latest.values()];
+  const turns = [...first.values()].filter((e) => e.jev);
   const n = turns.length;
   const dir = sideHits(turns, "directions", (t) => t.chosen?.direction);
   const styled = turns.filter((t) => t.chosen?.style);
   const sty = sideHits(styled, "styles", (t) => t.chosen.style);
   const from = { jev: 0, det: 0, both: 0, none: 0 };
   for (const t of turns) from[Object.hasOwn(from, t.direction_from) ? t.direction_from : "none"]++;
+  const two = turns.filter((t) => columnsOfLine(t).length === 2);
+  const position = { n: two.length, left: 0, right: 0, both: 0, none: 0, left_jev: 0, left_det: 0 };
+  for (const t of two) {
+    position[positionOf(t)]++;
+    position[columnsOfLine(t)[0] === "jev" ? "left_jev" : "left_det"]++;
+  }
   const gate = gateOf({ n, detHits: dir.det.hits3, jevHits: dir.jev.hits3 });
   const strip = ({ hit1, hit3 }) => ({ hit1, hit3 });
   return {
     n, min,
     det: strip(dir.det), jev: strip(dir.jev),
     styles: { n: styled.length, det: strip(sty.det), jev: strip(sty.jev) },
-    from, gate,
+    from, position, gate,
     decision: n < min ? "wait" : gate.pass ? "jev" : "deterministic",
   };
 }
@@ -184,6 +207,8 @@ function runPicks(a, log) {
   log(`picks n=${r.n}/${r.min} ${line(r)}`);
   log(`picks style n=${r.styles.n} ${line(r.styles)}`);
   log(`picks from jev=${r.from.jev} det=${r.from.det} both=${r.from.both} none=${r.from.none}`);
+  const p = r.position;
+  log(`picks position n=${p.n} left=${p.left} right=${p.right} both=${p.both} none=${p.none} (Jev bên trái ${p.left_jev} lượt, tất định bên trái ${p.left_det} lượt)`);
   const diff = r.gate.diff_points === null ? "n/a" : r.gate.diff_points;
   log(`decision: ${r.decision} (${r.n}/${r.min} lượt; Jev − tất định = ${diff} điểm hit@3, cần ≥ ${THRESHOLD})`);
   writeOut(a.out, { at: new Date().toISOString(), root: a.root, ...r });

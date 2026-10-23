@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { gateOf, hitAt, MIN_PICKS, pickStats, sampleBy } from "../scripts/suggest-eval.mjs";
+import { gateOf, hitAt, MIN_PICKS, pickStats, positionOf, sampleBy } from "../scripts/suggest-eval.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SCRIPT = join(ROOT, "scripts", "suggest-eval.mjs");
@@ -85,15 +85,52 @@ test("pickStats: under 30 turns waits", () => {
   assert.equal(r.decision, "wait");
 });
 
-test("pickStats: one turn per project and brief, the latest click wins; lines without Jev are left out", () => {
+test("pickStats: one turn per project and brief, the first click wins whatever its outcome", () => {
   const [a] = turns(1, 0, 0);
-  const later = { ...a, at: "2026-10-23T11:00:00.000Z", chosen: { direction: "A4" }, direction_from: "jev" };
-  const noJev = { ...a, hash: "other", jev: null };
-  const r = pickStats([later, a, noJev], { min: 1 });
+  // The user first clicks Jev's A4, which the pitch lacks, then a pitch row the card offered.
+  const first = { ...a, chosen: { direction: "A4" }, direction_from: "jev", outcome: "not_in_pitch" };
+  const later = { ...a, at: "2026-10-23T11:00:00.000Z", chosen: { direction: "A1" }, direction_from: "det", outcome: "chosen" };
+  const r = pickStats([later, first], { min: 1 });
   assert.equal(r.n, 1);
   assert.equal(r.jev.hit1, 100);
   assert.equal(r.det.hit3, 0);
   assert.deepEqual(r.from, { jev: 1, det: 0, both: 0, none: 0 });
+  const queued = { ...first, outcome: "queued" };
+  assert.equal(pickStats([queued, later], { min: 1 }).jev.hit1, 100, "a queued first click counts too");
+});
+
+test("pickStats: lines with the same time keep the one written first", () => {
+  const [a] = turns(1, 0, 0);
+  const one = { ...a, chosen: { direction: "A4" } }, two = { ...a, chosen: { direction: "A1" } };
+  assert.equal(pickStats([one, two], { min: 1 }).jev.hit1, 100);
+});
+
+test("pickStats: a turn whose first click had no Jev ranking is left out", () => {
+  const [a] = turns(1, 0, 0);
+  const noJev = { ...a, jev: null, chosen: { direction: "A1" } };
+  const later = { ...a, at: "2026-10-23T11:00:00.000Z", chosen: { direction: "A4" } };
+  assert.equal(pickStats([noJev, later], { min: 1 }).n, 0);
+});
+
+test("pickStats counts the left and right column of two-column turns", () => {
+  const base = turns(1, 0, 0)[0];
+  const line = (i, columns, direction) => ({ ...base, hash: `p${i}`, columns, chosen: { direction } });
+  const entries = [
+    line(0, ["jev", "det"], "A4"), // Jev left, chosen in Jev
+    line(1, ["det", "jev"], "A4"), // Jev right, chosen in Jev
+    line(2, ["det", "jev"], "A2"), // det left, chosen in det
+    line(3, ["det", "jev"], "A7"), // neither
+    line(4, ["jev"], "A4"), // one column: not counted
+  ];
+  const r = pickStats(entries, { min: 1 });
+  assert.deepEqual(r.position, { n: 4, left: 2, right: 1, both: 0, none: 1, left_jev: 1, left_det: 3 });
+  assert.equal(positionOf({ ...base, columns: ["det", "jev"], det: { directions: ["A1"] }, jev: { directions: ["A1"] }, chosen: { direction: "A1" } }), "both");
+});
+
+test("pickStats reads a line without columns as the earlier layout: Jev left while observing", () => {
+  const base = turns(1, 0, 0)[0];
+  const r = pickStats([{ ...base, record_source: "observe", chosen: { direction: "A4" } }, { ...base, hash: "x", record_source: "jev" }], { min: 1 });
+  assert.deepEqual(r.position, { n: 1, left: 1, right: 0, both: 0, none: 0, left_jev: 1, left_det: 0 });
 });
 
 test("--picks reads every project's pick log and waits under 30 turns", () => {
