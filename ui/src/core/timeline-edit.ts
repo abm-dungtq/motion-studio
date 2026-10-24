@@ -12,7 +12,12 @@ export interface Shot { id: string; start: number; end: number; name?: string; a
 export interface Line { id: string; shot: string; start: number; duration?: number | string | null }
 export interface SfxEvent { id: string; shot: string; offset?: number | string | null }
 export interface MusicBed { id: string; start?: number | string | null; end?: number | null; media_start?: number | string | null }
-export interface Manifest { shots?: Shot[]; lines?: Line[]; events?: SfxEvent[]; music?: MusicBed[]; duration?: number }
+// A group of shots the user reviews and approves together (one script scene).
+export interface SceneGroup { id: string; label?: string; shots: string[] }
+// picture_from_code: the picture is drawn by code from the voice timing (buildFilm); shot edges
+// follow the lines, so the timeline neither drags them nor splits a shot.
+export interface Capabilities { picture_from_code?: boolean; [k: string]: unknown }
+export interface Manifest { shots?: Shot[]; lines?: Line[]; events?: SfxEvent[]; music?: MusicBed[]; duration?: number; scenes?: SceneGroup[]; capabilities?: Capabilities }
 // TIMING block of a composition (window.TIMING): beat grid, kicks and per-line word rows.
 export interface Timing {
   beat0?: number | string | null;
@@ -35,6 +40,10 @@ export interface DecoItem { t: number; until: number | null; label: string; kind
 export type Decorator = (m: unknown, state: unknown) => unknown;
 
 const MIN = 0.5;
+
+// Why a shot edge does not drag and S does not split when the picture is drawn by code.
+export const PICTURE_LOCK_NOTE = "Hình dựng bằng mã: mốc shot đi theo lời. Dời câu thì được.";
+export const pictureFromCode = (m: Manifest | null | undefined): boolean => m?.capabilities?.picture_from_code === true;
 const EPS = 1e-6;
 const r3 = (x: number): number => Math.round(x * 1000) / 1000;
 // Tenths, after r3 so float noise (6.05 - 4.5 = 1.5499…) rounds the way the user reads it.

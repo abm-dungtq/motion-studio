@@ -284,11 +284,14 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
     let pr = gateRuns.get(name);
     if (!pr) {
       pr = run(P.commands.preflight, ["--project", dir, "--stage", "final", "--json"]).then((r) => {
-        if (r.killed) return { pass: false, fails: ["check-preflight quá 60 giây"], animatic: false };
+        if (r.killed) return { pass: false, fails: ["check-preflight quá 60 giây"], animatic: false, audio_changed: false };
         let j;
-        try { j = JSON.parse(r.stdout); } catch { return { pass: false, fails: ["không đọc được check-preflight"], animatic: false }; }
+        try { j = JSON.parse(r.stdout); } catch { return { pass: false, fails: ["không đọc được check-preflight"], animatic: false, audio_changed: false }; }
         const fails = Array.isArray(j?.errors) ? j.errors : [];
-        return { pass: j?.pass === true, fails, animatic: fails.some((e) => /demo\.md|animatic|approval/i.test(String(e))) };
+        // The sound changed after the approved animatic but the picture did not: a warning, and the
+        // "hear it again" card (routes/gates-audio.mjs) shows.
+        const audioChanged = Array.isArray(j?.warnings) && j.warnings.some((w) => /tiếng đã đổi/.test(String(w)));
+        return { pass: j?.pass === true, fails, animatic: fails.some((e) => /demo\.md|animatic|approval/i.test(String(e))), audio_changed: audioChanged };
       }).finally(() => gateRuns.delete(name));
       gateRuns.set(name, pr);
     }

@@ -147,6 +147,28 @@ describe("TimelineArea", () => {
     expect(pick).toHaveBeenLastCalledWith("line", "vo-01");
   });
 
+  it("picture drawn by code: no shot edge to drag, no cut or roll in the menu, lines still move", async () => {
+    const m = { ...base(), capabilities: { editable: true, picture_from_code: true } };
+    open(m);
+    renderUi(<><TimelineArea /><PointMenuHost /></>);
+    expect(el('[data-id="s1"] .handle').classList.contains("hidden")).toBe(true);
+    expect(el('[data-id="s1"]').title).toBe("1 · Mở\nHình dựng bằng mã: mốc shot đi theo lời. Dời câu thì được.");
+    drag(el('[data-id="s1"] .handle'), 30);
+    expect(patch).not.toHaveBeenCalled();
+    fireEvent.contextMenu(el('[data-id="s2"]'));
+    expect((await screen.findAllByRole("menuitem")).map((i) => i.textContent)).toEqual(["Nhờ đạo diễn sửa shot này"]);
+    drag(el('[data-id="vo-01"]'), 30);
+    expect(patch).toHaveBeenCalledTimes(1);
+    expect(patch.mock.calls[0][0]).toEqual([expect.objectContaining({ op: "move_line", id: "vo-01" })]);
+  });
+
+  it("without the flag the shot edges drag as before", () => {
+    open();
+    renderUi(<TimelineArea />);
+    expect(el('[data-id="s1"] .handle').classList.contains("hidden")).toBe(false);
+    expect(el('[data-id="s1"]').title).toBe("1 · Mở");
+  });
+
   it("snapping pulls a dragged SFX onto a shot edge and shows the snap line", () => {
     open();
     useStudio.setState({ snap: true });

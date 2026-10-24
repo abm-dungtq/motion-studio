@@ -4,13 +4,14 @@
 // every later shot); Roll moves the cut between this shot and the next and keeps the video's length
 // (rollOps, bounded by rollRange). A snapped edge keeps the target's exact time. Footage dropped on
 // the block goes to the shot. Right click: cut at the playhead, roll the cut to the playhead, ask
-// the director about the shot.
+// the director about the shot. When the picture is drawn by code (capabilities.picture_from_code)
+// shot edges follow the lines: no edge handle, no cut or roll in the menu, and the hover says why.
 import { memo, useLayoutEffect, useMemo, useRef, type PointerEvent } from "react";
 import { actions } from "@/api/actions.ts";
 import { say } from "@/api/client.ts";
 import type { Manifest, Shot, TimelineMedia } from "@/api/types.ts";
 import { round1 } from "@/core/format.ts";
-import { rollOps, rollRange, type SnapTarget } from "@/core/timeline-edit.ts";
+import { PICTURE_LOCK_NOTE, pictureFromCode, rollOps, rollRange, type SnapTarget } from "@/core/timeline-edit.ts";
 import { MIN_SHOT, round3 } from "@/core/timeline-geometry.ts";
 import { cn } from "@/lib/utils";
 import type { EditMode } from "@/store/studio.ts";
@@ -23,13 +24,16 @@ import { byId, clearPreview, leftOf, markDrag, preview, settle, useView, widthOf
 export interface ShotBlockProps {
   m: Manifest; s: Shot; i: number; pps: number; mode: EditMode; sel: boolean; editable: boolean;
   name: string; render: TimelineMedia["render"] | undefined;
+  // Shot edges follow the lines (picture drawn by code): editable, but the edges stay put.
+  locked?: boolean;
 }
 
-export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, editable, name, render }: ShotBlockProps) {
+export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, editable, name, render, locked = false }: ShotBlockProps) {
   const view = useView();
   const ref = useRef<HTMLDivElement>(null);
   const dur = s.end - s.start;
   const label = s.name ? `${i + 1} · ${s.name}` : `${i + 1}`;
+  const edges = editable && !locked;
   const nextShot = m.shots[i + 1];
   const thumb = useShotThumb(name, render, s.start, s.end, pps);
   useLayoutEffect(() => clearPreview(ref.current), [s.start, s.end, pps]);
@@ -84,7 +88,7 @@ export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, edit
       ref={ref}
       data-id={s.id}
       data-kind="shot"
-      title={label}
+      title={locked ? `${label}\n${PICTURE_LOCK_NOTE}` : label}
       className={cn(
         "blk shot absolute top-1.5 bottom-1.5 flex cursor-pointer items-center overflow-hidden rounded-sm border px-2 text-xs font-semibold whitespace-nowrap select-none [&.drop-on]:outline-2 [&.drop-on]:outline-primary",
         sel ? "sel border-primary bg-primary text-primary-foreground" : "border-track-shot bg-track-shot/60 text-foreground",
@@ -94,14 +98,14 @@ export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, edit
       )}
       style={{ left: leftOf(s.start * pps), width: widthOf(dur * pps), backgroundImage: thumb ? `url("${thumb}")` : undefined }}
       onClick={() => actions.select(s.id)}
-      onContextMenu={(e) => shotMenu(e, m, s, Boolean(nextShot), editable)}
+      onContextMenu={(e) => shotMenu(e, m, s, Boolean(nextShot), edges)}
       {...dropProps(s.id, editable)}
     >
       <span className={cn("shot-label relative truncate", thumb && "rounded-[3px] px-1.5 py-px", thumb && (sel ? "bg-primary text-primary-foreground" : "bg-background/85 text-foreground"))}>{label}</span>
       <div
-        className={cn("handle absolute top-0 -right-px h-full w-2 cursor-ew-resize hover:bg-primary", !editable && "hidden")}
+        className={cn("handle absolute top-0 -right-px h-full w-2 cursor-ew-resize hover:bg-primary", !edges && "hidden")}
         title={handleTitle}
-        onPointerDown={onHandleDown}
+        onPointerDown={edges ? onHandleDown : undefined}
       />
     </div>
   );
@@ -110,5 +114,6 @@ export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, edit
 export interface ShotTrackProps { m: Manifest; pps: number; mode: EditMode; sel: string | null; editable: boolean; name: string; render: TimelineMedia["render"] | undefined }
 
 export function ShotTrack({ m, pps, mode, sel, editable, name, render }: ShotTrackProps) {
-  return <>{m.shots.map((s, i) => <ShotBlock key={s.id} m={m} s={s} i={i} pps={pps} mode={mode} sel={s.id === sel} editable={editable} name={name} render={render} />)}</>;
+  const locked = pictureFromCode(m);
+  return <>{m.shots.map((s, i) => <ShotBlock key={s.id} m={m} s={s} i={i} pps={pps} mode={mode} sel={s.id === sel} editable={editable} name={name} render={render} locked={locked} />)}</>;
 }

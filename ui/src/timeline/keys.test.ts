@@ -100,4 +100,15 @@ describe("timeline keys", () => {
     key({ key: "s", code: "KeyS" });
     expect(split).toHaveBeenCalledTimes(1);
   });
+
+  it("S splits nothing when the picture is drawn by code, and says why", () => {
+    const split = vi.spyOn(actions, "split").mockResolvedValue();
+    queryClient.setQueryData(Q.keys.project("demo"), { version: 1, fps: 30, shots: [], lines: [], capabilities: { editable: true, picture_from_code: true } });
+    key({ key: "s", code: "KeyS" });
+    expect(split).not.toHaveBeenCalled();
+    expect(say).toHaveBeenLastCalledWith("Hình dựng bằng mã: mốc shot đi theo lời. Dời câu thì được.");
+    queryClient.setQueryData(Q.keys.project("demo"), { version: 1, fps: 30, shots: [], lines: [], capabilities: { editable: true, picture_from_code: false } });
+    key({ key: "s", code: "KeyS" });
+    expect(split).toHaveBeenCalledTimes(1);
+  });
 });
