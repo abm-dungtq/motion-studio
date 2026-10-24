@@ -1,0 +1,19 @@
+{
+  "schema": "opus-video/series@1",
+  "name": "Series Thử",
+  "characters": "characters",
+  "voices": { "roles": "voices/roles.json" },
+  "read": ["refs", "characters"],
+  "writable": { "refs": "refs", "rig_src": "characters/{char}", "props": "props" },
+  "episode": { "tool": "new-episode", "name": "ep-{NN}" },
+  "delivery_dir": "delivery/tap-{N}",
+  "drive": { "account": "someone@example.com", "folder": "thu" },
+  "image_styles": { "pose": "flat green background", "background": "night" },
+  "tools": {
+    "echo-args": { "file": "tools/echo-args.mjs", "flags": { "--out": "path:write", "--in": "path:read", "--n": "int", "--x": "number", "--all": "bool", "--label": "text", "--slot": "slot*", "--project": "project", "--char": "id" }, "writes": ["{project}/assets/gen", "props"], "timeout_s": 30 },
+    "pose": { "file": "characters/{char}/src/pose.mjs", "positional": "id*", "flags": { "--preview": "path:write" }, "writes": ["characters/{char}"], "timeout_s": 30 },
+    "fail": { "file": "tools/fail.mjs", "flags": {}, "writes": [], "timeout_s": 30 },
+    "slow": { "file": "tools/slow.mjs", "flags": {}, "writes": [], "timeout_s": 1 },
+    "new-episode": { "file": "tools/new-episode.mjs", "flags": { "--root": "root", "--episode": "int", "--title": "text", "--name": "id" }, "writes": ["{root}"], "timeout_s": 30 }
+  }
+}

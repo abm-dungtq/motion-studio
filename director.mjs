@@ -24,6 +24,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { readState, runnerSetting } from "./lib/config.mjs";
 import { loadTools } from "./lib/tools.mjs";
+import { seriesFor } from "./lib/series.mjs";
 import { SERVER_NAME, serverArgs, toolsForProfile } from "./mcp/studio-mcp.mjs";
 import { startJob, running } from "./jobs.mjs";
 
@@ -41,6 +42,8 @@ const studioMcpOn = () => readState()?.director?.studio_mcp !== false && STUDIO_
 // The names (with prefix) of the Studio tools the director gets.
 export const studioToolNames = (p) => toolsForProfile("director", STUDIO_TOOLS, p).map((t) => STUDIO_PREFIX + t.name);
 
+// Passed to Studio's MCP server when set, so its tools reach the Studio that started the director.
+export const MCP_ENV = ["MOTION_STUDIO_STATE", "MOTION_STUDIO_PORT"];
 // Writes the director's MCP config for this request; null when Studio's MCP server is off.
 export function studioMcp(p, dir, req) {
   if (!studioMcpOn()) return null;
@@ -48,7 +51,10 @@ export function studioMcp(p, dir, req) {
   if (!tools.length) return null;
   const file = studioMcpFile(dir);
   mkdirSync(dirname(file), { recursive: true });
-  const config = { mcpServers: { [SERVER_NAME]: { command: process.execPath, args: serverArgs({ profile: "director", root: dirname(dir), request: req.id }) } } };
+  // A test Studio (own state file or port) must be the one the director's tools call.
+  const pass = Object.fromEntries(MCP_ENV.filter((k) => process.env[k]).map((k) => [k, process.env[k]]));
+  const server = { command: process.execPath, args: serverArgs({ profile: "director", root: dirname(dir), request: req.id }), ...(Object.keys(pass).length ? { env: pass } : {}) };
+  const config = { mcpServers: { [SERVER_NAME]: server } };
   const tmp = `${file}.${process.pid}.tmp`;
   writeFileSync(tmp, JSON.stringify(config, null, 2) + "\n");
   renameSync(tmp, file);
@@ -62,6 +68,16 @@ function saveSession(dir, sid) {
   const tmp = `${sessionFile(dir)}.${process.pid}.tmp`;
   writeFileSync(tmp, JSON.stringify(sid ? { session_id: sid, updated: new Date().toISOString() } : {}, null, 2) + "\n");
   renameSync(tmp, sessionFile(dir));
+}
+
+// A project of a series: its tools, images, voices, scenes and delivery go through Studio's tools
+// only (the director cannot write outside the project, and the tools keep receipts). A broken
+// declaration still marks the project as one of a series.
+function seriesRule(p, dir) {
+  let name = null;
+  try { name = seriesFor(p, dir)?.config.name ?? null; } catch { const d = p.series?.dirOf(dir); name = d ? basename(d) : null; }
+  if (!name) return null;
+  return `Dự án thuộc series ${name}. Công cụ series, vẽ ảnh, lồng tiếng, dựng cảnh và giao nộp chỉ đi qua tool motion-studio (series_*, asset_*, voice_*, scene_*, deliver_*). Không gọi codex, cast-tts, \`eleven.mjs tts\` hay \`eleven.mjs voice*\` trực tiếp (giọng chỉ qua series_tts, voice_design). \`eleven.mjs sfx\` và \`eleven.mjs music\` vẫn dùng được cho hiệu ứng và nhạc nền; trước khi gọi, ưu tiên thư viện shared-assets/sfx của thư mục gốc và file đã có trong dự án, và ghi số lượt đã dùng vào project_log. File cần ghi vào kho series thì viết trong dự án rồi dùng series_file_put.`;
 }
 
 // The prompt is the user's request plus fixed rules; the provider adds what is knowledge of its
@@ -87,6 +103,7 @@ export function buildPrompt(p, dir, req) {
     `Cần người dùng chọn hoặc duyệt (hướng đạo diễn, kịch bản, animatic) thì gọi studio_ask với project "${dir}", id "${req.id}", gate "direction" cho chọn hướng (${f.pitch ?? "mỗi option có id và label là tên hướng; styleframe trong artifacts"}) hoặc gate "animatic" cho duyệt animatic (kind "approve", artifacts là file animatic và contact sheet). Sau studio_ask, kết thúc lượt ngay, không gọi studio_request_done.`,
     "BRIEF.md và DEMO.md do Studio ghi. Không sửa hai file này; dòng direction: và approval: chỉ đến từ câu trả lời của người dùng.",
     studioMcpOn() ? `Thao tác media (sinh ảnh, ffmpeg) dùng tool motion-studio (project "${basename(dir)}") để có biên nhận; ghi id biên nhận trong receipt cuối.` : null,
+    seriesRule(p, dir),
   ].filter(Boolean);
   return [
     req.follows ? `Đây là lượt tiếp theo sau câu trả lời của người dùng cho yêu cầu ${req.follows}.` : "",

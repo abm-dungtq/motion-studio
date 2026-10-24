@@ -117,11 +117,17 @@ const run = (file, args) => new Promise((res) => {
   execFile(process.execPath, [file, ...args], { encoding: "utf8", timeout: 60000, maxBuffer: 32 << 20 }, (err, stdout, stderr) => res({ code: err ? (err.code ?? 1) : 0, stdout, stderr, killed: Boolean(err?.killed) }));
 });
 
+// A folder entry of root, or a symlink to a folder (an episode kept elsewhere); a broken link is not.
+const isFolder = (root, e) => {
+  if (e.isDirectory()) return true;
+  if (!e.isSymbolicLink()) return false;
+  try { return statSync(join(root, e.name)).isDirectory(); } catch { return false; }
+};
 // p null (no provider): projects with project.json are listed, none editable.
 function projectsOf(root, p) {
   const out = [];
   for (const e of readdirSync(root, { withFileTypes: true })) {
-    if (!e.isDirectory() || e.name.startsWith(".") || !NAME.test(e.name)) continue;
+    if (e.name.startsWith(".") || !NAME.test(e.name) || !isFolder(root, e)) continue;
     const dir = join(root, e.name);
     if (existsSync(join(dir, "project.json"))) {
       let m = null;

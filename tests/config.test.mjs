@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { compressScript, env, rootDefault, LEGACY_ROOT, OLD } from "../lib/config.mjs";
+import { compressScript, env, port, rootDefault, LEGACY_ROOT, OLD } from "../lib/config.mjs";
 import { adapterFor } from "../lib/provider.mjs";
 
 const CLI = fileURLToPath(new URL("../bin/motion-studio.mjs", import.meta.url));
@@ -83,4 +83,23 @@ test("the legacy state file is copied to ~/.config/motion-studio once and never 
     const again = cli(["status"], { HOME: home });
     assert.doesNotMatch(again.stderr, /đã chép/, "copied only once");
   } finally { rmSync(home, { recursive: true, force: true }); }
+});
+
+test("the port is 4317 unless MOTION_STUDIO_PORT names another one", () => {
+  assert.equal(port({}), 4317);
+  assert.equal(port({ MOTION_STUDIO_PORT: "4420" }), 4420);
+  for (const bad of ["abc", "0", "70000", "44.5"]) assert.equal(port({ MOTION_STUDIO_PORT: bad }), 4317, bad);
+});
+
+test("a Studio started with MOTION_STUDIO_PORT reports that port and its own state file", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cfg-port-"));
+  try {
+    const state = join(dir, "studio.json");
+    const r = cli(["status"], { MOTION_STUDIO_STATE: state, MOTION_STUDIO_PORT: "4420" });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.stdout.trim(), "stopped");
+    const code = `const m = await import(${JSON.stringify(CLI)}); console.log(m.PORT);`;
+    const e = spawnSync(process.execPath, ["--input-type=module", "-e", code], { encoding: "utf8", env: clean({ MOTION_STUDIO_STATE: state, MOTION_STUDIO_PORT: "4420" }) });
+    assert.equal(e.stdout.trim(), "4420", e.stderr);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

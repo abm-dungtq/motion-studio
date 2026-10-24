@@ -2,7 +2,7 @@
 // motion-studio.mjs — run Motion Studio, the local web app over a provider's command gateway
 // (server.mjs; the provider is found by lib/provider.mjs and loaded on first use: the server
 // starts without one and the page says what is missing).
-//   node bin/motion-studio.mjs start [--background] [--root <dir>]   serve http://127.0.0.1:4317
+//   node bin/motion-studio.mjs start [--background] [--root <dir>]   serve http://127.0.0.1:4317 ($MOTION_STUDIO_PORT)
 //   node bin/motion-studio.mjs status                                 running <url> … | stopped
 //   node bin/motion-studio.mjs stop                                   SIGTERM, then the pidfile is removed
 //   node bin/motion-studio.mjs setup [--yes] [--ref <ref>] [--host claude|codex|all]
@@ -10,13 +10,16 @@
 //   node bin/motion-studio.mjs --help | -h
 // Root: --root, else $MOTION_STUDIO_ROOT, else the root of the last run (kept in the state file),
 // else /Volumes/2/Edit-Video (fallback until 2.0). Projects are its direct
-// children holding project.json (or index.html + BRIEF.md, offered as "Nhập dự án").
+// children holding project.json (or index.html + BRIEF.md, offered as "Nhập dự án"); a child may
+// be a symlink to a project folder elsewhere.
 // One server on this machine: pid, root, port and the token of the run are kept in
 // ~/.config/motion-studio/studio.json (chmod 600; $MOTION_STUDIO_STATE overrides the path; the
 // state file of the default provider's old Studio is copied there once, never removed). start
 // with a live server for the same root prints its URL; for another root it refuses (exit 3) and
 // names the running root. Port 4317 held by another process: "cổng 4317 đang bị <pid> giữ",
-// exit 3; the port never changes. Binds 127.0.0.1 only. Background log: studio.log beside the
+// exit 3; the port never changes on its own. $MOTION_STUDIO_PORT picks another port, for a test
+// Studio beside the real one (give it its own $MOTION_STUDIO_STATE too, or it takes over the
+// real one's state file and token). Binds 127.0.0.1 only. Background log: studio.log beside the
 // state file.
 // Settings in the same file survive stop and start: {"director": {"runner": "cli" | "mcp"}}
 // (default cli: Studio runs `claude -p` itself; mcp: an open Claude Code session takes the queue)
@@ -30,11 +33,11 @@ import { spawn, execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { logFile, migrateState, readState as readStateFile, rootDefault, settingsOf, stateFile } from "../lib/config.mjs";
+import { logFile, migrateState, port, readState as readStateFile, rootDefault, settingsOf, stateFile } from "../lib/config.mjs";
 import { legacyStateFiles, providerStatus } from "../lib/provider.mjs";
 import { ensureUi, uiState } from "../lib/ui-build.mjs";
 
-export const PORT = 4317;
+export const PORT = port();
 export const HOST = "127.0.0.1";
 // Resolved in main(), after the legacy state file is copied.
 let STATE, LOG;

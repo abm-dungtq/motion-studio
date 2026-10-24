@@ -1,7 +1,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -82,4 +82,35 @@ test("the init line reports missing Studio tools like the provider's", () => {
   assert.match(init([...P.director.mcpTools, ...studio]), new RegExp(`đủ ${P.director.mcpTools.length} .* \\+ ${studio.length} tool motion-studio$`));
   assert.equal(init(P.director.mcpTools), `THIẾU tool MCP: ${studio.join(", ")}`);
   assert.equal(read(JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: `${STUDIO_PREFIX}receipts_list` }] } }), "stdout"), "→ receipts_list");
+});
+
+test("the MCP config passes the test Studio's state file and port only when they are set", () => {
+  const savedPort = process.env.MOTION_STUDIO_PORT;
+  try {
+    process.env.MOTION_STUDIO_PORT = "4420";
+    let cfg = JSON.parse(readFileSync(studioMcp(P, dir, req).file, "utf8")).mcpServers["motion-studio"];
+    assert.deepEqual(cfg.env, { MOTION_STUDIO_STATE: process.env.MOTION_STUDIO_STATE, MOTION_STUDIO_PORT: "4420" });
+    delete process.env.MOTION_STUDIO_PORT;
+    const state = process.env.MOTION_STUDIO_STATE;
+    delete process.env.MOTION_STUDIO_STATE;
+    try {
+      cfg = JSON.parse(readFileSync(studioMcp(P, dir, req).file, "utf8")).mcpServers["motion-studio"];
+      assert.equal(cfg.env, undefined);
+    } finally { process.env.MOTION_STUDIO_STATE = state; }
+  } finally { if (savedPort === undefined) delete process.env.MOTION_STUDIO_PORT; else process.env.MOTION_STUDIO_PORT = savedPort; }
+});
+
+test("a project of a series gets one more rule: series work only through Studio's tools", () => {
+  const seriesDir = fileURLToPath(new URL("./fixtures/series", import.meta.url));
+  const withSeries = { ...P, series: { file: "studio-series.json", dirOf: () => seriesDir, validate: () => [] } };
+  const p = buildPrompt(withSeries, dir, req);
+  assert.match(p, /^13\. Dự án thuộc series Series Thử\. .*series_file_put\.$/m);
+  assert.match(p, /Không gọi codex, cast-tts, `eleven\.mjs tts` hay `eleven\.mjs voice\*` trực tiếp/);
+  assert.match(p, /`eleven\.mjs sfx` và `eleven\.mjs music` vẫn dùng được/);
+  const brokenDir = join(root, "series-hong");
+  mkdirSync(brokenDir, { recursive: true });
+  writeFileSync(join(brokenDir, "studio-series.json"), "{");
+  const broken = { ...withSeries, series: { ...withSeries.series, dirOf: () => brokenDir } };
+  assert.match(buildPrompt(broken, dir, req), /^13\. Dự án thuộc series series-hong\. /m);
+  assert.doesNotMatch(buildPrompt({ ...P, series: null }, dir, req), /Dự án thuộc series/);
 });
