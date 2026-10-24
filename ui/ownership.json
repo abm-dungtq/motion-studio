@@ -8,7 +8,8 @@
     "export":      ["ui/src/panels/export/**", "ui/src/ext/receipts/**", "ui/src/panels/library/**", "ui/src/core/library.ts", "ui/src/panels/agent/**", "ui/src/ext/agents/**"],
     "anime":       ["ui/src/ext/anime/**"],
     "lemo":        ["ui/src/ext/lemo/**"],
-    "fx":          ["ui/src/ext/fx/**"]
+    "fx":          ["ui/src/ext/fx/**"],
+    "series":      ["ui/src/ext/series/**"]
   },
   "every_area": [
     "plans/261023-1018-react-ui-rewrite/reports/parity-{area}.md",

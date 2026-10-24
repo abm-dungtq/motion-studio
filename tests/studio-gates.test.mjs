@@ -7,7 +7,7 @@ import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { loadProvider } from "../lib/provider.mjs";
 import { createServer } from "../server.mjs";
-import { answerCard, chooseArgv, writeApproval } from "../gates.mjs";
+import { answerCard, chooseArgv, writeApproval, writeDemoNote } from "../gates.mjs";
 
 const P = await loadProvider();
 const { enqueue, next, ask, list, cancelRequest } = P.requests;
@@ -165,4 +165,26 @@ test("chooseArgv appends extra arguments after the declared and the default form
   assert.deepEqual(chooseArgv(declared, "/w/d", 2, extra), ["/p/c.mjs", "x", "/w/d", "2", "--style-profile", "s1"]);
   assert.deepEqual(chooseArgv({ pitch: "/p/m.mjs" }, "/w/d", 2), ["/p/m.mjs", "choose", "--project", "/w/d", "--pick", "2", "--accept-warnings"]);
   assert.deepEqual(chooseArgv(declared, "/w/d", 2), ["/p/c.mjs", "x", "/w/d", "2"]);
+});
+
+test("writeDemoNote puts notes above ## Frames in order and never touches the approval line", () => {
+  const d = mkdtempSync(join(tmpdir(), "studio-demo-note-"));
+  writeFileSync(join(d, "DEMO.md"), DEMO);
+  assert.equal(writeDemoNote(d, "tài sản prop: approved một"), "- tài sản prop: approved một");
+  writeDemoNote(d, "tài sản background:\napproved hai");
+  assert.equal(readFileSync(join(d, "DEMO.md"), "utf8"), "# DEMO\n\nanimatic: demo/animatic.mp4\napproval: pending\n\n- tài sản prop: approved một\n- tài sản background: approved hai\n\n## Frames\n\n- demo/f1.png\n");
+  writeApproval(d, "duyệt", new Date("2026-10-17T00:00:00Z"));
+  assert.match(readFileSync(join(d, "DEMO.md"), "utf8"), /^approval: user@studio 2026-10-17T00:00:00.000Z duyệt\n\n- tài sản prop/m);
+  rmSync(d, { recursive: true, force: true });
+});
+
+test("writeDemoNote appends without ## Frames and makes a DEMO.md when there is none", () => {
+  const d = mkdtempSync(join(tmpdir(), "studio-demo-note-"));
+  writeDemoNote(d, "một");
+  writeDemoNote(d, "hai");
+  assert.equal(readFileSync(join(d, "DEMO.md"), "utf8"), "# DEMO\n\n- một\n- hai\n");
+  writeFileSync(join(d, "DEMO.md"), "# DEMO\n\napproval: pending\n");
+  writeDemoNote(d, "ba");
+  assert.equal(readFileSync(join(d, "DEMO.md"), "utf8"), "# DEMO\n\napproval: pending\n\n- ba\n");
+  rmSync(d, { recursive: true, force: true });
 });
