@@ -2,12 +2,16 @@
 // its id, its state in words and why its self-check failed; zoom buttons; a tick per image;
 // "Duyệt cả bảng" (POST /api/assets/approve per batch) and "Vẽ lại ảnh đã đánh dấu" with a
 // required one-sentence reason (POST /api/assets/redo). An image that needs a look (needs_review)
-// is approved only when it is ticked.
+// is approved only when it is ticked. "Xem rộng" opens the same board in a large dialog, the images
+// laid out side by side at full size so poses can be compared; zoom, ticks and the reason are the
+// same state in both places.
 import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { say } from "@/api/client.ts";
+import { cn } from "@/lib/utils";
 import { Button, Checkbox, Input } from "@/shell/controls.tsx";
 import { approveBoard, projectSrc, redoImages } from "./api.ts";
-import { PixelImage, ZoomBar } from "./Zoom.tsx";
+import { PixelImage, ZoomBar, type Fit } from "./Zoom.tsx";
 import type { AssetStatus, BoardData, BoardItem, Zoom } from "./types.ts";
 
 export const STATUS_TEXT: Record<AssetStatus, string> = {
@@ -29,6 +33,7 @@ export function Board({ name, board, running }: { name: string; board: BoardData
   const [ticked, setTicked] = useState<Set<string>>(new Set());
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [wide, setWide] = useState(false);
 
   const isTicked = (it: BoardItem) => ticked.has(tickKey(it));
   const toApprove = board.items.filter((it) => it.status === "keyed" || (it.status === "needs_review" && isTicked(it)));
@@ -60,15 +65,11 @@ export function Board({ name, board, running }: { name: string; board: BoardData
     setReason("");
   }
 
-  return (
-    <section aria-label={board.title} className="flex flex-col gap-2 rounded-md bg-panel-2 p-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="m-0 text-sm font-semibold">{`${board.title} `}<span className="text-muted-foreground">{String(board.items.length)}</span></h3>
-        <ZoomBar zoom={zoom} onZoom={setZoom} label={board.title} />
-      </div>
-      <ul className="m-0 flex list-none flex-wrap items-start gap-2 p-0">
-        {board.items.map((it) => <Cell key={tickKey(it)} name={name} it={it} zoom={zoom} ticked={isTicked(it)} onTick={() => flip(it)} />)}
-      </ul>
+  const zoomBar = <ZoomBar zoom={zoom} onZoom={setZoom} label={board.title} />;
+  const count = <span className="text-muted-foreground">{String(board.items.length)}</span>;
+  const cells = (fit: Fit) => board.items.map((it) => <Cell key={tickKey(it)} name={name} it={it} zoom={zoom} fit={fit} ticked={isTicked(it)} onTick={() => flip(it)} />);
+  const actions = (
+    <>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="primary" disabled={busy || running || !toApprove.length} onClick={() => void approve()}>Duyệt cả bảng</Button>
         <span className="text-xs text-muted-foreground">Ảnh "cần xem" chỉ được duyệt khi bạn đánh dấu nó.</span>
@@ -77,16 +78,43 @@ export function Board({ name, board, running }: { name: string; board: BoardData
         <Input aria-label={`Lý do vẽ lại, ${board.title}`} placeholder="Lý do vẽ lại (một câu, bắt buộc)" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} className="min-w-48 flex-1" />
         <Button disabled={busy || running || !toRedo.length || !reason.trim()} onClick={() => void redo()}>Vẽ lại ảnh đã đánh dấu</Button>
       </div>
+    </>
+  );
+
+  return (
+    <section aria-label={board.title} className="flex flex-col gap-2 rounded-md bg-panel-2 p-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="m-0 text-sm font-semibold">{`${board.title} `}{count}</h3>
+        <div className="flex flex-wrap items-center gap-1">
+          {zoomBar}
+          <Button className="h-7 px-2 text-xs" aria-label={`Xem rộng ${board.title}`} onClick={() => setWide(true)}>Xem rộng</Button>
+        </div>
+      </div>
+      <ul className="m-0 flex list-none flex-wrap items-start gap-2 p-0">{cells("cell")}</ul>
+      {actions}
+      <Dialog open={wide} onOpenChange={setWide}>
+        <DialogContent className="flex h-[88vh] max-w-[92vw] flex-col gap-3 p-4 sm:max-w-[92vw]">
+          <DialogHeader className="flex-row flex-wrap items-center gap-3 pr-8">
+            <DialogTitle className="text-base">{board.title}</DialogTitle>
+            <DialogDescription className="flex-1">{`${board.items.length} ảnh, xếp cạnh nhau để so. Đánh dấu và lý do dùng chung với bảng ở cột trái.`}</DialogDescription>
+            {zoomBar}
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-auto rounded-md bg-panel-2 p-2">
+            <ul className="m-0 flex list-none flex-wrap items-start gap-3 p-0">{cells("wide")}</ul>
+          </div>
+          {actions}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
 
-function Cell({ name, it, zoom, ticked, onTick }: { name: string; it: BoardItem; zoom: Zoom; ticked: boolean; onTick: () => void }) {
+function Cell({ name, it, zoom, fit, ticked, onTick }: { name: string; it: BoardItem; zoom: Zoom; fit: Fit; ticked: boolean; onTick: () => void }) {
   const img = it.preview ?? (it.kind === "background" ? it.keyed : null) ?? null;
   const why = it.status === "failed" ? it.error : it.reasons?.length ? it.reasons[it.reasons.length - 1] : null;
   return (
-    <li data-status={it.status} className="flex max-w-full min-w-28 flex-col gap-1 rounded-md border border-border bg-background p-1.5 text-xs">
-      {img ? <PixelImage src={projectSrc(name, img, it.updated)} alt={`Ảnh ${it.id}`} zoom={zoom} /> : <p className="m-0 p-4 text-center text-muted-foreground">chưa có ảnh</p>}
+    <li data-status={it.status} className={cn("flex min-w-28 flex-col gap-1 rounded-md border border-border bg-background p-1.5 text-xs", fit === "cell" && "max-w-full")}>
+      {img ? <PixelImage src={projectSrc(name, img, it.updated)} alt={`Ảnh ${it.id}`} zoom={zoom} fit={fit} /> : <p className="m-0 p-4 text-center text-muted-foreground">chưa có ảnh</p>}
       <label className="flex items-center gap-1.5">
         <Checkbox checked={ticked} onChange={onTick} aria-label={`Đánh dấu ${it.id}`} />
         <span className="font-mono">{it.id}</span>
