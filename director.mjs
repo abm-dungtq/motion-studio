@@ -3,7 +3,9 @@
 // --permission-mode acceptEdits --allowedTools … --disallowedTools … [--resume <sid>]` in the
 // project directory, one job at a time per project (jobs.mjs). No --add-dir: Read and
 // Skill reach the provider's files without it. No Edit/Write allow rule either: acceptEdits writes only
-// inside the cwd, so the director cannot edit files outside the project.
+// inside the cwd, so the director cannot edit files outside the project. The cwd and the project
+// path in the prompt are the realpath: Claude Code resolves its cwd, so a project reached through a
+// symlink in the root would otherwise be told a path its own writes are refused under.
 // The session id of the system/init event is kept in <project>/.opus/director.json and resumed
 // next time; a failed resume is retried once without it. The director closes the request with
 // studio_request_done (the provider's MCP server learns the runner and request from
@@ -20,7 +22,7 @@
 // --mcp-config <project>/.opus/studio-mcp.json and one allow rule per tool. The provider's MCP
 // server still loads as before (no --strict-mcp-config). studio.json director.studio_mcp: false
 // turns this off.
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { readState, runnerSetting } from "./lib/config.mjs";
 import { loadTools } from "./lib/tools.mjs";
@@ -162,8 +164,9 @@ function launch(p, name, dir, req, { resume = true, onEnd } = {}) {
   const sid = resume ? savedSession(dir) : null;
   const state = { session: null, result: null, isError: false };
   const mcp = studioMcp(p, dir, req);
+  const here = realpathSync(dir);
   return startJob({
-    name, kind: KIND, cmd: "claude", args: claudeArgs(p, buildPrompt(p, dir, req), sid, mcp), cwd: dir, env: childEnv(p, req), meta: { request: req.id, resume: sid },
+    name, kind: KIND, cmd: "claude", args: claudeArgs(p, buildPrompt(p, here, req), sid, mcp), cwd: here, env: childEnv(p, req), meta: { request: req.id, resume: sid },
     onLine: reader(p, dir, state, mcp?.tools ?? []),
     onExit: (job) => {
       const now = list(dir).find((r) => r.id === req.id);

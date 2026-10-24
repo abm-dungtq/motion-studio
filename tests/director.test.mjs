@@ -1,6 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { request } from "node:http";
@@ -204,5 +204,24 @@ test("a request queued before Studio starts is pumped when it listens", async ()
   } finally {
     s2.closeAllConnections?.(); s2.close();
     rmSync(other, { recursive: true, force: true });
+  }
+});
+
+test("a project reached through a symlink in the root runs in its realpath, the path the prompt names", async () => {
+  const away = mkdtempSync(join(tmpdir(), "director-away-"));
+  try {
+    cpSync(FIXTURE, join(away, "tap"), { recursive: true });
+    symlinkSync(join(away, "tap"), join(root, "linked"));
+    const real = realpathSync(join(away, "tap"));
+    const r = await post("/api/director", { name: "linked", scope: "project", text: "Qua symlink" });
+    assert.equal(r.status, 200);
+    for (let i = 0; i < 100 && !["done", "failed"].includes(list(real).find((x) => x.id === r.json.request.id)?.status); i++) await new Promise((x) => setTimeout(x, 50));
+    assert.equal(list(real).find((x) => x.id === r.json.request.id)?.status, "done");
+    const prompt = argv().at(-1)[argv().at(-1).indexOf("-p") + 1];
+    assert.ok(prompt.includes(real), "the prompt names the realpath");
+    assert.ok(!prompt.includes(join(root, "linked")), "not the symlink, under which acceptEdits refuses writes");
+  } finally {
+    rmSync(join(root, "linked"), { force: true });
+    rmSync(away, { recursive: true, force: true });
   }
 });
