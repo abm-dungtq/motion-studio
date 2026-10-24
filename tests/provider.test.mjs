@@ -89,7 +89,7 @@ test("the default provider's name appears nowhere outside its adapter", () => {
 });
 
 test("STUDIO_API 4: declared COMMANDS and SKILLS are used; API 3 keeps the fixed script names", async () => {
-  const extra = `export const COMMANDS = { pitch: "/x/pitch.mjs", choose: { file: "/x/pitch.mjs", args: ["choose", "--project", "{project}", "--pick", "{pick}"] } };\nexport const SKILLS = ["s-one", "s-two"];`;
+  const extra = `export const COMMANDS = { pitch: "/x/pitch.mjs", choose: { file: "/x/pitch.mjs", args: ["choose", "--project", "{project}", "--pick", "{pick}"] } };\nexport const SKILLS = ["s-one", "s-two"];\nexport const VOICE_DENIED_TOOLS = ["Bash(node /x/eleven.mjs tts*)"];`;
   const v4 = fakePlugin({ schema: A.NEED.schema, api: 4, extra });
   const v3 = fakePlugin({ schema: A.NEED.schema, api: 3 });
   try {
@@ -102,11 +102,13 @@ test("STUDIO_API 4: declared COMMANDS and SKILLS are used; API 3 keeps the fixed
       assert.equal(p4.commands[k], join(v4, "scripts", f), k);
     }
     assert.match(p4.director.promptFragments().skills, /: s-one, s-two\.$/);
+    assert.deepEqual(p4.director.voiceDeniedTools, ["Bash(node /x/eleven.mjs tts*)"]);
     const p3 = await A.create({ OPUS_VIDEO_HOME: v3 });
     assert.equal(p3.commands.pitch, join(v3, "scripts", "make-pitch.mjs"));
     assert.equal(p3.commands.choose, undefined);
     assert.equal(p3.commands.qc, join(v3, "scripts", "qc-mp4.mjs"), "API 3 has the new commands at their file names too");
     assert.doesNotMatch(p3.director.promptFragments().skills, /s-one/);
+    assert.deepEqual(p3.director.voiceDeniedTools, [], "a plugin without VOICE_DENIED_TOOLS denies nothing more");
   } finally { for (const d of [v4, v3]) rmSync(d, { recursive: true, force: true }); }
 });
 
