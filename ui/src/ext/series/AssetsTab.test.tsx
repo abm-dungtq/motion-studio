@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 import { useStudio } from "@/store/studio.ts";
 import { createStudio, getTabs } from "@/ext/registry.ts";
 import { AssetsTab, boardsOf, LEAD } from "./AssetsTab.tsx";
+import { extraTurnsText } from "./ConsentCard.tsx";
 import { register } from "./index.ts";
 import type { AssetsList } from "./types.ts";
 
@@ -64,6 +65,8 @@ describe("Tài sản tab", () => {
     const card = await screen.findByRole("region", { name: "Thẻ chờ đồng ý" });
     expect(within(card).getByText(CARD.title)).toBeInTheDocument();
     expect(within(card).getByText("acct1 còn 62% trong 5 giờ")).toBeInTheDocument();
+    expect(within(card).getByText(extraTurnsText(4))).toBeInTheDocument();
+    expect(extraTurnsText(4)).toContain("Tối đa 8 lượt vẽ và 8 lượt đọc ảnh");
     fireEvent.click(within(card).getByRole("button", { name: "Đồng ý" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/api/consent/answer", body: { name: "ep", id: "c-1", ok: true } }]));
   });
@@ -111,6 +114,49 @@ describe("Tài sản tab", () => {
     expect(img.className).toContain("[zoom:8]");
     expect(img.className).not.toContain("[zoom:4]");
     expect(within(sheet).getByRole("button", { name: "8×" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("Xem rộng opens the board in a dialog with every image at full size, side by side", async () => {
+    routes();
+    open("ep");
+    const sheet = await screen.findByRole("region", { name: "Tờ nhân vật thu" });
+    expect(within(sheet).getByRole("img", { name: "Ảnh ngoi" }).parentElement).toHaveAttribute("data-fit", "cell");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Xem rộng Tờ nhân vật thu" }));
+    const dialog = await screen.findByRole("dialog", { name: "Tờ nhân vật thu" });
+    const imgs = within(dialog).getAllByRole("img");
+    expect(imgs.map((i) => i.getAttribute("alt"))).toEqual(["Ảnh ngoi", "Ảnh dung"]);
+    for (const i of imgs) {
+      expect(i.parentElement).toHaveAttribute("data-fit", "wide");
+      expect(i.parentElement?.className).not.toContain("max-h-96");
+      expect(i.className).toContain("[zoom:4]");
+    }
+    fireEvent.click(within(dialog).getByRole("button", { name: "8×" }));
+    expect(imgs[0].className).toContain("[zoom:8]");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(within(sheet).getByRole("img", { name: "Ảnh ngoi" }).className).toContain("[zoom:8]");
+  });
+
+  test("a tick and a reason given in the wide view are the board's; Vẽ lại and Duyệt work from the dialog", async () => {
+    const { posts } = routes();
+    open("ep");
+    const sheet = await screen.findByRole("region", { name: "Tờ nhân vật thu" });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Xem rộng Tờ nhân vật thu" }));
+    let dialog = await screen.findByRole("dialog", { name: "Tờ nhân vật thu" });
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: "Đánh dấu dung" }));
+    fireEvent.change(within(dialog).getByRole("textbox", { name: /Lý do vẽ lại/ }), { target: { value: "Bỏ ngón tay thừa." } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(within(sheet).getByRole("checkbox", { name: "Đánh dấu dung" })).toBeChecked();
+    expect(within(sheet).getByRole("textbox", { name: /Lý do vẽ lại/ })).toHaveValue("Bỏ ngón tay thừa.");
+    expect(within(sheet).getByRole("button", { name: "Vẽ lại ảnh đã đánh dấu" })).toBeEnabled();
+
+    fireEvent.click(within(sheet).getByRole("button", { name: "Xem rộng Tờ nhân vật thu" }));
+    dialog = await screen.findByRole("dialog", { name: "Tờ nhân vật thu" });
+    expect(within(dialog).getByRole("checkbox", { name: "Đánh dấu dung" })).toBeChecked();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Duyệt cả bảng" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/api/assets/approve", body: { name: "ep", batch: "dot", board: "character:thu", ids: ["ngoi", "dung"] } }]));
+    await waitFor(() => expect(within(dialog).getByRole("checkbox", { name: "Đánh dấu dung" })).not.toBeChecked());
   });
 
   test("boardsOf leaves screen cards and thumbnails out", () => {
