@@ -12,14 +12,17 @@ import { adapterFor } from "../lib/provider.mjs";
 import { seriesFor } from "../lib/series.mjs";
 import { buildArgv } from "../lib/series-run.mjs";
 import { callTool, studioClient, toolEnv } from "../lib/tools.mjs";
+import { waitJob } from "../lib/tools/series.mjs";
 import { listReceipts } from "../lib/receipts.mjs";
+import { cancel, startJob } from "../jobs.mjs";
+import { recordApproved } from "../lib/ledger.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/series", import.meta.url));
 const A = await adapterFor({});
 const TOKEN = "q".repeat(64);
 const ENV = ["OPUS_VIDEO_HOME", "MOTION_STUDIO_STATE"];
-let tmp, plugin, P, series, root, video, server, port, saved, env;
+let tmp, plugin, P, series, root, video, server, port, saved, env, director;
 
 const brief = (dir, title) => { mkdirSync(dir, { recursive: true }); writeFileSync(join(dir, "BRIEF.md"), `---\ntitle: ${title}\nseries: ${series}\n---\n`); };
 
@@ -45,8 +48,11 @@ before(async () => {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
   env = toolEnv({ root, P, studio: studioClient({ state: { url: `http://127.0.0.1:${port}/`, token: TOKEN } }) });
+  // The director of request r-1 works on ep-01 (a job Studio itself holds).
+  director = startJob({ name: "ep-01", kind: "director", cmd: "/bin/sleep", args: ["600"], cwd: tmp, meta: { request: "r-1" } });
 });
 after(() => {
+  cancel(director.id);
   server.closeAllConnections?.(); server.close();
   for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
   rmSync(tmp, { recursive: true, force: true }); rmSync(plugin, { recursive: true, force: true });
@@ -200,6 +206,25 @@ test("a tool that runs past its timeout_s is stopped", async () => {
   assert.equal(done.job.status, "cancelled");
 });
 
+test("a second series tool on the same project while one runs is a 409 and starts nothing", async () => {
+  const first = await http("POST", "/api/series/run", { name: "direct", tool: "slow" });
+  assert.equal(first.status, 200, first.text);
+  const second = await http("POST", "/api/series/run", { name: "direct", tool: "echo-args", flags: { "--out": "assets/gen/busy.txt" } });
+  assert.equal(second.status, 409, second.text);
+  assert.match(second.json.error, /direct đang chạy một công cụ series khác, chờ xong đã/);
+  await finished(first.json.job.id);
+  assert.ok(!existsSync(join(root, "direct", "assets", "gen", "busy.txt")));
+});
+
+test("series_tool stops waiting after the tool's timeout and says the job still runs", async () => {
+  let polls = 0;
+  const studio = { post: async () => ({ job: { id: "j-long" }, timeout_s: 0 }), get: async () => { polls++; return { job: { id: "j-long", status: "running" } }; } };
+  const r = await waitJob({ studio }, { job: { id: "j-long" }, timeout_s: 0 }, { pollMs: 5, slackMs: 40 });
+  assert.equal(r.ok, false);
+  assert.match(r.error, /việc j-long vẫn chạy sau thời hạn; xem trong Studio/);
+  assert.ok(polls >= 1, "it polled before giving up");
+});
+
 test("series_list answers the project's series; without project every series of the root", async () => {
   const one = await callTool("series_list", { project: "direct" }, env);
   assert.equal(one.result.name, "Series Thử");
@@ -232,6 +257,59 @@ test("series_file_put copies into a writable folder, never overwrites without re
   }
   const outside = await callTool("series_file_put", { project: "ep-01", from: "../../series/thu/tools/fail.mjs", to: "refs/x.mjs" }, env);
   assert.equal(outside.ok, false);
+});
+
+test("series_file_put never replaces what the user approved: approval.json, its images, files Studio recorded", async () => {
+  const hero = join(series, "characters", "hero");
+  mkdirSync(join(hero, "poses"), { recursive: true });
+  const approval = JSON.stringify({ approved: true, date: "2026-10-24", by: "user@studio", images: ["S/characters/hero/poses/idle.png"] });
+  writeFileSync(join(hero, "approval.json"), approval);
+  writeFileSync(join(hero, "poses", "idle.png"), "duyệt");
+  writeFileSync(join(series, "refs", "hero-sheet.png"), "bảng đã duyệt");
+  recordApproved(series, [{ rel: "refs/hero-sheet.png", sha: "0".repeat(64) }]);
+  writeFileSync(join(video, "ep-01", "assets", "gen", "fake.json"), JSON.stringify({ approved: true, by: "director" }));
+  for (const [to, char] of [["rig_src/approval.json", "hero"], ["rig_src/poses/idle.png", "hero"], ["refs/hero-sheet.png", null], ["rig_src/approval.json", "villain"]]) {
+    for (const replace of [false, true]) {
+      const r = await http("POST", "/api/series/put", { name: "ep-01", from: "assets/gen/fake.json", to, char, replace });
+      assert.equal(r.status, 409, `${to} ${char} ${replace}: ${r.text}`);
+      assert.match(r.json.error, /người dùng đã duyệt|lời duyệt/, to);
+    }
+  }
+  assert.equal(readFileSync(join(hero, "approval.json"), "utf8"), approval);
+  assert.equal(readFileSync(join(hero, "poses", "idle.png"), "utf8"), "duyệt");
+  assert.equal(readFileSync(join(series, "refs", "hero-sheet.png"), "utf8"), "bảng đã duyệt");
+  assert.ok(!existsSync(join(series, "characters", "villain", "approval.json")), "no approval.json is made either");
+  // Another file of the same folder is still written.
+  const ok = await http("POST", "/api/series/put", { name: "ep-01", from: "assets/gen/fake.json", to: "rig_src/poses/note.json", char: "hero" });
+  assert.equal(ok.status, 200, ok.text);
+});
+
+test("a director's tools change only the project of its request, also when Studio is asked directly", async () => {
+  const had = listReceipts(join(root, "direct"), {}).length;
+  mkdirSync(join(root, "direct", "assets", "gen"), { recursive: true });
+  writeFileSync(join(root, "direct", "assets", "gen", "card.txt"), "x");
+  // Studio's side: the request id names its project; any other project, or an unknown request, is refused.
+  for (const [body, re] of [
+    [{ name: "direct", tool: "echo-args", flags: { "--out": "assets/gen/o.txt" }, actor: "director:r-1" }, /chỉ được làm trên ep-01/],
+    [{ name: "ep-01", tool: "echo-args", flags: { "--out": "assets/gen/o.txt" }, actor: "director:r-gone" }, /không có yêu cầu r-gone/],
+  ]) {
+    const r = await http("POST", "/api/series/run", body);
+    assert.equal(r.status, 403, r.text);
+    assert.match(r.json.error, re);
+  }
+  const put = await http("POST", "/api/series/put", { name: "direct", from: "assets/gen/card.txt", to: "refs/from-direct.txt", actor: "director:r-1" });
+  assert.equal(put.status, 403, put.text);
+  const ep = await http("POST", "/api/series/episode", { from: "direct", episode: 9, title: "x", actor: "director:r-1" });
+  assert.equal(ep.status, 403, ep.text);
+  assert.ok(!existsSync(join(series, "refs", "from-direct.txt")));
+  assert.equal(listReceipts(join(root, "direct"), {}).length, had, "nothing written into the other project");
+  // The MCP side: a server started for ep-01 refuses a changing tool on another project, reads still work.
+  const mine = { ...env, actor: "director", request: "r-1", project: "ep-01" };
+  const w = await callTool("series_file_put", { project: "direct", from: "assets/gen/card.txt", to: "refs/from-direct.txt" }, mine);
+  assert.equal(w.ok, false);
+  assert.match(w.error, /chỉ được làm trên ep-01/);
+  const read = await callTool("receipts_list", { project: "direct" }, mine);
+  assert.equal(read.ok, true, read.error);
 });
 
 test("series_file_put never writes through a symlink already at the target", async () => {

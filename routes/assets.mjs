@@ -3,14 +3,21 @@
 //   GET  /api/assets?name=<project>   → { series, batches: [batchStatus + consent (the waiting
 //                                       card of that batch) + job (the running batch job)] }
 //   POST /api/assets/batch { name, batch, actor? }
-//        → checks the batch file and writes a consent card (kind codex, action asset-batch):
-//          { waiting_consent: true, consent, estimate, message }. A batch that already has a
-//          waiting card answers that card. Nothing is drawn until the card is approved.
+//        → checks the batch file and writes a consent card (kind codex, action asset-batch) that
+//          carries the sha256 of the file: { waiting_consent: true, consent, estimate, message }.
+//          A waiting card of the same file answers again; one of another content is declined as
+//          stale and a new card is made. Nothing is drawn until the card is approved, and a yes
+//          on a card whose file changed since runs nothing (409 and a fresh card, lib/consent.mjs).
 //   POST /api/assets/redo { name, batch, ids, reason?, actor? }
 //        → redraws those images now, as the project's "asset-batch" job: the user's click is the
-//          consent. A redraw the director (or a tool) asks for counts per image; after
-//          MAX_AI_REDOS of them the image needs the user (409). from: "board" (the Tài sản tab)
-//          needs a reason.
+//          consent. A redraw the director (or a tool) asks for is only of an image that a run
+//          behind a card (or the user's own redraw) has drawn, and counts per image in Studio's
+//          ledger (lib/ledger.mjs, outside the project); after MAX_AI_REDOS of them the image needs
+//          the user (409). from: "board" (the Tài sản tab) needs a reason.
+//   POST /api/assets/resume { name, batch }
+//        → carries on a run that was cut short (interrupted): only its interrupted images, as the
+//          card that started it allowed (the file must be unchanged since), without a new card. A
+//          drawing already made is read and keyed, not drawn again.
 //   POST /api/assets/approve { name, batch, board, ids, notes? }
 //        → the user approves images of one board: board is character:<id> (poses of that
 //          character), background or prop. Every id must be keyed (or needs_review, when the user
@@ -22,7 +29,9 @@
 //          receipt (op asset-approve) and a request for the director to carry on.
 // The consent action asset-batch starts the whole batch as the "asset-batch" job (one per
 // project at a time). When a batch job started by the user ends, a request is queued for the
-// director to carry on once the user has gone through the board.
+// director to carry on once the user has gone through the board. A batch job that ends while its
+// state still says running (cancelled, killed, Studio stopping) leaves the batch interrupted; so
+// does a state still running when Studio starts or lists the batches with no job behind it.
 import { createHash } from "node:crypto";
 import { constants, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, sep } from "node:path";
@@ -32,8 +41,9 @@ import { queueRequest } from "../director.mjs";
 import { running, startJob } from "../jobs.mjs";
 import { listAgents } from "../lib/agents/index.mjs";
 import { redact } from "../lib/agents/redact.mjs";
-import { batchStatus, estimate, estimateTitle, listBatches, MAX_AI_REDOS, readBatch, readState, summarize, validateBatch, writeState } from "../lib/assets/batch.mjs";
-import { createCard, listCards, registerAction } from "../lib/consent.mjs";
+import { batchFile, batchStatus, estimate, estimateTitle, interruptStale, listBatches, MAX_AI_REDOS, readBatch, readState, summarize, validateBatch, writeState } from "../lib/assets/batch.mjs";
+import { createCard, digestOf, registerAction, waitingCard } from "../lib/consent.mjs";
+import { aiRedos, batchEntry, bumpAiRedo, recordApproved, recordBatchRun, recordDrawn } from "../lib/ledger.mjs";
 import { writeReceipt } from "../lib/receipts.mjs";
 import { ID as CHAR_ID, seriesFor, seriesPath } from "../lib/series.mjs";
 import { insideProject } from "../lib/tools.mjs";
@@ -52,7 +62,23 @@ function projectOf(c, name) {
   if (!series) throw bad(404, `${name} không thuộc series nào: đợt ảnh cần series (BRIEF.md có dòng series:)`);
   return { path: pd.dir, dir: realpathSync(pd.dir), series };
 }
-const waitingCard = (dir, batch) => listCards(dir, { status: "waiting" }).find((x) => x.action?.name === KIND && x.action.args?.batch === batch) ?? null;
+// The sha256 of the batch file as it is now (what a card approves).
+export const batchDigest = (dir, batch) => { readBatch(dir, batch); return digestOf(readFileSync(batchFile(dir, batch))); };
+const sameBatch = (batch) => (a) => a.batch === batch;
+const waitingOf = (dir, batch) => waitingCard(dir, KIND, sameBatch(batch), batchDigest(dir, batch));
+const INTERRUPTED_JOB = "việc vẽ dừng giữa chừng";
+
+// The waiting card of the batch as it is now, or a new one: { card, estimate }.
+async function askBatch(c, name, batch) {
+  const p = projectOf(c, name);
+  const items = validateBatch(readBatch(p.dir, batch), { series: p.series, projectDir: p.dir });
+  const digest = batchDigest(p.dir, batch);
+  const had = await waitingCard(p.dir, KIND, sameBatch(batch), digest);
+  if (had) return { card: had, estimate: had.estimate };
+  const est = estimate(items, await listAgents());
+  const card = createCard(p.dir, { kind: "codex", title: estimateTitle(batch, est), count: items.length, estimate: est, quota: { accounts: est.accounts }, action: { name: KIND, args: { batch } }, digest });
+  return { card, estimate: est };
+}
 
 // The line the director gets when a batch it did not start itself has ended.
 export function doneText(batch, sum) {
@@ -60,16 +86,25 @@ export function doneText(batch, sum) {
   return `${head}${sum.message ? ` ${sum.message}` : ""} Gọi asset_status rồi làm tiếp (nhập rig, nền, đạo cụ) sau khi người dùng duyệt bảng.`;
 }
 
-function startBatch(c, name, { batch, ids = null, reason = null, actor, aiRedo = false }) {
+// Starts a run as the project's "asset-batch" job. The ids it may draw are fixed now (what was
+// allowed); when the job ends, those that have a drawing are recorded in the ledger, and a state
+// still running is marked interrupted.
+function startBatch(c, name, { batch, ids = null, reason = null, actor, aiRedo = false, resume = false }) {
   const p = projectOf(c, name);
-  validateBatch(readBatch(p.dir, batch), { series: p.series, projectDir: p.dir });
-  const arg = { projectDir: p.dir, root: c.root, series: { dir: p.series.dir, config: p.series.config }, batch, ids, reason, aiRedo, actor };
+  const items = validateBatch(readBatch(p.dir, batch), { series: p.series, projectDir: p.dir });
+  const allowed = resume ? Object.entries(readState(p.dir, batch)?.items ?? {}).filter(([, s]) => s.status === "interrupted").map(([id]) => id) : ids ?? items.map((it) => it.id);
+  const arg = { projectDir: p.dir, root: c.root, series: { dir: p.series.dir, config: p.series.config }, batch, ids, reason, aiRedo, resume, actor };
   const notify = !byAi(actor);
   try {
     return startJob({
       name, kind: KIND, cmd: process.execPath, args: [BATCH, "run", JSON.stringify(arg)], cwd: p.dir,
-      meta: { step: KIND, batch, ids, actor }, onLine: (l) => redact(l),
+      meta: { step: KIND, batch, ids, actor, ...(resume ? { resume: true } : {}) }, onLine: (l) => redact(l),
       onExit: () => {
+        try {
+          interruptStale(p.dir, batch, INTERRUPTED_JOB);
+          const st = readState(p.dir, batch);
+          recordDrawn(p.dir, batch, allowed.filter((id) => { const r = st?.items?.[id]?.raw; return r && existsSync(join(p.dir, r)); }));
+        } catch (e) { console.error(`motion-studio: không ghi được sổ đợt ${batch}: ${e.message}`); }
         if (!notify) return;
         try { queueRequest(c.P, name, p.path, { scope: "project", text: doneText(batch, summarize(readState(p.dir, batch), ids)) }); }
         catch (e) { console.error(`motion-studio: không xếp được yêu cầu cho đạo diễn sau đợt ${batch}: ${e.message}`); }
@@ -146,6 +181,7 @@ export async function approveBoard(c, b) {
   if (b.notes != null && (typeof b.notes !== "string" || b.notes.length > 1000)) throw bad(400, "notes: chữ, tối đa 1000 ký tự");
   const notes = b.notes?.replace(/\s+/g, " ").trim() || null;
   if (running(b.name, KIND)) throw bad(409, `${b.name} đang chạy một đợt ảnh, chờ xong rồi duyệt`);
+  interruptStale(p.dir, b.batch, INTERRUPTED_JOB);
   const state = readState(p.dir, b.batch);
   if (!state || state.running) throw bad(409, state ? `đợt ${b.batch} đang chạy, chờ xong rồi duyệt` : `đợt ${b.batch} chưa chạy`);
   const series = p.series;
@@ -207,6 +243,9 @@ export async function approveBoard(c, b) {
     copyFileSync(x.from, x.to, constants.COPYFILE_EXCL);
   }
   if (approvalFile) writeJson(approvalFile, approval);
+  // What went into the series, remembered outside it (series_file_put never writes these).
+  const sdir = realpathSync(series.dir);
+  recordApproved(series.dir, copies.filter((x) => x.to.startsWith(sdir + sep) && !x.to.startsWith(p.dir + sep)).map((x) => ({ rel: relative(sdir, x.to).split(sep).join("/"), sha: sha(x.from) })));
   const at = now.toISOString();
   for (const { id } of picked) state.items[id] = { ...state.items[id], status: "approved", approved: { at, by: BY, board: b.board } };
   writeState(p.dir, b.batch, state);
@@ -222,21 +261,34 @@ export async function approveBoard(c, b) {
 // The line the director gets once a board is approved.
 export const approvedText = (board, ids) => `Bảng ${board} đã duyệt: ${ids.join(", ")}. Làm tiếp: build-rig/props, sync-to-project, dùng tên mới trong scenes.`;
 
-registerAction(KIND, (ctx, { args, card }) => ({ job: startBatch(ctx, ctx.name, { batch: args.batch, actor: card.by ?? "human" }) }));
+registerAction(KIND, (ctx, { args, card }) => {
+  const p = projectOf(ctx, ctx.name);
+  const job = startBatch(ctx, ctx.name, { batch: args.batch, actor: card.by ?? "human" });
+  recordBatchRun(p.dir, args.batch, { digest: card.digest, ids: null });
+  return { job };
+}, {
+  digest: (ctx, { args }) => batchDigest(projectOf(ctx, ctx.name).dir, args.batch),
+  renew: async (ctx, { args }) => (await askBatch(ctx, ctx.name, args.batch)).card,
+});
 
 export const ROUTES = [
   {
     method: "GET", path: "/api/assets",
-    handler(c) {
+    async handler(c) {
       const name = c.q("name");
       const p = projectOf(c, name);
       const job = running(name, KIND);
-      const batches = listBatches(p.dir).map((b) => {
-        let s;
-        try { s = batchStatus(p.dir, b); } catch (e) { s = { batch: b, error: e.message, items: [] }; }
-        const card = waitingCard(p.dir, b);
-        return { ...s, consent: card, job: job?.meta?.batch === b ? { id: job.id, status: job.status, started: job.started } : null };
-      });
+      const batches = [];
+      for (const b of listBatches(p.dir)) {
+        if (job?.meta?.batch !== b) interruptStale(p.dir, b, INTERRUPTED_JOB);
+        let s, card = null, canResume = false;
+        try {
+          s = batchStatus(p.dir, b);
+          card = await waitingOf(p.dir, b);
+          canResume = s.interrupted && !job && batchEntry(p.dir, b)?.digest === batchDigest(p.dir, b);
+        } catch (e) { s = { batch: b, error: e.message, items: [] }; }
+        batches.push({ ...s, can_resume: canResume, consent: card, job: job?.meta?.batch === b ? { id: job.id, status: job.status, started: job.started } : null });
+      }
       return { series: p.series.config.name, batches };
     },
   },
@@ -244,14 +296,8 @@ export const ROUTES = [
     method: "POST", path: "/api/assets/batch",
     async handler(c) {
       const b = c.body ?? {};
-      const p = projectOf(c, b.name);
-      const items = validateBatch(readBatch(p.dir, b.batch), { series: p.series, projectDir: p.dir });
-      const message = "Chờ người dùng bấm Đồng ý ở tab Tài sản";
-      const had = waitingCard(p.dir, b.batch);
-      if (had) return { waiting_consent: true, consent: had, estimate: had.estimate, message };
-      const est = estimate(items, await listAgents());
-      const card = createCard(p.dir, { kind: "codex", title: estimateTitle(b.batch, est), count: items.length, estimate: est, quota: { accounts: est.accounts }, action: { name: KIND, args: { batch: b.batch } } });
-      return { waiting_consent: true, consent: card, estimate: est, message };
+      const { card, estimate: est } = await askBatch(c, b.name, b.batch);
+      return { waiting_consent: true, consent: card, estimate: est, message: "Chờ người dùng bấm Đồng ý ở tab Tài sản" };
     },
   },
   {
@@ -268,12 +314,30 @@ export const ROUTES = [
       const actor = actorOf(b);
       const aiRedo = byAi(actor);
       if (aiRedo) {
-        const st = readState(p.dir, b.batch);
-        const spent = ids.filter((id) => (st?.items?.[id]?.ai_redos ?? 0) >= MAX_AI_REDOS);
+        const drawn = batchEntry(p.dir, b.batch)?.drawn ?? {};
+        const fresh = ids.filter((id) => !drawn[id]);
+        if (fresh.length) throw bad(409, `ảnh ${fresh.join(", ")} của đợt ${b.batch} chưa được vẽ qua thẻ đồng ý; vẽ lần đầu cần thẻ: gọi asset_batch rồi chờ người dùng đồng ý`);
+        const spent = ids.filter((id) => aiRedos(p.dir, b.batch, id) >= MAX_AI_REDOS);
         if (spent.length) throw bad(409, `ảnh ${spent.join(", ")} đã vẽ lại ${MAX_AI_REDOS} lần theo yêu cầu của AI trong đợt này; cần người dùng xem ở tab Tài sản`);
       }
       const job = startBatch(c, b.name, { batch: b.batch, ids, reason: b.reason?.trim() || null, actor, aiRedo });
+      if (aiRedo) for (const id of ids) bumpAiRedo(p.dir, b.batch, id);
       return { job };
+    },
+  },
+  {
+    method: "POST", path: "/api/assets/resume",
+    handler(c) {
+      const b = c.body ?? {};
+      const p = projectOf(c, b.name);
+      if (running(b.name, KIND)) throw bad(409, `${b.name} đang chạy một đợt ảnh, chờ xong đã`);
+      interruptStale(p.dir, b.batch, INTERRUPTED_JOB);
+      const st = readState(p.dir, b.batch);
+      if (!st?.interrupted) throw bad(409, `đợt ${b.batch} không bị ngắt, không có gì để chạy tiếp`);
+      const run = batchEntry(p.dir, b.batch);
+      if (!run?.digest) throw bad(409, `đợt ${b.batch} chưa chạy qua thẻ đồng ý nào; xin thẻ mới (asset_batch)`);
+      if (run.digest !== batchDigest(p.dir, b.batch)) throw bad(409, `file đợt ${b.batch} đã đổi sau thẻ đồng ý; chạy tiếp cần thẻ mới cho nội dung hiện tại`);
+      return { job: startBatch(c, b.name, { batch: b.batch, actor: actorOf(b), resume: true }) };
     },
   },
   {

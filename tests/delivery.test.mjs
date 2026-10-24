@@ -18,11 +18,13 @@ import { listReceipts } from "../lib/receipts.mjs";
 import { callTool, studioClient, toolEnv } from "../lib/tools.mjs";
 import { fakeAgents } from "./fake-cli.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
+import { holdDirector } from "./director-job.mjs";
+import { cancel, listJobs, startJob } from "../jobs.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/series", import.meta.url));
 const A = await adapterFor({});
 const TOKEN = "d".repeat(64);
-let tmp, plugin, P, series, root, ep, out, server, port, saved, env, agents, queued;
+let tmp, plugin, P, series, root, ep, out, server, port, saved, env, agents, queued, director;
 
 // The plugin's export, captions and viet-pro gate, and viet-pro's check-platform and lint. Each
 // logs its argv to $FAKE_DELIVERY_LOG; FAKE_<NAME>_EXIT makes it fail with that code.
@@ -127,8 +129,10 @@ before(async () => {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
   env = { ...toolEnv({ root, P, studio: studioClient({ state: { url: `http://127.0.0.1:${port}/`, token: TOKEN } }) }), actor: "director", request: "r-3" };
+  director = holdDirector("ep", "r-3");
 });
 after(() => {
+  director.stop();
   server.closeAllConnections?.(); server.close();
   for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
   Object.assign(process.env, saved);
@@ -248,6 +252,16 @@ test("deliver_export: the newest final render; the final gate stops it twice →
   assert.match(bad.error, /input/);
 });
 
+test("deliver_export while the project's export job runs is a 409, nothing started", async () => {
+  const before = listJobs("ep").filter((j) => j.kind === "export").length;
+  const other = startJob({ name: "ep", kind: "export", cmd: "/bin/sleep", args: ["600"], cwd: ep });
+  let r;
+  try { r = await http("POST", "/api/delivery/export", { name: "ep" }); } finally { cancel(other.id); }
+  assert.equal(r.status, 409, r.text);
+  assert.match(r.json.error, /ep đang có việc export chạy, chờ xong đã/);
+  assert.equal(listJobs("ep").filter((j) => j.kind === "export").length, before + 1, "only the job held by the test");
+});
+
 test("deliver_thumbnail draws nothing before the card; the yes draws three, the pick becomes thumbnail.jpg", async () => {
   const bad = await callTool("deliver_thumbnail", { project: "ep", line1: "", line2: "x" }, env);
   assert.match(bad.error, /line1/);
@@ -257,12 +271,25 @@ test("deliver_thumbnail draws nothing before the card; the yes draws three, the 
   assert.match(t.result.consent.title, /^3 ảnh nền thumbnail, ước 3 lượt vẽ/);
   assert.equal(t.result.consent.kind, "codex");
   assert.doesNotMatch(agents.calls(), / exec /, "no drawing before the answer");
-  const again = await callTool("deliver_thumbnail", { project: "ep", line1: "A", line2: "B" }, env);
-  assert.equal(again.result.consent.id, t.result.consent.id, "one waiting card");
+  const same = await callTool("deliver_thumbnail", { project: "ep", line1: "BÍ MẬT", line2: "CUỐI CÙNG", accent: "red" }, env);
+  assert.equal(same.result.consent.id, t.result.consent.id, "the same request answers the same card");
+  // Other words make another card; the card of the old words no longer waits.
+  const other = await callTool("deliver_thumbnail", { project: "ep", line1: "A", line2: "B" }, env);
+  assert.notEqual(other.result.consent.id, t.result.consent.id);
   const st = await http("GET", "/api/delivery?name=ep");
-  assert.deepEqual(st.json.cards.map((c) => c.id), [t.result.consent.id]);
+  assert.deepEqual(st.json.cards.map((c) => c.id), [other.result.consent.id]);
+  // The batch file is the project's: written over after the card, the yes draws nothing.
+  const bf = join(ep, "assets", "gen", "batches", "thumbnail.json");
+  const items = JSON.parse(readFileSync(bf, "utf8"));
+  writeFileSync(bf, JSON.stringify([...items, ...items.map((x) => ({ ...x, id: x.id + "-b" }))]));
+  const stale = await http("POST", "/api/consent/answer", { name: "ep", id: other.result.consent.id, ok: true });
+  assert.equal(stale.status, 409, stale.text);
+  assert.doesNotMatch(agents.calls(), / exec /, "nothing drawn on a changed batch");
+  assert.equal(stale.json.consent.count, 6, "the fresh card counts the file as it is");
 
-  const yes = await http("POST", "/api/consent/answer", { name: "ep", id: t.result.consent.id, ok: true });
+  const t2 = await callTool("deliver_thumbnail", { project: "ep", line1: "BÍ MẬT", line2: "CUỐI CÙNG", accent: "red" }, env);
+  assert.equal(t2.result.consent.count, 3);
+  const yes = await http("POST", "/api/consent/answer", { name: "ep", id: t2.result.consent.id, ok: true });
   assert.equal(yes.status, 200, yes.text);
   assert.equal(yes.json.job.kind, "asset-batch");
   const j = await jobDone(yes.json.job.id);
@@ -306,8 +333,10 @@ test("delivery_status: the folder, the rows, the masked Drive account; the Drive
 test("a project outside a series, or without episode:, is refused", async () => {
   mkdirSync(join(root, "loose"), { recursive: true });
   writeFileSync(join(root, "loose", "BRIEF.md"), "---\ntitle: x\n---\n");
-  assert.match((await callTool("delivery_status", { project: "loose" }, env)).error, /không thuộc series/);
+  const outside = { ...env, request: null, actor: "tool" };
+  assert.match((await callTool("delivery_status", { project: "loose" }, outside)).error, /không thuộc series/);
   mkdirSync(join(root, "noep"), { recursive: true });
   writeFileSync(join(root, "noep", "BRIEF.md"), `---\ntitle: x\nseries: ${series}\n---\n`);
-  assert.match((await callTool("deliver_text", { project: "noep" }, env)).error, /episode:/);
+  assert.match((await callTool("deliver_text", { project: "noep" }, outside)).error, /episode:/);
+  assert.match((await callTool("deliver_text", { project: "noep" }, env)).error, /chỉ được làm trên ep/, "the director of ep's request cannot hand over another project");
 });

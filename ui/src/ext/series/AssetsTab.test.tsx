@@ -43,6 +43,7 @@ function routes(over: Record<string, unknown> = {}) {
     "/api/consent/answer": post("/api/consent/answer", { card: { ...CARD, status: "approved" }, job: { id: "j1", status: "running" } }),
     "/api/assets/approve": post("/api/assets/approve", { ok: true, ids: ["ngoi"], copied: [] }),
     "/api/assets/redo": post("/api/assets/redo", { job: { id: "j2" } }),
+    "/api/assets/resume": post("/api/assets/resume", { job: { id: "j4" } }),
     ...over,
   });
   return { fetch, posts };
@@ -114,6 +115,33 @@ describe("Tài sản tab", () => {
     expect(within(screen.getByRole("region", { name: "Bảng đạo cụ" })).getByText("đang vẽ")).toBeInTheDocument();
     fireEvent.click(within(sheet).getByRole("button", { name: "Duyệt cả bảng" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/api/assets/approve", body: { name: "ep", batch: "dot", board: "character:thu", ids: ["ngoi"] } }]));
+  });
+
+  test("a batch cut short says bị ngắt, keeps the boards open, and Chạy tiếp posts the resume", async () => {
+    const cut: AssetsList = { series: "Series Thử", batches: [{
+      batch: "dot", running: false, stopped: true, interrupted: true, can_resume: true, message: "Đợt dot bị ngắt (Studio dừng); ảnh đã vẽ giữ nguyên. Còn 1 ảnh (dung): bấm Chạy tiếp để làm nốt, không cần thẻ mới.", consent: null, job: null,
+      items: [item("ngoi", "pose", { character: "thu", status: "needs_review", unchecked: true, reasons: ["chưa kiểm được: agy không trả lời"] }), item("dung", "pose", { character: "thu", status: "interrupted", preview: null })] as AssetsList["batches"][0]["items"],
+    }] };
+    const { posts } = routes({ "/api/assets": cut, "/api/consent": { cards: [] } });
+    open("ep");
+    const note = await screen.findByRole("status", { name: "Đợt dot bị ngắt" });
+    expect(within(note).getByText(/không cần thẻ mới/)).toBeInTheDocument();
+    const sheet = screen.getByRole("region", { name: "Tờ nhân vật thu" });
+    expect(within(sheet).getByText("bị ngắt")).toBeInTheDocument();
+    expect(within(sheet).getByText("cần xem · chưa kiểm được")).toBeInTheDocument();
+    // Not running any more: a ticked image can be approved.
+    fireEvent.click(within(sheet).getByRole("checkbox", { name: "Đánh dấu ngoi" }));
+    expect(within(sheet).getByRole("button", { name: "Duyệt cả bảng" })).toBeEnabled();
+    fireEvent.click(within(note).getByRole("button", { name: "Chạy tiếp" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/api/assets/resume", body: { name: "ep", batch: "dot" } }]));
+  });
+
+  test("without can_resume the note stays and there is no Chạy tiếp", async () => {
+    const cut: AssetsList = { series: "Series Thử", batches: [{ batch: "dot", running: false, interrupted: true, can_resume: false, message: null, consent: null, job: null, items: [item("dung", "pose", { character: "thu", status: "interrupted" })] as AssetsList["batches"][0]["items"] }] };
+    routes({ "/api/assets": cut, "/api/consent": { cards: [] } });
+    open("ep");
+    const note = await screen.findByRole("status", { name: "Đợt dot bị ngắt" });
+    expect(within(note).queryByRole("button", { name: "Chạy tiếp" })).toBeNull();
   });
 
   test("Vẽ lại stays off until an image is ticked and a reason is written", async () => {

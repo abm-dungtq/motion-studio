@@ -165,7 +165,15 @@ test("over HTTP: no write before the card; the yes uploads; receipts and job log
   assert.equal(dj.code, 0, dj.tail.join("\n"));
   assert.deepEqual(stateOf(state).files, []);
 
-  const yes = await http("POST", "/api/consent/answer", { name: "ep", id: card.json.consent.id, ok: true });
+  // A file added to the folder after the card: the yes sends nothing, a fresh card names it.
+  writeFileSync(join(out, "extra.mp4"), "x".repeat(4096));
+  const stale = await http("POST", "/api/consent/answer", { name: "ep", id: card.json.consent.id, ok: true });
+  assert.equal(stale.status, 409, stale.text);
+  assert.deepEqual(stale.json.consent.estimate.files, ["ep-youtube.mp4", "extra.mp4", "thumbnail.jpg"]);
+  assert.deepEqual(stateOf(state).files, [], "nothing uploaded on a changed folder");
+  rmSync(join(out, "extra.mp4"));
+  const card2 = await http("POST", "/api/delivery/drive", { name: "ep" });
+  const yes = await http("POST", "/api/consent/answer", { name: "ep", id: card2.json.consent.id, ok: true });
   assert.equal(yes.status, 200, yes.text);
   const j = await jobDone(yes.json.job.id);
   assert.equal(j.code, 0, j.tail.join("\n"));

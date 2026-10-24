@@ -5,13 +5,16 @@
 // reading back before writing, from OpenChatCut (https://github.com/0xsline/OpenChatCut, AGPL-3.0)
 // and AdobePremiereProMCP (https://github.com/ayushozha/AdobePremiereProMCP, MIT); no code copied.
 //
-//   node mcp/studio-mcp.mjs [--root <dir>] [--profile external|director] [--request <id>]
+//   node mcp/studio-mcp.mjs [--root <dir>] [--profile external|director] [--request <id>] [--project <name>]
 //
 // --root     the projects folder (default: rootDefault() of lib/config.mjs)
 // --profile  external (default): every tool. director: drops the tools whose name the provider's
 //            own MCP server already serves (P.director.mcpTools without the prefix), so the
 //            director never sees two project_patch.
-// --request  the Studio request the director works on; kept in history notes and receipts.
+// --request  the Studio request the director works on; kept in history notes and receipts
+//            (default: OPUS_STUDIO_REQUEST of the director's env).
+// --project  the project of that request: a tool that changes something refuses any other one
+//            (lib/scope.mjs; Studio checks the request's project again on its side).
 // Edits of project.json go through the provider's gateway with actor "director" (the gateway has
 // no "agent" actor; an outside client gets "agent" once the provider lists it in ACTORS).
 // Exits when stdin ends.
@@ -40,30 +43,31 @@ export function toolsForProfile(profile, tools, P) {
 export const actorFor = (profile, P) => (profile === "external" && P?.gateway?.ACTORS?.includes("agent") ? "agent" : "director");
 
 // The argv a client runs: [script, --profile, …]. Used by the director's config and /api/mcp/config.
-export const serverArgs = ({ profile = "external", root = null, request = null } = {}) =>
-  [SCRIPT, "--profile", profile, ...(root ? ["--root", root] : []), ...(request ? ["--request", request] : [])];
+export const serverArgs = ({ profile = "external", root = null, request = null, project = null } = {}) =>
+  [SCRIPT, "--profile", profile, ...(root ? ["--root", root] : []), ...(request ? ["--request", request] : []), ...(project ? ["--project", project] : [])];
 
 export function parseArgs(argv) {
-  const o = { root: null, profile: "external", request: null };
+  const o = { root: null, profile: "external", request: null, project: null };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i], v = argv[i + 1];
-    if (k === "--root" || k === "--profile" || k === "--request") {
+    if (k === "--root" || k === "--profile" || k === "--request" || k === "--project") {
       if (v == null || v.startsWith("--")) throw new Error(`${k} cần một giá trị`);
       o[k.slice(2)] = v; i++;
     } else throw new Error(`không hiểu tham số ${k}`);
   }
   if (!PROFILES.includes(o.profile)) throw new Error(`--profile là ${PROFILES.join(" | ")}`);
   if (o.request != null && !/^[A-Za-z0-9._-]{1,80}$/.test(o.request)) throw new Error("--request không hợp lệ");
+  if (o.project != null && (!/^[A-Za-z0-9._-]+$/.test(o.project) || o.project === "." || o.project === "..")) throw new Error("--project không hợp lệ");
   return o;
 }
 
 // The JSON-RPC handler for one server process. dir: the tools folder (tests pass their own).
-export async function studioHandler({ root, profile = "external", request = null, P, dir, studio } = {}) {
+export async function studioHandler({ root, profile = "external", request = null, project = null, P, dir, studio } = {}) {
   if (P === undefined) { try { P = await loadProvider(); } catch (e) { process.stderr.write(`motion-studio mcp: chưa có provider (${e.message}); tool cần provider sẽ báo lỗi\n`); P = null; } }
   const all = await loadTools(...(dir ? [dir] : []));
   const tools = toolsForProfile(profile, all, P);
   const names = new Set(tools.map((t) => t.name));
-  const env = { ...toolEnv({ root, P, ...(studio ? { studio } : {}) }), profile, request, actor: actorFor(profile, P) };
+  const env = { ...toolEnv({ root, P, ...(studio ? { studio } : {}) }), profile, request, project, actor: actorFor(profile, P) };
   return createHandler({
     serverInfo: { name: SERVER_NAME, title: "Motion Studio", version: VERSION },
     instructions: "Tool của Motion Studio cho các dự án video trong thư mục gốc. Đọc trước khi sửa: project_summary hoặc project_get lấy version, rồi project_patch với base là version đó. Thao tác media ghi biên nhận trong .opus/receipts/ của dự án.",
@@ -91,7 +95,8 @@ if (isMain()) {
   console.log = (...a) => console.error(...a);
   let o;
   try { o = parseArgs(process.argv.slice(2)); } catch (e) { process.stderr.write(`motion-studio mcp: ${e.message}\n`); process.exit(2); }
-  const handle = await studioHandler({ root: resolve(o.root ?? rootDefault()), profile: o.profile, request: o.request });
+  const fromEnv = /^[A-Za-z0-9._-]{1,80}$/.test(process.env.OPUS_STUDIO_REQUEST ?? "") ? process.env.OPUS_STUDIO_REQUEST : null;
+  const handle = await studioHandler({ root: resolve(o.root ?? rootDefault()), profile: o.profile, request: o.request ?? (o.profile === "director" ? fromEnv : null), project: o.project });
   await serve(handle);
   process.exit(0);
 }

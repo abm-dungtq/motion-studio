@@ -9,9 +9,11 @@ import { dirname, join } from "node:path";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { createServer } from "../server.mjs";
+import { cancel, running, startJob } from "../jobs.mjs";
 import { adapterFor } from "../lib/provider.mjs";
 import { dropCache } from "../lib/agents/index.mjs";
 import { listReceipts } from "../lib/receipts.mjs";
+import { approvedFiles } from "../lib/ledger.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/series", import.meta.url));
@@ -103,6 +105,7 @@ test("approving a new character sheet copies the raw drawings and writes approva
   assert.equal(a.by, "user@studio");
   assert.equal(a.notes, "ổn, giữ màu áo");
   assert.deepEqual(a.images, ["S/refs/thu/ngoi.png", "S/refs/thu/dung.png"]);
+  assert.ok(approvedFiles(seriesDir)["refs/thu/ngoi.png"], "an approved pose is recorded");
   assert.equal(a.previous, null);
   assert.deepEqual(readdirSync(join(seriesDir, "characters", "thu")), ["approval.json"], "a new character folder holds only approval.json");
   const st = state(dir);
@@ -168,6 +171,10 @@ test("backgrounds go to the series and assets/bg, props to the props folder; the
   assert.equal(same.status, 200, same.text);
   assert.deepEqual(same.json.copied, ["assets/bg/san.png"]);
   assert.deepEqual(rawList(dir), before);
+  // Studio remembers what went into the series, outside it: series_file_put never writes these.
+  const held = approvedFiles(seriesDir);
+  for (const rel of ["backgrounds/san.png", "backgrounds/cong-truong.png", "props/ly.pxl", "props/dt.pxl"]) assert.match(held[rel] ?? "", /^[a-f0-9]{64}$/, rel);
+  assert.ok(!Object.keys(held).some((k) => k.startsWith("assets/")), "the project's own copy is not the series'");
 });
 
 test("bad requests: unknown board, image not keyed yet, a running batch", async () => {
@@ -183,10 +190,20 @@ test("bad requests: unknown board, image not keyed yet, a running batch", async 
   await no({ board: "character:thu", ids: ["zz"] }, 400, /không có ảnh zz/);
   await no({ board: "character:thu", ids: ["b"] }, 409, /đang drawing/);
   await no({ board: "prop", ids: ["a"] }, 400, /không thuộc bảng prop/);
+  // A live batch job of the project holds the board.
+  const job = startJob({ name: "ep-bad", kind: "asset-batch", cmd: process.execPath, args: ["-e", "setTimeout(() => {}, 30000)"], cwd: dir });
+  try { await no({ board: "character:thu", ids: ["a"] }, 409, /đang chạy một đợt ảnh/); } finally { cancel(job.id); }
+  for (let i = 0; i < 100 && running("ep-bad", "asset-batch"); i++) await new Promise((r) => setTimeout(r, 20));
+  // A state left running with no job behind it (Studio stopped under it) is interrupted, not held.
   const st = state(dir);
   st.running = true;
   writeFileSync(join(dir, ".opus", "assets", "dot.json"), JSON.stringify(st));
-  await no({ board: "character:thu", ids: ["a"] }, 409, /đang chạy/);
+  const r = await http("POST", "/api/assets/approve", { name: "ep-bad", batch: "dot", board: "character:thu", ids: ["a"] });
+  assert.equal(r.status, 200, r.text);
+  const left = JSON.parse(readFileSync(join(dir, ".opus", "assets", "dot.json"), "utf8"));
+  assert.equal(left.running, false);
+  assert.equal(left.interrupted, true);
+  assert.equal(left.items.b.status, "interrupted");
 });
 
 test("a redraw from the board needs a reason", async () => {

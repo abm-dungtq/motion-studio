@@ -14,12 +14,13 @@ import { listReceipts } from "../lib/receipts.mjs";
 import { approvalNote, sceneApprovals, sceneList, sceneWindow } from "../lib/scenes.mjs";
 import { callTool, studioClient, toolEnv } from "../lib/tools.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
+import { holdDirector } from "./director-job.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/series", import.meta.url));
 const A = await adapterFor({});
 const TOKEN = "s".repeat(64);
 const ENV = ["OPUS_VIDEO_HOME", "MOTION_STUDIO_STATE", "PATH", "FAKE_PREVIEW_EXIT", "FAKE_NPX_LOG"];
-let tmp, plugin, P, series, root, ep, plain, server, port, saved, env, queued, npxLog;
+let tmp, plugin, P, series, root, ep, plain, server, port, saved, env, queued, npxLog, director;
 
 // scene-preview: writes the page --out names with the span's length; FAKE_PREVIEW_EXIT=3 is a bad cue.
 const SCENE_PREVIEW = `import { mkdirSync, writeFileSync } from "node:fs";
@@ -108,8 +109,10 @@ before(async () => {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
   env = { ...toolEnv({ root, P, studio: studioClient({ state: { url: `http://127.0.0.1:${port}/`, token: TOKEN } }) }), actor: "director", request: "r-9" };
+  director = holdDirector("ep", "r-9");
 });
 after(() => {
+  director.stop();
   server.closeAllConnections?.(); server.close();
   for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
   rmSync(tmp, { recursive: true, force: true }); rmSync(plugin, { recursive: true, force: true });

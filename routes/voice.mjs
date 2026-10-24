@@ -6,14 +6,18 @@
 //          previews wait for the user's pick (file is a project path, served under /p/<name>/),
 //          and whether the provider can set a line's speaker
 //   POST /api/voice/tts { name, ids, actor? }
-//        → one line runs now as the project's "tts" job ({ job }): re-voicing one line needs no
-//          card. Two or more write a consent card (kind elevenlabs, action tts-batch) with the
-//          characters it costs: { waiting_consent: true, consent, estimate, message }. A line
+//        → one line that a run behind a card has voiced before (Studio's ledger, lib/ledger.mjs),
+//          or whose paid voice waits to be mixed again, runs now as the project's "tts" job
+//          ({ job }): re-voicing one line needs no card. Any other request (a line never voiced,
+//          two or more lines) writes a consent card (kind elevenlabs, action tts-batch) with the
+//          characters it costs and the sha256 of the lines' speakers and text:
+//          { waiting_consent: true, consent, estimate, message }. A waiting card of the same
+//          lines and text answers again; one whose text changed is declined as stale. A line
 //          without a speaker is a 400 "Chọn người nói trước".
 //   POST /api/voice/design { name, role, actor? }
 //        → a consent card (kind elevenlabs, action voice-design) for one Voice Design run of a role
-//          of the roles file that has no voice yet; a waiting card of the same role is answered
-//          again. When approved, the "voice-design" job runs `voice-design design --role <id>`,
+//          of the roles file that has no voice yet, with the sha256 of the role's entry; a waiting
+//          card of the same role and entry is answered again. When approved, the "voice-design" job runs `voice-design design --role <id>`,
 //          copies the three previews into .opus/voice-design/<id>/ and writes a receipt (op
 //          voice-design).
 //   POST /api/voice/pick { name, role, pick }
@@ -26,10 +30,11 @@ import { fileURLToPath } from "node:url";
 import { queueRequest } from "../director.mjs";
 import { cancel, startJob } from "../jobs.mjs";
 import { redact } from "../lib/agents/redact.mjs";
-import { createCard, listCards, registerAction } from "../lib/consent.mjs";
+import { createCard, digestOf, registerAction, waitingCard } from "../lib/consent.mjs";
+import { isVoiced, pendingRemix } from "../lib/ledger.mjs";
 import { writeReceipt } from "../lib/receipts.mjs";
 import { seriesFor, seriesPath } from "../lib/series.mjs";
-import { copyPreviews, designable, designCommand, linesToVoice, pendingPicks, pickCommand, PREVIEWS, ttsEstimate, ttsTitle } from "../lib/series-voice.mjs";
+import { copyPreviews, designable, designCommand, linesDigest, linesToVoice, pendingPicks, pickCommand, PREVIEWS, roleEntry, ttsEstimate, ttsTitle } from "../lib/series-voice.mjs";
 
 export const TTS_KIND = "tts";
 export const DESIGN_KIND = "voice-design";
@@ -45,7 +50,30 @@ function projectOf(c, name) {
   if (!series) throw bad(404, `${name} không thuộc series nào: lồng tiếng theo vai cần series (BRIEF.md có dòng series:)`);
   return { path: pd.dir, dir: realpathSync(pd.dir), series };
 }
-const waiting = (dir, action, match) => listCards(dir, { status: "waiting" }).find((x) => x.action?.name === action && match(x.action.args ?? {})) ?? null;
+const ASK_MESSAGE = "Chờ người dùng bấm Đồng ý (tab Lời & giọng hoặc Tài sản)";
+const idsKey = (ids) => [...ids].sort().join(",");
+
+// The waiting card of these lines as they are now, or a new one.
+async function askTts(c, name, ids) {
+  const p = projectOf(c, name);
+  const lines = linesToVoice(c.P.manifest.load(p.dir), ids, p.series);
+  const digest = linesDigest(lines);
+  const key = idsKey(lines.map((l) => l.id));
+  const had = await waitingCard(p.dir, "tts-batch", (a) => Array.isArray(a.ids) && idsKey(a.ids) === key, digest);
+  if (had) return { card: had, estimate: had.estimate };
+  const est = ttsEstimate(lines);
+  return { card: createCard(p.dir, { kind: "elevenlabs", title: ttsTitle(est), count: est.lines, estimate: est, action: { name: "tts-batch", args: { ids: lines.map((l) => l.id) } }, digest }), estimate: est };
+}
+const designDigest = (p, role) => digestOf({ role, entry: roleEntry(p.series, role) });
+async function askDesign(c, name, role) {
+  const p = projectOf(c, name);
+  const r = designable(p.series, role);
+  const digest = designDigest(p, r.id);
+  const had = await waitingCard(p.dir, "voice-design", (a) => a.role === r.id, digest);
+  if (had) return { card: had, estimate: had.estimate };
+  const estimate = { voice_design: 1, previews: PREVIEWS };
+  return { card: createCard(p.dir, { kind: "elevenlabs", title: `Tạo ${PREVIEWS} giọng thử cho ${r.name}, 1 lượt Voice Design`, count: 1, estimate, action: { name: "voice-design", args: { role: r.id } }, digest }), estimate };
+}
 const busy = (e, name, what) => bad(e.code === "BUSY" ? 409 : 500, e.code === "BUSY" ? `${name} đang ${what}, chờ xong đã` : e.message);
 
 function startTts(c, name, { ids, actor }) {
@@ -85,8 +113,14 @@ function startDesign(c, name, { role, actor }) {
   });
 }
 
-registerAction("tts-batch", (ctx, { args, card }) => ({ job: startTts(ctx, ctx.name, { ids: args.ids, actor: card.by ?? "human" }) }));
-registerAction("voice-design", (ctx, { args, card }) => ({ job: startDesign(ctx, ctx.name, { role: args.role, actor: card.by ?? "human" }) }));
+registerAction("tts-batch", (ctx, { args, card }) => ({ job: startTts(ctx, ctx.name, { ids: args.ids, actor: card.by ?? "human" }) }), {
+  digest: (ctx, { args }) => { const p = projectOf(ctx, ctx.name); return linesDigest(linesToVoice(ctx.P.manifest.load(p.dir), args.ids, p.series)); },
+  renew: async (ctx, { args }) => (await askTts(ctx, ctx.name, args.ids)).card,
+});
+registerAction("voice-design", (ctx, { args, card }) => ({ job: startDesign(ctx, ctx.name, { role: args.role, actor: card.by ?? "human" }) }), {
+  digest: (ctx, { args }) => designDigest(projectOf(ctx, ctx.name), args.role),
+  renew: async (ctx, { args }) => (await askDesign(ctx, ctx.name, args.role)).card,
+});
 
 export const ROUTES = [
   {
@@ -98,33 +132,22 @@ export const ROUTES = [
   },
   {
     method: "POST", path: "/api/voice/tts",
-    handler(c) {
+    async handler(c) {
       const b = c.body ?? {};
       const p = projectOf(c, b.name);
       const lines = linesToVoice(c.P.manifest.load(p.dir), b.ids, p.series);
       const ids = lines.map((l) => l.id);
-      if (ids.length === 1) return { job: startTts(c, b.name, { ids, actor: actorOf(b) }) };
-      const key = [...ids].sort().join(",");
-      const had = waiting(p.dir, "tts-batch", (a) => Array.isArray(a.ids) && [...a.ids].sort().join(",") === key);
-      const message = "Chờ người dùng bấm Đồng ý (tab Lời & giọng hoặc Tài sản)";
-      if (had) return { waiting_consent: true, consent: had, estimate: had.estimate, message };
-      const est = ttsEstimate(lines);
-      const card = createCard(p.dir, { kind: "elevenlabs", title: ttsTitle(est), count: est.lines, estimate: est, action: { name: "tts-batch", args: { ids } } });
-      return { waiting_consent: true, consent: card, estimate: est, message };
+      if (ids.length === 1 && (isVoiced(p.dir, ids[0]) || pendingRemix(p.dir, ids[0]))) return { job: startTts(c, b.name, { ids, actor: actorOf(b) }) };
+      const { card, estimate } = await askTts(c, b.name, ids);
+      return { waiting_consent: true, consent: card, estimate, message: ASK_MESSAGE };
     },
   },
   {
     method: "POST", path: "/api/voice/design",
-    handler(c) {
+    async handler(c) {
       const b = c.body ?? {};
-      const p = projectOf(c, b.name);
-      const r = designable(p.series, b.role);
-      const message = "Chờ người dùng bấm Đồng ý (tab Lời & giọng hoặc Tài sản)";
-      const had = waiting(p.dir, "voice-design", (a) => a.role === r.id);
-      if (had) return { waiting_consent: true, consent: had, estimate: had.estimate, message };
-      const estimate = { voice_design: 1, previews: PREVIEWS };
-      const card = createCard(p.dir, { kind: "elevenlabs", title: `Tạo ${PREVIEWS} giọng thử cho ${r.name}, 1 lượt Voice Design`, count: 1, estimate, action: { name: "voice-design", args: { role: r.id } } });
-      return { waiting_consent: true, consent: card, estimate, message };
+      const { card, estimate } = await askDesign(c, b.name, b.role);
+      return { waiting_consent: true, consent: card, estimate, message: ASK_MESSAGE };
     },
   },
   {
