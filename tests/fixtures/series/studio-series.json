@@ -12,6 +12,8 @@
   "tools": {
     "echo-args": { "file": "tools/echo-args.mjs", "flags": { "--out": "path:write", "--in": "path:read", "--n": "int", "--x": "number", "--all": "bool", "--label": "text", "--slot": "slot*", "--project": "project", "--char": "id" }, "writes": ["{project}/assets/gen", "props"], "timeout_s": 30 },
     "pose": { "file": "characters/{char}/src/pose.mjs", "positional": "id*", "flags": { "--preview": "path:write" }, "writes": ["characters/{char}"], "timeout_s": 30 },
+    "read-list": { "file": "tools/echo-args.mjs", "positional": "path:read*", "flags": {}, "writes": [], "timeout_s": 30 },
+    "sprite": { "file": "tools/echo-args.mjs", "flags": { "--out": "path:write" }, "writes": ["{project}/assets/gen", "characters/{char}/poses"], "timeout_s": 30 },
     "fail": { "file": "tools/fail.mjs", "flags": {}, "writes": [], "timeout_s": 30 },
     "slow": { "file": "tools/slow.mjs", "flags": {}, "writes": [], "timeout_s": 1 },
     "new-episode": { "file": "tools/new-episode.mjs", "flags": { "--root": "root", "--episode": "int", "--title": "text", "--name": "id" }, "writes": ["{root}"], "timeout_s": 30 }

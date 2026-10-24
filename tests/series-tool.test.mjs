@@ -96,6 +96,35 @@ test("buildArgv refuses paths outside the project, absolute paths and S/build", 
   refuses({ tool: "echo-args", flags: { "--out": "a\\b" } }, /dấu \\/);
 });
 
+test("a positional path:read is held to the read folders like a flag", () => {
+  refuses({ tool: "read-list", positional: ["S/tools/fail.mjs"] }, /positional\[0\]: "S\/tools\/fail\.mjs" không nằm trong dự án hay một thư mục read/);
+  refuses({ tool: "read-list", positional: ["S/refs/a.txt", "S/studio-series.json"] }, /positional\[1\].*không nằm trong dự án hay một thư mục read/);
+  const r = argvOf({ tool: "read-list", positional: ["S/refs/a.txt", "assets/gen/draft.txt"] });
+  assert.deepEqual(r.argv.slice(1), [join(series, "refs", "a.txt"), join(video, "ep-01", "assets", "gen", "draft.txt")]);
+});
+
+test("a writes folder with {char} opens only the named character's folder", () => {
+  assert.deepEqual(argvOf({ tool: "sprite", flags: { "--out": "assets/gen/a.pxl" } }).writes, [join(video, "ep-01", "assets", "gen")]);
+  refuses({ tool: "sprite", flags: { "--out": "S/characters/hero/poses/a.pxl" } }, /không nằm trong dự án hay một thư mục writes/);
+  assert.equal(argvOf({ tool: "sprite", char: "hero", flags: { "--out": "S/characters/hero/poses/a.pxl" } }).outputs[0], join(series, "characters", "hero", "poses", "a.pxl"));
+  refuses({ tool: "sprite", char: "hero", flags: { "--out": "S/characters/villain/poses/a.pxl" } }, /không nằm trong dự án hay một thư mục writes/);
+  refuses({ tool: "sprite", char: "hero", flags: { "--out": "S/characters/hero/src/pose.mjs" } }, /không nằm trong dự án hay một thư mục writes/);
+});
+
+test("a series folder inside the project itself is refused", () => {
+  const inner = join(tmp, "nested");
+  mkdirSync(inner, { recursive: true });
+  cpSync(FIXTURE, join(inner, "own-series"), { recursive: true });
+  writeFileSync(join(inner, "BRIEF.md"), "---\ntitle: Lồng\nseries: own-series\n---\n");
+  assert.throws(() => seriesFor(P, inner), (e) => e.status === 400 && /nằm trong chính dự án/.test(e.message));
+  writeFileSync(join(inner, "BRIEF.md"), "---\ntitle: Lồng\nseries: .\n---\n");
+  writeFileSync(join(inner, "studio-series.json"), readFileSync(join(FIXTURE, "studio-series.json")));
+  assert.throws(() => seriesFor(P, inner), (e) => e.status === 400 && /nằm trong chính dự án/.test(e.message));
+  symlinkSync(inner, join(tmp, "nested-link"));
+  assert.throws(() => seriesFor(P, join(tmp, "nested-link")), (e) => e.status === 400 && /nằm trong chính dự án/.test(e.message));
+  rmSync(join(tmp, "nested-link")); rmSync(inner, { recursive: true, force: true });
+});
+
 test("buildArgv checks every type", () => {
   refuses({ tool: "echo-args", flags: { "--n": "ba" } }, /cần số nguyên/);
   refuses({ tool: "echo-args", flags: { "--n": 1.5 } }, /cần số nguyên/);
@@ -203,6 +232,23 @@ test("series_file_put copies into a writable folder, never overwrites without re
   }
   const outside = await callTool("series_file_put", { project: "ep-01", from: "../../series/thu/tools/fail.mjs", to: "refs/x.mjs" }, env);
   assert.equal(outside.ok, false);
+});
+
+test("series_file_put never writes through a symlink already at the target", async () => {
+  const away = join(tmp, "away.txt");
+  writeFileSync(away, "ngoài series\n");
+  writeFileSync(join(video, "ep-01", "assets", "gen", "card.txt"), "thẻ\n");
+  symlinkSync(away, join(series, "refs", "linked.txt"));
+  symlinkSync(join(tmp, "nowhere.txt"), join(series, "refs", "dangling.txt"));
+  for (const [to, replace] of [["refs/linked.txt", true], ["refs/linked.txt", false], ["refs/dangling.txt", false], ["refs/dangling.txt", true]]) {
+    const r = await http("POST", "/api/series/put", { name: "ep-01", from: "assets/gen/card.txt", to, replace });
+    assert.equal(r.status, 400, `${to} ${replace}: ${r.text}`);
+    assert.match(r.json.error, /liên kết \(symlink\)/);
+  }
+  assert.equal(readFileSync(away, "utf8"), "ngoài series\n");
+  assert.ok(!existsSync(join(tmp, "nowhere.txt")));
+  assert.ok(!readdirSync(join(series, "refs")).some((f) => f.includes(".bak-")));
+  assert.equal(listReceipts(join(video, "ep-01"), { op: "series-put" }).filter((r) => r.params.to.startsWith("refs/")).length, 0);
 });
 
 test("series_episode_new from a linked episode makes the next one beside it and links it into the root", async () => {
