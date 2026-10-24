@@ -2,9 +2,17 @@
 // fakeAgents() returns { dir, env, log, rm }: env has MOTION_STUDIO_AGENT_PATH = the folder plus
 // /usr/bin:/bin (so the registry sees only these CLIs), its own state file and HOME, and the
 // FAKE_* switches the scripts read. Every call appends "<cli> <args> | stdin=<stdin>" to log.
-//   FAKE_POOL=ok|exhausted   codex-pool status sample
+//   FAKE_POOL=ok|one|exhausted   codex-pool status sample (one: only acct1 can run)
+//   FAKE_POOL_CREDITS="<n1> <n2>"  codex-pool accounts with that many image runs left each (reading
+//                            an image costs nothing here): a drawing
+//                            takes acct1 while it has credits, then switches to acct2 (one
+//                            "out of credits, switching" line on stderr, like the real script),
+//                            and fails with "out of credits" when both are spent; status follows.
+//                            Plain codex spends the same accounts (they are the same logins).
 //   FAKE_IMAGE=write|none|quota|refuse|hang|json   what `exec` of codex/codex-pool does
-//   FAKE_AGY=ok|quota        what agy -p answers
+//   FAKE_DELAY=<s>           exec sleeps that long first and logs "end <cli>" when done
+//   FAKE_AGY=ok|quota|check  what agy -p answers; check: the image check JSON of the asset batch,
+//                            failing (no_text false) for the first FAKE_AGY_FAILS calls
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,13 +22,42 @@ export const PNG_1PX = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4
 
 const head = (name) => `#!/bin/sh
 LOG="$FAKE_LOG"
+LOCKD="$FAKE_LOG.lock"
+lock() { while ! mkdir "$LOCKD" 2>/dev/null; do sleep 0.01; done; }
+unlock() { rmdir "$LOCKD" 2>/dev/null; }
+# count <file>: adds one to the number in file and prints the number before.
+count() { N=$(cat "$1" 2>/dev/null || echo 0); echo $((N + 1)) > "$1"; echo "$N"; }
 IN=""
 if [ ! -t 0 ]; then IN=$(cat 2>/dev/null); fi
 printf '%s %s | stdin=%s\\n' "${name}" "$*" "$IN" >> "$LOG"
 `;
 
+// codex-pool accounts with credits (FAKE_POOL_CREDITS): spend one, or fail when none is left.
+const credits = `
+case "$IN" in "Use your image generation tool"*) DRAW=1;; *) DRAW="";; esac
+if [ -n "$FAKE_POOL_CREDITS" ] && [ "$FAKE_IMAGE" = "write" ] && [ -n "$DRAW" ]; then
+  set -- $FAKE_POOL_CREDITS
+  lock
+  U1=$(cat "$LOG.acct1" 2>/dev/null || echo 0); U2=$(cat "$LOG.acct2" 2>/dev/null || echo 0)
+  if [ "$U1" -lt "$1" ]; then echo $((U1 + 1)) > "$LOG.acct1"
+  elif [ "$U2" -lt "$2" ]; then echo $((U2 + 1)) > "$LOG.acct2"; echo "acct1: out of credits, switching to acct2" >&2
+  else unlock; echo "ERROR: acct1 and acct2 are out of credits" >&2; exit 1
+  fi
+  unlock
+fi
+`;
+const poolStatus = `
+if [ -n "$FAKE_POOL_CREDITS" ]; then
+  set -- $FAKE_POOL_CREDITS
+  U1=$(cat "$LOG.acct1" 2>/dev/null || echo 0); U2=$(cat "$LOG.acct2" 2>/dev/null || echo 0)
+  if [ "$U1" -lt "$1" ]; then echo "acct1: OK   ok; 5h 40% (reset 22/10 20:47); week 12% (reset 29/10 10:36)"; else echo "acct1: SKIP exhausted until 24/10 03:00; 5h 100% (reset 24/10 03:00); week 40% (reset 29/10 10:36)"; fi
+  if [ "$U2" -lt "$2" ]; then echo "acct2: OK   ok; 5h 10% (reset 22/10 21:00); week 5% (reset 29/10 10:36)"; else echo "acct2: SKIP exhausted until 24/10 04:00; 5h 100% (reset 24/10 04:00); week 30% (reset 29/10 10:36)"; fi
+  exit 0
+fi
+`;
+
 // The exec part shared by codex and codex-pool: find -C <dir>, then act on FAKE_IMAGE.
-const execBody = `
+const execBody = (name, extra = "") => `
 DIR=""; LAST=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -29,6 +66,9 @@ while [ $# -gt 0 ]; do
     *) shift;;
   esac
 done
+if [ -n "$FAKE_DELAY" ]; then sleep "$FAKE_DELAY"; fi
+${extra}
+if [ -n "$FAKE_DELAY" ]; then printf 'end %s\\n' "${name}" >> "$LOG"; fi
 case "$FAKE_IMAGE" in
   quota) echo "ERROR: You've hit your usage limit." >&2; exit 1;;
   refuse) echo "I can't generate that image because it violates the content policy." > "$LAST"; echo "I can't generate that image."; exit 0;;
@@ -51,22 +91,27 @@ esac
 case "$1" in
   --version) echo "codex-cli 0.163.0";;
   login) echo "Logged in using ChatGPT eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl" >&2;;
-  exec) shift; ${execBody};;
+  exec) shift; ${execBody("codex", credits)};;
 esac
 `,
   "codex-pool": `${head("codex-pool")}
 case "$1" in
   status)
+    ${poolStatus}
     if [ "$FAKE_POOL" = "exhausted" ]; then
       echo "acct1: SKIP exhausted until 24/10 03:00; 5h 100% (reset 24/10 03:00); week 40% (reset 29/10 10:36)"
       echo "acct2: SKIP no login; no usage data yet"
       echo "pin=auto -> next: none available"
+    elif [ "$FAKE_POOL" = "one" ]; then
+      echo "acct1: OK   ok; 5h 38% (reset 22/10 20:47); week 12% (reset 29/10 10:36)"
+      echo "acct2: SKIP no login; no usage data yet"
+      echo "pin=auto -> next: acct1"
     else
       echo "acct1: OK   ok; 5h 38% (reset 22/10 20:47); week 12% (reset 29/10 10:36)"
       echo "acct2: OK   ok; no usage data yet"
       echo "pin=auto -> next: acct2"
     fi;;
-  exec) shift; ${execBody};;
+  exec) shift; ${execBody("codex-pool", credits)};;
 esac
 `,
   agy: `${head("agy")}
@@ -75,6 +120,15 @@ case "$1" in
   models) printf 'gemini-4-argon-medium\\tGemini 4 Argon (Medium)\\nclaude-opus-5-5-low\\tClaude Opus 5.5 (Low)\\nFetching available models...\\n';;
   -p)
     if [ "$FAKE_AGY" = "quota" ]; then echo '{"status":"ERROR","response":"quota exceeded for this account"}'; exit 1; fi
+    if [ "$FAKE_AGY" = "check" ]; then
+      lock; N=$(count "$LOG.agy"); unlock
+      if [ "$N" -lt "\${FAKE_AGY_FAILS:-0}" ]; then
+        echo '{"status":"SUCCESS","response":"{\\"right_character\\":true,\\"single_figure\\":true,\\"flat_green\\":true,\\"no_text\\":false,\\"note\\":\\"có chữ ở góc\\"}"}'
+      else
+        echo '{"status":"SUCCESS","response":"{\\"right_character\\":true,\\"single_figure\\":true,\\"flat_green\\":true,\\"no_text\\":true,\\"note\\":\\"\\"}"}'
+      fi
+      exit 0
+    fi
     echo '{"status":"SUCCESS","response":"OK from agy"}';;
 esac
 `,

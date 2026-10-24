@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { request } from "node:http";
 import { createServer } from "../server.mjs";
 import { callTool, studioClient, toolEnv } from "../lib/tools.mjs";
-import { dropCache, listAgents, probeDir, readVerified, summarize } from "../lib/agents/index.mjs";
+import { dropCache, generateImage, listAgents, probeDir, readVerified, slotsOf, summarize } from "../lib/agents/index.mjs";
 import { detectBin, exec, firstJson, which } from "../lib/agents/run.mjs";
 import { redact, MASK } from "../lib/agents/redact.mjs";
 import { parseStatus } from "../lib/agents/cli/codex-pool.mjs";
@@ -105,6 +105,37 @@ test("firstJson reads a fenced block, a bare object or one inside text", () => {
   assert.deepEqual(firstJson('The answer is {"b":"x}y"} done'), { b: "x}y" });
   assert.deepEqual(firstJson("[1,2]"), [1, 2]);
   assert.equal(firstJson("no json"), null);
+});
+
+// "s" for each start of an exec run of cli and "e" for each end, in log order (FAKE_DELAY on).
+const runs = (f, cli) => f.calls().split("\n").filter((l) => l.startsWith(`${cli} exec `) || l === `end ${cli}`).map((l) => (l.startsWith("end") ? "e" : "s")).join("");
+const twoImages = (f, dir, agent = null) => Promise.all(["a", "b"].map((n) => generateImage({ env: f.env, prompt: `image ${n}`, out: join(dir, `${n}.png`), project: dir, agent })));
+
+test("codex-pool runs as many images at once as it has accounts that can run; other agents one at a time", async () => {
+  const two = fakeAgents({ vars: { FAKE_DELAY: "0.5" } });
+  const dir = mkdtempSync(join(tmpdir(), "ms-slots-"));
+  try {
+    assert.equal(await slotsOf("codex-pool", { env: two.env, scan: await listAgents({ env: two.env, refresh: true }) }), 2);
+    assert.equal(await slotsOf("codex", { env: two.env }), 1);
+    const r = await twoImages(two, dir);
+    assert.ok(r.every((x) => x.ok && x.agent === "codex-pool"), JSON.stringify(r));
+    assert.equal(runs(two, "codex-pool"), "ssee", "two accounts: the runs overlap");
+    const c = await twoImages(two, dir, "codex");
+    assert.ok(c.every((x) => x.ok && x.agent === "codex"));
+    assert.equal(runs(two, "codex"), "sese", "plain codex keeps one run at a time");
+  } finally { two.rm(); }
+  const one = fakeAgents({ vars: { FAKE_DELAY: "0.5", FAKE_POOL: "one" } });
+  try {
+    assert.equal(await slotsOf("codex-pool", { env: one.env, scan: await listAgents({ env: one.env, refresh: true }) }), 1);
+    await twoImages(one, dir);
+    assert.equal(runs(one, "codex-pool"), "sese", "one account: one after the other");
+    writeFileSync(one.env.MOTION_STUDIO_STATE, JSON.stringify({ agents: { parallel: { "codex-pool": 2 } } }));
+    assert.equal(await slotsOf("codex-pool", { env: one.env }), 2, "studio.json agents.parallel wins");
+    await twoImages(one, dir);
+    assert.equal(runs(one, "codex-pool"), "sese" + "ssee", "the log keeps the first pair; with the setting the second pair overlaps");
+    writeFileSync(one.env.MOTION_STUDIO_STATE, JSON.stringify({ agents: { parallel: { "codex-pool": 9 } } }));
+    assert.equal(await slotsOf("codex-pool", { env: one.env }), 1, "a setting outside 1–4 is ignored");
+  } finally { one.rm(); rmSync(dir, { recursive: true, force: true }); }
 });
 
 const call = (port, method, path, body, token) => new Promise((res, rej) => {
