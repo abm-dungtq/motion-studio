@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadProvider } from "../lib/provider.mjs";
-import { buildPrompt, claudeArgs, reader, STUDIO_PREFIX, studioMcp, studioMcpFile, studioToolNames } from "../director.mjs";
+import { buildPrompt, claudeArgs, reader, STUDIO_PREFIX, studioMcp, studioMcpFile, studioToolNames, voiceDenied } from "../director.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
 const SERVER = fileURLToPath(new URL("../mcp/studio-mcp.mjs", import.meta.url));
@@ -113,4 +113,19 @@ test("a project of a series gets one more rule: series work only through Studio'
   const broken = { ...withSeries, series: { ...withSeries.series, dirOf: () => brokenDir } };
   assert.match(buildPrompt(broken, dir, req), /^13\. Dự án thuộc series series-hong\. /m);
   assert.doesNotMatch(buildPrompt({ ...P, series: null }, dir, req), /Dự án thuộc series/);
+});
+
+test("the director of a series episode is also denied the provider's voice commands; other projects are not", () => {
+  const seriesDir = fileURLToPath(new URL("./fixtures/series", import.meta.url));
+  const voice = ["Bash(node /ov/scripts/eleven.mjs tts*)", "Bash(node /ov/scripts/eleven.mjs audio-meta*)"];
+  const plain = { ...P, series: null, director: { ...P.director, voiceDeniedTools: voice } };
+  const withSeries = { ...plain, series: { file: "studio-series.json", dirOf: () => seriesDir, validate: () => [] } };
+  assert.deepEqual(voiceDenied(withSeries, dir), voice);
+  assert.deepEqual(voiceDenied(plain, dir), []);
+  assert.deepEqual(voiceDenied({ ...withSeries, director: { ...P.director, voiceDeniedTools: undefined } }, dir), [], "a provider without the rules");
+  const denied = (p) => { const a = claudeArgs(p, "prompt", null, null, voiceDenied(p, dir)); return a.slice(a.indexOf("--disallowedTools") + 1); };
+  const s = denied(withSeries);
+  for (const t of [...P.director.deniedTools, ...voice]) assert.ok(s.includes(t), t);
+  assert.ok(!voice.some((t) => denied(plain).includes(t)));
+  assert.ok(!voice.some((t) => between(claudeArgs(withSeries, "prompt", null, null, voice), "--allowedTools", "--disallowedTools").includes(t)), "never in the allowed list");
 });

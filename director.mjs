@@ -79,8 +79,13 @@ function seriesRule(p, dir) {
   let name = null;
   try { name = seriesFor(p, dir)?.config.name ?? null; } catch { const d = p.series?.dirOf(dir); name = d ? basename(d) : null; }
   if (!name) return null;
-  return `Dự án thuộc series ${name}. Công cụ series, vẽ ảnh, lồng tiếng, dựng cảnh và giao nộp chỉ đi qua tool motion-studio (series_*, asset_*, voice_*, scene_*, deliver_*). Không gọi codex, cast-tts, \`eleven.mjs tts\` hay \`eleven.mjs voice*\` trực tiếp (giọng chỉ qua series_tts, voice_design). \`eleven.mjs sfx\` và \`eleven.mjs music\` vẫn dùng được cho hiệu ứng và nhạc nền; trước khi gọi, ưu tiên thư viện shared-assets/sfx của thư mục gốc và file đã có trong dự án, và ghi số lượt đã dùng vào project_log. File cần ghi vào kho series thì viết trong dự án rồi dùng series_file_put.`;
+  return `Dự án thuộc series ${name}. Công cụ series, vẽ ảnh, lồng tiếng, dựng cảnh và giao nộp chỉ đi qua tool motion-studio (series_*, asset_*, voice_*, scene_*, deliver_*, drive_upload). Không gọi codex, cast-tts, \`eleven.mjs tts\` hay \`eleven.mjs voice*\` trực tiếp (giọng chỉ qua series_tts, voice_design). \`eleven.mjs sfx\` và \`eleven.mjs music\` vẫn dùng được cho hiệu ứng và nhạc nền; trước khi gọi, ưu tiên thư viện shared-assets/sfx của thư mục gốc và file đã có trong dự án, và ghi số lượt đã dùng vào project_log. File cần ghi vào kho series thì viết trong dự án rồi dùng series_file_put.`;
 }
+
+// The provider's voice rules (P.director.voiceDeniedTools) are denied to the director of a series
+// episode, under the same condition as the prompt rule above: its voices go only through the
+// series tools behind a consent card. [] for any other project, or a provider without them.
+export const voiceDenied = (p, dir) => (seriesRule(p, dir) ? [...(p.director.voiceDeniedTools ?? [])] : []);
 
 // The prompt is the user's request plus fixed rules; the provider adds what is knowledge of its
 // own tools (skills, scripts, where its keys live). Text from project files or the web is never
@@ -121,10 +126,10 @@ export function buildPrompt(p, dir, req) {
   ].filter((x) => x !== "").join("\n");
 }
 
-// mcp: studioMcp() of this request, or null.
-export function claudeArgs(p, prompt, sid, mcp = null) {
+// mcp: studioMcp() of this request, or null. extraDenied: more denied tools (voiceDenied).
+export function claudeArgs(p, prompt, sid, mcp = null, extraDenied = []) {
   return ["-p", prompt, "--output-format", "stream-json", "--verbose", "--permission-mode", "acceptEdits",
-    "--allowedTools", ...p.director.allowedTools, ...(mcp?.tools ?? []), "--disallowedTools", ...p.director.deniedTools,
+    "--allowedTools", ...p.director.allowedTools, ...(mcp?.tools ?? []), "--disallowedTools", ...p.director.deniedTools, ...extraDenied,
     ...(mcp ? ["--mcp-config", mcp.file] : []),
     ...(sid ? ["--resume", sid] : [])];
 }
@@ -166,7 +171,7 @@ function launch(p, name, dir, req, { resume = true, onEnd } = {}) {
   const mcp = studioMcp(p, dir, req);
   const here = realpathSync(dir);
   return startJob({
-    name, kind: KIND, cmd: "claude", args: claudeArgs(p, buildPrompt(p, here, req), sid, mcp), cwd: here, env: childEnv(p, req), meta: { request: req.id, resume: sid },
+    name, kind: KIND, cmd: "claude", args: claudeArgs(p, buildPrompt(p, here, req), sid, mcp, voiceDenied(p, here)), cwd: here, env: childEnv(p, req), meta: { request: req.id, resume: sid },
     onLine: reader(p, dir, state, mcp?.tools ?? []),
     onExit: (job) => {
       const now = list(dir).find((r) => r.id === req.id);

@@ -85,7 +85,7 @@ Kiểm đường chỉ ở mức đối số. Công cụ series là mã tin cậ
 
 Biên nhận nằm ở `.opus/receipts/` của dự án (thư mục thật), `actor` là `director:<id yêu cầu>` khi đạo diễn gọi. Chuỗi giống khóa trong tham số bị che (`lib/agents/redact.mjs`).
 
-Với dự án thuộc series, prompt của đạo diễn có thêm một luật: công cụ series, vẽ ảnh, lồng tiếng, dựng cảnh và giao nộp chỉ đi qua tool của Studio; không gọi codex, cast-tts hay phần giọng của `eleven.mjs` trực tiếp. `eleven.mjs sfx` và `eleven.mjs music` vẫn dùng được.
+Với dự án thuộc series, prompt của đạo diễn có thêm một luật: công cụ series, vẽ ảnh, lồng tiếng, dựng cảnh và giao nộp chỉ đi qua tool của Studio; không gọi codex, cast-tts hay phần giọng của `eleven.mjs` trực tiếp. `eleven.mjs sfx` và `eleven.mjs music` vẫn dùng được. Phần giọng còn bị chặn bằng quyền: provider khai `director.voiceDeniedTools` (provider mặc định: `VOICE_DENIED_TOOLS`, gồm `eleven.mjs tts` và `eleven.mjs audio-meta`), và Studio nối danh sách đó vào `--disallowedTools` của đạo diễn khi dự án thuộc series. Dự án thường không bị chặn.
 
 ## Lồng tiếng theo vai
 
@@ -110,7 +110,7 @@ Lồng tiếng đi qua hai công cụ của series, khai báo như mọi công c
 
 Thẻ đồng ý của mọi việc (ảnh, giọng, giao nộp) đọc từ `GET /api/consent?name=` và hiện ở đầu tab Tài sản và dưới tab "Lời & giọng". Thẻ "Chọn giọng cho <tên>" có 3 trình phát và hiện ở tab Tài sản, tab "Lời & giọng" và cột Đạo diễn. Nút "Lồng tiếng lại" của một câu `stale` gọi `/api/voice/tts` với câu đó; "Lồng tiếng các câu cũ" gửi mọi câu `stale` và ra thẻ đồng ý.
 
-Studio không đọc khóa ElevenLabs; khóa chỉ nằm trong công cụ series. Đuôi log của việc và biên nhận đi qua `lib/agents/redact.mjs`. Giới hạn: luật "không gọi phần giọng của `eleven.mjs` trực tiếp" chỉ nằm trong prompt đạo diễn, Studio không chặn được một lệnh shell mà đạo diễn tự chạy. Kiểm sau mỗi tập: mọi file giọng mới phải có biên nhận `series-tts` (hoặc `voice-design`) tương ứng.
+Studio không đọc khóa ElevenLabs; khóa chỉ nằm trong công cụ series. Đuôi log của việc và biên nhận đi qua `lib/agents/redact.mjs`. Với dự án series, Claude Code từ chối `node <OV>/scripts/eleven.mjs tts …` và `… audio-meta …` của đạo diễn (quyền `--disallowedTools`, xem trên). Quyền chỉ khớp theo dạng lệnh: một lệnh viết khác đi (qua biến, qua script khác) vẫn lọt, nên vẫn kiểm sau mỗi tập: mọi file giọng mới phải có biên nhận `series-tts` (hoặc `voice-design`) tương ứng.
 
 ## Dựng lại một cảnh, duyệt nhóm cảnh
 
@@ -140,6 +140,52 @@ Lồng tiếng lại một câu sau khi animatic đã duyệt mà hình không �
 - "Nghe rồi, được": `POST /api/gates/audio-review { name }` chạy `make-demo --record-audio-review user@studio` của provider (dòng `audio_review:` của `DEMO.md` ghi theo tiếng hiện giờ; dòng `approval:` giữ nguyên) và biên nhận `audio-review`.
 
 Đổi mốc cảnh hay đổi người nói của một câu vẫn làm cổng FAIL như trước: khi đó dựng lại và duyệt lại cảnh.
+
+## Giao nộp
+
+Năm việc giao nộp của một tập ghi vào thư mục `delivery_dir` của series, `{N}` là dòng `episode:` trong frontmatter `BRIEF.md` (thiếu thì 400). Studio không bao giờ ghi đè: file cùng tên mà khác sha thì thêm `-2`, `-3`; cùng sha thì coi như đã giao; đích là symlink thì 409. Mỗi việc ghi biên nhận `deliver-<việc>` với tên file, kích thước, sha256.
+
+| Route | Tool | Việc |
+|---|---|---|
+| `GET /api/delivery?name=` | `delivery_status` | Thư mục giao nộp, file đã có, trạng thái và lỗi gần nhất của năm dòng, bản final mới nhất, Drive (email đã che), thẻ đồng ý đang chờ, việc đang chạy |
+| `POST /api/delivery/text` | `deliver_text` | Lần đầu ghi `delivery/tieu-de-mo-ta.md` của dự án từ bản nháp `<thư mục cha của delivery_dir>/tap-<N>-tieu-de-mo-ta.md` (không có thì khung `## title`, `## description`), thêm mốc chương `m:ss <nhãn>` mỗi cảnh vào cuối mục mô tả (dòng đầu `0:00`; mô tả đã có mốc thì giữ nguyên). Chạy `COMMANDS.platform youtube` và `lint-vietnamese-content.mjs` cạnh nó; ERROR thì trả dòng lỗi và không chép. Lần sau dùng bản trong dự án (đạo diễn sửa được) |
+| `POST /api/delivery/captions` | `deliver_captions` | Cần `CAPTIONS.md` ở gốc dự án có mục `## Facebook` và `## TikTok`. `COMMANDS.captions` ra `delivery/<dự án>.srt`, rồi `COMMANDS.vietPro --stage delivery`; qua thì chép SRT và `CAPTIONS.md` |
+| `POST /api/delivery/export { name, input? }` | `deliver_export` | Việc `export` (một mỗi dự án): `COMMANDS.export --target youtube,facebook,tiktok --no-thumb` trên `renders/*-final.mp4` mới nhất, chỉ cho nền tảng chưa có file; mã 5 là "cổng final chặn" kèm dòng preflight; xong chép ba file |
+| `POST /api/delivery/thumbnail { name, line1, line2, accent?, prompt? }` | `deliver_thumbnail` | Ghi đợt ảnh `thumbnail` (3 ảnh `kind: "thumbnail"`, khuôn `image_styles.thumbnail`) và thẻ đồng ý `codex` action `thumbnail`; chưa tốn lượt. Đồng ý thì việc `asset-batch` vẽ cả đợt (`runBatch`) rồi chạy công cụ series `make-thumbnail` cho mỗi ảnh ra `delivery/thumb-<i>.jpg` (`--tag` là "<TÊN SERIES> · TẬP N") |
+| `POST /api/delivery/thumbnail/pick { name, n }` | | Lựa chọn của người dùng: `delivery/thumb-<n>.jpg` thành `thumbnail.jpg` của thư mục giao nộp |
+| `POST /api/delivery/drive { name, dry_run? }` | `drive_upload` | Không `dry_run`: thẻ đồng ý `drive` "Tải <n> file (<MB>) lên Drive <email đã che>/<thư mục>", action `drive-upload`. `dry_run: true`: chạy ngay, không cần thẻ |
+| `POST /api/delivery/ask { name, row }` | | Nhờ đạo diễn sửa dòng `text` hoặc `captions` (xếp một yêu cầu kèm lỗi gần nhất) |
+
+Công cụ `make-thumbnail` của series nhận `--in` (ảnh vẽ), `--out` (`.jpg`, không ghi đè), `--line1`, `--line2`, `--accent red|yellow|cyan`, `--tag`:
+
+```json
+"make-thumbnail": { "file": "kenh-youtube/make-thumbnail.mjs", "flags": { "--in": "path:read", "--out": "path:write", "--line1": "text", "--line2": "text", "--accent": "word", "--tag": "text" }, "writes": ["{project}/delivery"], "timeout_s": 120 }
+```
+
+Hộp thoại Xuất bản có bảng "Giao nộp" năm dòng (Video, Thumbnail, Tiêu đề và mô tả, Phụ đề, Drive): trạng thái ("chưa có", "đã có trong tap-N", "lỗi: …"), nút chạy, thẻ đồng ý của thumbnail và Drive ngay dưới dòng của nó, ba ảnh thumbnail để chọn, và "Nhờ đạo diễn sửa" khi tiêu đề hay phụ đề lỗi.
+
+### Drive
+
+`lib/drive.mjs` tải lên bằng gws (Google Workspace CLI); Studio không giữ khóa Google nào. Lệnh gws là `MOTION_STUDIO_GWS` (đường file; `.mjs`/`.js` chạy bằng node) hoặc `gws` trong các đường tìm CLI của agent; mọi lần gọi không qua shell:
+
+1. `gws drive about get`: tài khoản đang đăng nhập khác `drive.account` của series thì dừng trước mọi lệnh ghi, lời nhắn có hai email đã che.
+2. Tìm thư mục `drive.folder` ở gốc My Drive; không có thì tạo một lần.
+3. Mỗi file `mp4`, `jpg`, `srt`, `md` của thư mục giao nộp (bỏ file ẩn): file cùng tên và cùng cỡ đã có trên Drive thì bỏ qua; còn lại `gws drive files create --upload <tên>` với cwd là thư mục giao nộp, rồi so `size` Drive trả về với file trên máy.
+
+`dry_run` thêm `--dry-run` của gws cho mọi lệnh ghi (tạo thư mục, tải file): gws kiểm lệnh tại chỗ và không gửi; lệnh đọc vẫn chạy. Biên nhận `drive-upload` chỉ có tài khoản đã che, thư mục, và mỗi file: tên, cỡ, cỡ trên Drive, link, kết quả; không giữ đầu ra thô của gws.
+
+## Cần xử lý ngoài
+
+Một bước chạy công cụ lỗi hai lần liền cùng mã thì thử lại trong Studio khó qua. `lib/handoff.mjs` đếm lỗi theo bước trong `.opus/failures.json`: `series_tool` (bước là tên công cụ, ví dụ `build-rig`), `asset_batch` (`asset-batch`), `series_tts` (`tts`; câu bị cổng viet-pro chặn không tính), `scene_rebuild` (`scene-cN`), bốn việc giao nộp (`deliver-text`, `deliver-captions`, `deliver-export`, `deliver-thumbnail`) và `drive-upload`. Lỗi ném ra có mã HTTP thì mã là `http-<mã>`. Lần thành công xoá đếm.
+
+Lần thứ hai cùng mã: Studio ghi `.opus/handoff/<bước>.md` (bước, lệnh đã chạy, mã, 30 dòng cuối đã che khóa, đường dự án, câu để dán vào Claude Code ở terminal, dòng hướng dẫn thêm `resolved: <ghi chú>`), biên nhận `handoff`, và kết quả của tool có `handoff` để đạo diễn dừng thử lại. Không ghi biến môi trường nào.
+
+| Route | Việc |
+|---|---|
+| `GET /api/handoff?name=` | Thẻ đang mở: file trong `.opus/handoff/` chưa có dòng `resolved:` |
+| `POST /api/handoff/resolve { name, step, note? }` | Thêm `resolved: user@studio <ISO> <ghi chú>`; không có thẻ là 404, đã xử lý là 409 |
+
+Thẻ đỏ "Cần xử lý ngoài: <bước>" ở đầu cột Đạo diễn có câu để dán, nút "Chép" và "Đã xử lý". Dòng `resolved:` thêm bằng tay hay do Claude Code thêm cũng tắt thẻ. Bước đó lỗi lại hai lần sau khi đã xử lý thì file cũ đổi tên thành `<bước>.resolved-<giờ>.md` và có file mới.
 
 ## Thêm một series khác
 
