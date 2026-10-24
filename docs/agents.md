@@ -1,6 +1,6 @@
 # Agent CLI trên máy
 
-Studio dò các agent CLI cài trên máy và nhờ chúng viết chữ, đọc ảnh hoặc sinh ảnh. Mọi phần của Studio đi qua một module là `lib/agents/index.mjs`, nên thứ tự thử, fallback, khoá mỗi agent một việc và che bí mật chỉ nằm ở một chỗ.
+Studio dò các agent CLI cài trên máy và nhờ chúng viết chữ, đọc ảnh hoặc sinh ảnh. Mọi phần của Studio đi qua một module là `lib/agents/index.mjs`, nên thứ tự thử, fallback, giới hạn số lượt chạy cùng lúc của mỗi agent và che bí mật chỉ nằm ở một chỗ.
 
 ## Xem trên giao diện
 
@@ -38,7 +38,23 @@ Mặc định:
 | Đọc ảnh | agy → codex-pool → claude → gemini |
 | Chữ | agy → codex-pool → claude → opencode |
 
-Một agent bị bỏ qua khi không thấy, bị lỗi, chưa đăng nhập, có khả năng ấy là `không`, hoặc (codex-pool) không còn tài khoản nào chạy được. Agent `có` đứng trước agent `chưa rõ`. Hết quota hay chạy lỗi thì chuyển sang agent kế tiếp. Agent từ chối yêu cầu thì dừng và báo lý do, không thử agent khác. Mỗi agent chạy một việc một lúc. Mỗi lượt chạy trong một thư mục tạm riêng, xong thì xoá.
+Một agent bị bỏ qua khi không thấy, bị lỗi, chưa đăng nhập, có khả năng ấy là `không`, hoặc (codex-pool) không còn tài khoản nào chạy được. Agent `có` đứng trước agent `chưa rõ`. Hết quota hay chạy lỗi thì chuyển sang agent kế tiếp. Agent từ chối yêu cầu thì dừng và báo lý do, không thử agent khác. Mỗi lượt chạy trong một thư mục tạm riêng, xong thì xoá.
+
+### Số lượt chạy cùng lúc
+
+Trong một tiến trình, mỗi agent chạy tối đa N lượt cùng lúc; lượt thứ N+1 chờ tới lượt theo thứ tự gọi. N lấy theo thứ tự:
+
+1. `agents.parallel[<id>]` trong file trạng thái, số nguyên 1–4 (giá trị khác bị bỏ qua).
+2. Hàm `parallel(row)` của adapter, nếu có, giới hạn trong 1–4. codex-pool trả số tài khoản đang chạy được trong lần quét (`acct1: OK`, …).
+3. Mặc định 1.
+
+Vậy codex-pool có hai tài khoản còn lượt thì vẽ hai ảnh một lúc, còn một tài khoản thì lần lượt. Một tài khoản chạy được vài lượt song song, nên có thể nâng lên:
+
+```json
+{ "agents": { "parallel": { "codex-pool": 4 } } }
+```
+
+Giới hạn này tính trong một tiến trình: đợt ảnh (`docs/assets.md`) chạy cả đợt trong một tiến trình con nên tuân theo nó; hai việc khác nhau của Studio (một ảnh lẻ và một đợt) là hai tiến trình, mỗi cái có giới hạn riêng.
 
 Đổi thứ tự trong file trạng thái (`~/.config/motion-studio/studio.json`, hoặc `MOTION_STUDIO_STATE`):
 
@@ -51,7 +67,7 @@ Khoá nào không ghi thì giữ mặc định. Studio đọc lại thứ tự �
 ## Gọi từ code
 
 ```js
-import { complete, describeImages, generateImage, listAgents } from "./lib/agents/index.mjs";
+import { complete, describeImages, generateImage, listAgents, slotsOf } from "./lib/agents/index.mjs";
 
 const scan = await listAgents();              // { agents, order, at }; cache 60 s, { refresh: true } quét lại
 const img = await generateImage({ prompt: "một con mèo thuỷ màu", out: "/abs/pj/assets/cat.png", project: "/abs/pj", actor: "director" });
@@ -59,6 +75,7 @@ const img = await generateImage({ prompt: "một con mèo thuỷ màu", out: "/a
 const seen = await describeImages({ images: ["/abs/pj/assets/cat.png"], prompt: "Có chữ trong ảnh không?", schema: { type: "object", properties: { text: { type: "boolean" } } } });
 // { ok, json, text, agent, tried }
 const txt = await complete({ prompt: "Ba ý cho cảnh mở đầu", schema: null });
+const n = await slotsOf("codex-pool");   // số lượt codex-pool được chạy cùng lúc (1–4)
 ```
 
 - `refs` đính ảnh tham chiếu, `edit: true` sửa `refs[0]` giữ khung, `size` như `1024x1024`, `agent` ép dùng một agent.
