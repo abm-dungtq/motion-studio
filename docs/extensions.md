@@ -11,6 +11,7 @@ Studio có sẵn các chỗ cắm dưới đây. Một tính năng mới thườ
 | Biên nhận đầu ra | gọi `writeReceipt` | `lib/receipts.mjs` |
 | Agent CLI (chữ, đọc ảnh, sinh ảnh) | `lib/agents/cli/*.mjs` | `lib/agents/index.mjs`, xem [agents.md](agents.md) |
 | Lệnh của provider | `P.commands.*` | `lib/provider.mjs` |
+| Công cụ của một series (kho dùng chung nhiều tập) | `studio-series.json` trong thư mục series | `lib/series.mjs`, `lib/series-run.mjs`, xem [series.md](series.md) |
 
 Các module được nạp theo thứ tự tên file. Tên trùng (route, tool, id kiểm) làm Studio dừng ngay lúc khởi động và báo file nào trùng, để lỗi không lọt vào lúc đang dùng.
 
