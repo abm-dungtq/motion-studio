@@ -1,6 +1,6 @@
 // The routes the series extension reads and writes (docs/assets.md, docs/series.md), through the
 // shared client: GET /api/series, /api/assets, /api/consent and /api/voice/previews; POST
-// /api/consent/answer, /api/assets/approve, /api/assets/redo and /api/voice/pick. A write answers
+// /api/consent/answer, /api/assets/approve, /api/assets/redo, /api/assets/resume and /api/voice/pick. A write answers
 // { status, data?, error? } and, on 200, reloads the assets, the waiting cards and the previews.
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api, ApiError, queryClient, send } from "@/api/client.ts";
@@ -70,6 +70,7 @@ async function write<T>(name: string, path: string, body: Record<string, unknown
 
 export const answerConsent = (name: string, id: string, ok: boolean) => write<{ card: unknown; job: unknown }>(name, "/api/consent/answer", { name, id, ok });
 export const approveBoard = (name: string, batch: string, board: BoardKey, ids: string[]) => write<{ ids: string[]; copied: string[] }>(name, "/api/assets/approve", { name, batch, board, ids });
+export const resumeBatch = (name: string, batch: string) => write<{ job: unknown }>(name, "/api/assets/resume", { name, batch });
 export const redoImages = (name: string, batch: string, ids: string[], reason: string) => write<{ job: unknown }>(name, "/api/assets/redo", { name, batch, ids, reason, from: "board" });
 
 export const pickVoice = (name: string, role: string, pick: number) => write<{ job: unknown; role: string; pick: number }>(name, "/api/voice/pick", { name, role, pick });

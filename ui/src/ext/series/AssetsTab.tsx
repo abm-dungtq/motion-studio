@@ -3,18 +3,20 @@
 // character, the backgrounds board and the props board, built from every batch of the project
 // (GET /api/assets). A running batch is followed by polling the assets and by the project's job
 // feed; when its job ends the boards load again and a toast says so. Screen cards and thumbnails
-// need no board: they are used from the project as drawn.
-import { useEffect, useMemo, useRef } from "react";
+// need no board: they are used from the project as drawn. A batch cut short says so, with Chạy
+// tiếp (POST /api/assets/resume) when Studio can carry it on without a new card.
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, say } from "@/api/client.ts";
 import { jobsQuery } from "@/api/queries.ts";
 import { Empty, Fail, Loading } from "@/shell/states.tsx";
 import { useStudio } from "@/store/studio.ts";
-import { seriesKeys, useAssets, useSeries } from "./api.ts";
+import { Button } from "@/shell/controls.tsx";
+import { resumeBatch, seriesKeys, useAssets, useSeries } from "./api.ts";
 import { ConsentCards } from "./ConsentCards.tsx";
 import { VoicePicks } from "./VoicePick.tsx";
 import { Board } from "./Board.tsx";
-import type { AssetsList, BoardData, BoardItem } from "./types.ts";
+import type { AssetsList, BatchView, BoardData, BoardItem } from "./types.ts";
 
 export const LEAD = "Ảnh của series: đồng ý đợt vẽ, duyệt tờ nhân vật, nền và đạo cụ";
 export const KIND = "asset-batch";
@@ -53,6 +55,23 @@ function useBatchEnds(name: string, list: AssetsList | undefined): void {
   }, [list]);
 }
 
+// A batch cut short: what Studio says about it, and Chạy tiếp when it can carry on without a card.
+function Interrupted({ name, b }: { name: string; b: BatchView }) {
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true);
+    const r = await resumeBatch(name, b.batch);
+    setBusy(false);
+    say(r.status === 200 ? `Đợt ${b.batch} chạy tiếp` : `Không chạy tiếp được: ${r.error}`, r.status !== 200);
+  };
+  return (
+    <div role="status" aria-label={`Đợt ${b.batch} bị ngắt`} className="flex flex-wrap items-center gap-2 text-xs text-warn">
+      <span>{b.message ?? `Đợt ${b.batch} bị ngắt; ảnh đã vẽ giữ nguyên.`}</span>
+      {b.can_resume ? <Button className="h-7 px-2 text-xs" disabled={busy} onClick={() => void go()}>Chạy tiếp</Button> : null}
+    </div>
+  );
+}
+
 export function AssetsTab() {
   const name = useStudio((s) => s.name);
   if (!name) return <Empty text="Chưa mở dự án nào. Chọn một dự án ở thanh trên cùng." />;
@@ -78,6 +97,7 @@ function SeriesAssets({ name }: { name: string }) {
       <ConsentCards name={name} />
       <VoicePicks name={name} />
       {running.map((b) => <p key={b.batch} className="m-0 text-xs text-muted-foreground">{`Đợt ${b.batch} đang chạy. Bảng tự tải lại khi xong.`}</p>)}
+      {q.data.batches.filter((b) => b.interrupted && !b.running && !b.job).map((b) => <Interrupted key={b.batch} name={name} b={b} />)}
       {q.data.batches.filter((b) => b.error).map((b) => <p key={b.batch} className="m-0 text-xs text-warn">{`Đợt ${b.batch} có lỗi: ${b.error}`}</p>)}
       {boards.length
         ? boards.map((b) => <Board key={b.key} name={name} board={b} running={running.length > 0} />)

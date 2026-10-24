@@ -16,7 +16,7 @@ import type { AssetStatus, BoardData, BoardItem, Zoom } from "./types.ts";
 
 export const STATUS_TEXT: Record<AssetStatus, string> = {
   new: "chưa vẽ", queued: "chờ vẽ", drawing: "đang vẽ", checking: "đang tự kiểm", keying: "đang tách nền",
-  keyed: "chờ duyệt", ready: "chờ duyệt", needs_review: "cần xem", failed: "lỗi", waiting_quota: "chờ lượt", approved: "đã duyệt",
+  keyed: "chờ duyệt", ready: "chờ duyệt", needs_review: "cần xem", failed: "lỗi", waiting_quota: "chờ lượt", interrupted: "bị ngắt", approved: "đã duyệt",
 };
 const BUSY: AssetStatus[] = ["queued", "drawing", "checking", "keying"];
 
@@ -119,7 +119,7 @@ function Cell({ name, it, zoom, fit, ticked, onTick }: { name: string; it: Board
         <Checkbox checked={ticked} onChange={onTick} aria-label={`Đánh dấu ${it.id}`} />
         <span className="font-mono">{it.id}</span>
       </label>
-      <span className={it.status === "needs_review" || it.status === "failed" ? "text-warn" : "text-muted-foreground"}>{STATUS_TEXT[it.status] ?? it.status}</span>
+      <span className={["needs_review", "failed", "interrupted"].includes(it.status) ? "text-warn" : "text-muted-foreground"}>{`${STATUS_TEXT[it.status] ?? it.status}${it.unchecked ? " · chưa kiểm được" : ""}`}</span>
       {why ? <span className="text-muted-foreground">{`Tự kiểm: ${why}`}</span> : null}
     </li>
   );

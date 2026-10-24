@@ -11,7 +11,7 @@ export interface SeriesInfo {
 }
 
 export type AssetKind = "pose" | "background" | "prop" | "ui-card" | "thumbnail";
-export type AssetStatus = "new" | "queued" | "drawing" | "checking" | "keying" | "keyed" | "ready" | "needs_review" | "failed" | "waiting_quota" | "approved";
+export type AssetStatus = "new" | "queued" | "drawing" | "checking" | "keying" | "keyed" | "ready" | "needs_review" | "failed" | "waiting_quota" | "interrupted" | "approved";
 
 // One image of a batch: the batch file's item with its state (batchStatus of lib/assets/batch.mjs).
 export interface AssetItem {
@@ -25,6 +25,8 @@ export interface AssetItem {
   preview?: string | null;
   reasons?: string[];
   error?: string | null;
+  // The self-check could not read the image (not a failed check): it waits on the board, not redrawn.
+  unchecked?: boolean;
   updated?: string;
 }
 
@@ -51,6 +53,10 @@ export interface BatchView {
   batch: string;
   running: boolean;
   stopped?: boolean;
+  // Cut short (job killed, Studio stopped): drawn images kept; can_resume when the batch file is
+  // still the one the card approved and no job runs, so Chạy tiếp needs no new card.
+  interrupted?: boolean;
+  can_resume?: boolean;
   message?: string | null;
   error?: string;
   items: AssetItem[];
