@@ -77,11 +77,26 @@ Dòng cuối của job là `RESULT {"ok", "batch", "counts", "passed", "review",
 | `needs_review` | trượt kiểm hai lần; người dùng xem trên bảng duyệt |
 | `failed` | bị từ chối hoặc lỗi (xem `error`) |
 | `waiting_quota` | chờ lượt, hoặc đợt dừng vì hết lượt |
+| `approved` | người dùng đã duyệt trên bảng; ảnh có thêm `approved: { at, by, board }` |
 
 ## Vẽ lại
 
 - `asset_redo { project, batch, id, reason }`: đạo diễn vẽ lại đúng một ảnh, không cần thẻ, chờ xong rồi trả trạng thái ảnh. Mỗi ảnh tối đa 3 lần vẽ lại do AI yêu cầu trong một đợt; lần thứ tư trả lỗi "cần người dùng xem". Đạo diễn tự vẽ lại thì không có yêu cầu mới xếp cho nó.
-- `POST /api/assets/redo { name, batch, ids, reason }`: nút "Vẽ lại ảnh đã đánh dấu" của người dùng. Cú bấm là đồng ý, không cần thẻ thứ hai, không giới hạn số lần.
+- `POST /api/assets/redo { name, batch, ids, reason }`: nút "Vẽ lại ảnh đã đánh dấu" của người dùng. Cú bấm là đồng ý, không cần thẻ thứ hai, không giới hạn số lần. Gửi từ bảng duyệt (`from: "board"`) thì bắt buộc có `reason`.
+
+## Duyệt bảng
+
+Tab Tài sản xếp ảnh của các đợt thành bảng: `character:<id>` gồm ảnh `pose` của nhân vật đó, `background` gồm ảnh `background`, `prop` gồm ảnh `prop`. `ui-card` và `thumbnail` không có bảng. "Duyệt cả bảng" gửi `POST /api/assets/approve { name, batch, board, ids, notes? }` với mọi ảnh `keyed` của bảng, cộng ảnh `needs_review` người dùng đã đánh dấu; mỗi đợt một lần gọi.
+
+Route kiểm hết rồi mới ghi; một ảnh bị từ chối thì không ghi gì:
+
+- `ids` có 1 đến 50 ảnh, đều thuộc bảng và ở `keyed` hoặc `needs_review`; `notes` tối đa 1000 ký tự. Đợt đang chạy là 409.
+- Mọi đích trong series phải nằm trong một thư mục `writable` (so bằng `realpath`), không dưới `S/build`, không phải symlink. Đích đã có cùng nội dung thì nhận; khác nội dung thì 409, không bao giờ ghi đè ảnh đã duyệt.
+- Nhân vật: ảnh vẽ (`raw`) chép sang `target`; ảnh không có `target` thì chỉ ghi đường raw trong dự án vào `images`. Rồi ghi `<characters>/<id>/approval.json` (thư mục đó phải thuộc một khóa writable, như `rig_src`): nội dung cũ giữ nguyên, cộng `{ approved: true, date, by, notes, images, previous }`, với `previous` là bản cũ. File cũ hỏng JSON thì 409.
+- Nền: ảnh đã lượng tử hóa chép sang `target`, không có thì `<writable.backgrounds>/<id bỏ bg->.png`, và sang `assets/bg/` của dự án.
+- Đạo cụ: `.pxl` đã tách nền chép sang `<writable.props>/<tên>.pxl`, tên lấy từ `target` hoặc id bỏ `prop-`.
+
+Series thiếu khóa writable cần dùng thì 400 nói rõ khóa nào. Sau khi chép, ảnh chuyển `approved`, `DEMO.md` có thêm dòng `- tài sản <bảng>: approved <ai> <giờ> <ids>` phía trên `## Frames`, có biên nhận `asset-approve`, và đạo diễn nhận yêu cầu "Bảng <bảng> đã duyệt: … Làm tiếp: build-rig/props, sync-to-project, dùng tên mới trong scenes." Ảnh trong `assets/gen/raw/` vẫn ở nguyên chỗ.
 
 ## Route và tool
 
@@ -90,6 +105,7 @@ Dòng cuối của job là `RESULT {"ok", "batch", "counts", "passed", "review",
 | `GET /api/assets?name=` | | Mọi đợt của dự án: ảnh, trạng thái, thẻ đang chờ, job đang chạy |
 | `POST /api/assets/batch { name, batch }` | `asset_batch` | Kiểm file đợt, tạo thẻ đồng ý |
 | `POST /api/assets/redo { name, batch, ids, reason? }` | `asset_redo` | Vẽ lại ảnh đã chọn |
+| `POST /api/assets/approve { name, batch, board, ids, notes? }` | | Duyệt ảnh của một bảng và chép vào series (xem [Duyệt bảng](#duyệt-bảng)) |
 | | `asset_status { project, batch? }` | Trạng thái từng ảnh; không có `batch` thì liệt kê đợt |
 | `GET /api/consent?name=` (`&all=1`) | | Thẻ đang chờ (hay mọi thẻ) |
 | `POST /api/consent/answer { name, id, ok }` | | Trả lời thẻ; `ok: true` chạy action và trả `{ card, job }` |
@@ -103,4 +119,5 @@ Dòng cuối của job là `RESULT {"ok", "batch", "counts", "passed", "review",
 | `assets/gen/keyed/` | ảnh đã tách nền (`.pxl` và ảnh xem trước, hoặc nền đã lượng tử hóa) |
 | `.opus/assets/<đợt>.json` | trạng thái từng ảnh |
 | `.opus/consent/<id>.json` | thẻ đồng ý |
-| `.opus/receipts/` | biên nhận `image-generate`, `image-check`, `series-tool`, `consent` |
+| `DEMO.md` | một dòng mỗi lần duyệt bảng |
+| `.opus/receipts/` | biên nhận `image-generate`, `image-check`, `series-tool`, `consent`, `asset-approve` |
