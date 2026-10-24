@@ -71,15 +71,15 @@ describe("integration: every panel and extension through the real loader", () =>
     expect(failures).toEqual([]);
   });
 
-  it("puts 7 tabs on the rail in group order, with 2 group lines", async () => {
+  it("puts 8 tabs on the rail in group order, with 2 group lines", async () => {
     await bootApp();
     const rail = slot("rail")!;
     const ids = Array.from(rail.querySelectorAll("[role=tab]"), (b) => b.getAttribute("data-tab"));
-    expect(ids).toEqual(["media", "styles-code", "anime", "fx", "voice", "music", "library"]);
+    expect(ids).toEqual(["media", "styles-code", "anime", "fx", "series-assets", "voice", "music", "library"]);
     expect(rail.querySelectorAll("[data-rail-sep]")).toHaveLength(2);
-    // The lines fall between the groups: after fx and after music.
+    // The lines fall between the groups: after series-assets and after music.
     const order = Array.from(rail.children, (e) => e.getAttribute("data-tab") ?? (e.hasAttribute("data-rail-sep") ? "|" : "?"));
-    expect(order).toEqual(["media", "styles-code", "anime", "fx", "|", "voice", "music", "|", "library"]);
+    expect(order).toEqual(["media", "styles-code", "anime", "fx", "series-assets", "|", "voice", "music", "|", "library"]);
   });
 
   it("registers the sections of the media tab, the export dialog and the director tab", async () => {

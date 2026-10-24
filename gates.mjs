@@ -14,6 +14,7 @@ import { runFile } from "./create.mjs";
 export const BY = "user@studio";
 const PITCH_TIMEOUT_MS = 60000;
 const APPROVAL = /^\s*[-*]?\s*approval:.*$/im;
+const FRAMES = /^## Frames[ \t]*$/m;
 
 // The argv after `node` that writes the picked direction. A provider that declares
 // commands.choose = { file, args } (placeholders {project}, {pick}) is run as declared; otherwise
@@ -43,6 +44,24 @@ export function writeApproval(dir, what, now = new Date()) {
   writeFileSync(tmp, text);
   renameSync(tmp, f);
   return line;
+}
+
+// Puts "- <line>" into DEMO.md just above "## Frames" (make-demo keeps the text above that
+// heading when it writes DEMO.md again), at the end when there is no such heading, or in a new
+// "# DEMO" when there is no DEMO.md. Lines already there, approval: among them, are left as they
+// are. Returns the line written.
+export function writeDemoNote(dir, line) {
+  const f = join(dir, "DEMO.md");
+  const note = `- ${String(line).replace(/[\r\n]+/g, " ").trim()}`;
+  const old = existsSync(f) ? readFileSync(f, "utf8") : "# DEMO\n";
+  const at = FRAMES.exec(old)?.index ?? -1;
+  const head = (at < 0 ? old : old.slice(0, at)).replace(/\s*$/, "");
+  const sep = /(^|\n)- [^\n]*$/.test(head) ? "\n" : "\n\n";
+  const text = at < 0 ? `${head}${sep}${note}\n` : `${head}${sep}${note}\n\n${old.slice(at)}`;
+  const tmp = `${f}.${process.pid}.tmp`;
+  writeFileSync(tmp, text);
+  renameSync(tmp, f);
+  return note;
 }
 
 // The shown answer for a valid value, or { error } (400).
