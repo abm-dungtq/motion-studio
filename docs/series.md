@@ -9,7 +9,7 @@ Provider mặc định (`P.series.dirOf`) đọc `BRIEF.md` của dự án:
 1. Dòng `series: <thư mục>` trong frontmatter (đường tuyệt đối, hoặc tương đối với dự án).
 2. Không có thì dòng `- Thư mục series: <thư mục>` dưới mục `## series_bible` (tập cũ).
 
-Thư mục đó phải có `studio-series.json`, nếu không dự án không thuộc series nào. File khai báo có lỗi thì mọi route series trả 400 kèm danh sách lỗi; Studio đọc lại file khi nó đổi.
+Thư mục đó phải có `studio-series.json`, nếu không dự án không thuộc series nào. Thư mục series nằm trong chính dự án (so bằng `realpath`, kể cả `series: .`) bị từ chối với 400: series là kho dùng chung nằm ngoài các tập, và ai sửa được dự án không được tự chọn công cụ nào Studio chạy. File khai báo có lỗi thì mọi route series trả 400 kèm danh sách lỗi; Studio đọc lại file khi nó đổi.
 
 Tập có thể nằm ngoài thư mục gốc của Studio, cạnh các tập khác của series. Khi đó thư mục gốc chứa một symlink tới tập; Studio liệt kê symlink tới thư mục như một dự án (symlink hỏng thì bỏ qua).
 
@@ -35,7 +35,7 @@ Tập có thể nằm ngoài thư mục gốc của Studio, cạnh các tập kh
 ```
 
 - Mọi đường tương đối với thư mục series. Không nhận đường tuyệt đối, `\`, `..`, `.` hay đoạn bắt đầu bằng dấu chấm.
-- Chỗ thay: `{char}` là id nhân vật (`^[a-z0-9][a-z0-9-]{0,40}$`), `{N}` và `{NN}` là số tập (hai chữ số), `{project}` là thư mục dự án và `{root}` là thư mục gốc của tập; hai chỗ sau chỉ đứng đầu một đường trong `writes`.
+- Chỗ thay: `{char}` là id nhân vật (`^[a-z0-9][a-z0-9-]{0,40}$`), `{N}` và `{NN}` là số tập (hai chữ số), `{project}` là thư mục dự án và `{root}` là thư mục gốc của tập; hai chỗ sau chỉ đứng đầu một đường trong `writes`. Một thư mục của `read` hay `writes` có `{char}` chỉ tính khi lần chạy có nhân vật (`char` của yêu cầu, hoặc cờ `--char`); không có nhân vật thì thư mục đó không mở.
 - `read`: thư mục series mà đối số kiểu `path:read` được trỏ vào (ngoài dự án).
 - `writable`: khóa ghi được cho `series_file_put`.
 - `episode`: công cụ tạo tập mới và khuôn tên tập.
@@ -67,7 +67,7 @@ Kiểu `root` nhận đúng hai thư mục: thư mục gốc của Studio, và t
 
 - `S/<đường>` là trong thư mục series; mọi đường khác là tương đối với dự án.
 - `realpath` của phần sâu nhất đã có phải nằm trong thư mục tương ứng (symlink không đưa ra ngoài được).
-- `path:read` nằm trong dự án hoặc một thư mục của `read`.
+- `path:read` nằm trong dự án hoặc một thư mục của `read`, dù là cờ hay đối số vị trí.
 - `path:write` nằm trong dự án hoặc một thư mục trong `writes` của công cụ.
 - Không đối số nào được nằm dưới `S/build`: công cụ tự ghi vào đó, đối số thì không.
 
@@ -80,7 +80,7 @@ Kiểm đường chỉ ở mức đối số. Công cụ series là mã tin cậ
 | `GET /api/series?name=<dự án>` | `series_list` | Series của dự án: nhân vật, vai, công cụ và cờ, khóa ghi được, loại khuôn ảnh; không có `name` thì mọi series trong thư mục gốc |
 | `POST /api/series/run` | `series_tool` | Chạy một công cụ, việc `series` của dự án (một việc một lúc), biên nhận `series-tool` |
 | `GET /api/series/job?id=` | | Trạng thái việc và biên nhận khi đã ghi |
-| `POST /api/series/put` | `series_file_put` | Chép một file của dự án vào `<khóa writable>/<đường>`; file đã có thì 409 trừ khi `replace: true`, khi đó file cũ thành `<tên>.bak-<yyyymmddHHMM>`; biên nhận `series-put` |
+| `POST /api/series/put` | `series_file_put` | Chép một file của dự án vào `<khóa writable>/<đường>`; file đã có thì 409 trừ khi `replace: true`, khi đó file cũ thành `<tên>.bak-<yyyymmddHHMM>`; đích là symlink (kể cả symlink hỏng) thì 400, Studio không ghi xuyên qua; biên nhận `series-put` |
 | `POST /api/series/episode` | `series_episode_new` | Chạy công cụ `episode.tool` với `--root` là thư mục thật chứa tập nguồn; nếu thư mục đó khác thư mục gốc của Studio thì nối symlink `<gốc>/<tên tập>`; tên đã có là 409; biên nhận `series-episode` trong tập mới |
 
 Biên nhận nằm ở `.opus/receipts/` của dự án (thư mục thật), `actor` là `director:<id yêu cầu>` khi đạo diễn gọi. Chuỗi giống khóa trong tham số bị che (`lib/agents/redact.mjs`).

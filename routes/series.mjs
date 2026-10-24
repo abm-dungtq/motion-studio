@@ -9,14 +9,15 @@
 //   POST /api/series/put { name, from, to, char?, replace?, actor? }
 //        → copies one file of the project into a writable folder of the series: to is
 //          "<writable key>/<path>". An existing file is refused (409) unless replace is true; then
-//          the old one is kept as <file>.bak-<yyyymmddHHMM> first. Receipt op series-put.
+//          the old one is kept as <file>.bak-<yyyymmddHHMM> first. A symlink at the target is
+//          refused (400), never written through. Receipt op series-put.
 //   POST /api/series/episode { from, episode, title, actor? }
 //        → runs the series' episode tool with --root = the real folder holding project `from`
 //          (episodes of a series sit side by side, also when `from` is a symlink in the root).
 //          When that folder is not Studio's root, a symlink <root>/<episode name> to the new
 //          episode is made once the tool succeeded. A name already in the root is 409. Receipt op
 //          series-episode, in the new episode (in `from` when the tool failed).
-import { copyFileSync, existsSync, lstatSync, mkdirSync, realpathSync, statSync, symlinkSync } from "node:fs";
+import { constants, copyFileSync, existsSync, lstatSync, mkdirSync, realpathSync, statSync, symlinkSync } from "node:fs";
 import { basename, dirname, join, relative, sep } from "node:path";
 import { cancel, getJob, startJob } from "../jobs.mjs";
 import { redact } from "../lib/agents/redact.mjs";
@@ -31,6 +32,7 @@ const KEEP_RECEIPTS = 200;
 const bad = (status, msg) => Object.assign(new Error(msg), { status });
 const actorOf = (b) => (typeof b.actor === "string" && ACTOR.test(b.actor) ? b.actor : "human");
 const inside = (p, dir) => p === dir || p.startsWith(dir + sep);
+const entryAt = (p) => { try { return lstatSync(p); } catch { return null; } };
 const stamp = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()].map((n, i) => String(n).padStart(i ? 2 : 4, "0")).join("");
 
 const done = new Map(); // job id → { receipt, error, written: Promise }
@@ -140,14 +142,19 @@ export const ROUTES = [
       const realParent = realpathSync(dirname(dest));
       if (!inside(realParent, realpathSync(base)) || inside(realParent, join(series.dir, "build"))) throw bad(400, `to: "${to}" nằm ngoài thư mục ${key}`);
       const target = join(realParent, basename(dest));
+      // lstat, never existsSync: a link (even a dangling one) at the target would be written through.
+      const cur = entryAt(target);
+      if (cur?.isSymbolicLink()) throw bad(400, `${relative(series.dir, target)} là một liên kết (symlink); Studio không ghi xuyên qua liên kết`);
+      if (cur && !cur.isFile()) throw bad(400, `${relative(series.dir, target)} không phải một file`);
       let backup = null;
-      if (existsSync(target)) {
+      if (cur) {
         if (b.replace !== true) throw bad(409, `${relative(series.dir, target)} đã có; gửi replace: true để thay (file cũ được giữ thành .bak-…)`);
         backup = `${target}.bak-${stamp()}`;
-        for (let i = 2; existsSync(backup); i++) backup = `${target}.bak-${stamp()}-${i}`;
-        copyFileSync(target, backup);
+        for (let i = 2; entryAt(backup); i++) backup = `${target}.bak-${stamp()}-${i}`;
+        copyFileSync(target, backup, constants.COPYFILE_EXCL);
       }
-      copyFileSync(from, target);
+      // A new file is created exclusively, so a link made meanwhile is refused instead of followed.
+      copyFileSync(from, target, cur ? 0 : constants.COPYFILE_EXCL);
       const receipt = await writeReceipt(dir, { op: "series-put", actor: actorOf(b), tool: { name: "series_file_put" }, params: { to, char: b.char ?? null, replace: b.replace === true }, inputs: { series: series.config.name, from: b.from, backup: backup ? relative(series.dir, backup) : null }, outputs: [target] });
       return { ok: true, to: relative(series.dir, target), backup: backup ? relative(series.dir, backup) : null, receipt: { id: receipt.id, file: receipt.file } };
     },
@@ -164,7 +171,7 @@ export const ROUTES = [
       const name = ep.name.replace(/\{NN\}/g, String(b.episode).padStart(2, "0")).replace(/\{N\}/g, String(b.episode));
       const home = dirname(realpathSync(dir));
       const linked = home !== c.root;
-      const taken = (p) => { try { lstatSync(p); return true; } catch { return false; } };
+      const taken = (p) => entryAt(p) != null;
       if (taken(join(c.root, name))) throw bad(409, `${name} đã có trong thư mục gốc của Studio`);
       if (taken(join(home, name))) throw bad(409, `${join(home, name)} đã có`);
       const declared = series.config.tools[ep.tool]?.flags ?? {};
