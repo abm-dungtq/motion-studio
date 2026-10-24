@@ -1,10 +1,11 @@
 // Port of the keydown handler and runKey of public/app.js (:412-453); behaviour unchanged.
 // One handler on window for every timeline shortcut (core/timeline-edit.ts keyAction). Nothing
 // fires while the caret is in a field, a dialog or a menu is open, or focus is on the tab rail (its
-// arrows move between tabs).
+// arrows move between tabs). S splits nothing when the picture is drawn by code: it says why.
 import { useEffect, useRef } from "react";
 import { actions, current } from "@/api/actions.ts";
-import { keyAction } from "@/core/timeline-edit.ts";
+import { say } from "@/api/client.ts";
+import { keyAction, PICTURE_LOCK_NOTE, pictureFromCode } from "@/core/timeline-edit.ts";
 import { toggleMode, toggleSnap, zoomBy, ZOOM_STEP } from "./Toolbar.tsx";
 
 export function runKey(a: string, fit: () => void): void {
@@ -20,7 +21,11 @@ export function runKey(a: string, fit: () => void): void {
     case "nextFrame": return tr.step(1 / fps);
     case "start": return tr.seek(0);
     case "end": return tr.seek(tr.duration());
-    case "split": { void actions.split(); return; }
+    case "split": {
+      if (pictureFromCode(current().m)) return say(PICTURE_LOCK_NOTE);
+      void actions.split();
+      return;
+    }
     case "delete": { void actions.deletePicked(); return; }
     case "undo": { void actions.undo(); return; }
     case "redo": { void actions.redo(); return; }

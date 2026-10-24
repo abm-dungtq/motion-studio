@@ -86,7 +86,7 @@ describe("integration: every panel and extension through the real loader", () =>
     await bootApp();
     const ids = (host: string) => renderHook(() => useSections(host)).result.current.map((s) => s.id);
     expect(ids("media")).toContain("broll-search");
-    expect(ids("export")).toEqual(["gates", "jobs", "files", "receipts"]);
+    expect(ids("export")).toEqual(["gates", "series-audio-review", "jobs", "files", "receipts"]);
     expect(ids("director")).toContain("chat");
   });
 

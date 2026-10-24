@@ -112,6 +112,35 @@ Thẻ đồng ý của mọi việc (ảnh, giọng, giao nộp) đọc từ `GE
 
 Studio không đọc khóa ElevenLabs; khóa chỉ nằm trong công cụ series. Đuôi log của việc và biên nhận đi qua `lib/agents/redact.mjs`. Giới hạn: luật "không gọi phần giọng của `eleven.mjs` trực tiếp" chỉ nằm trong prompt đạo diễn, Studio không chặn được một lệnh shell mà đạo diễn tự chạy. Kiểm sau mỗi tập: mọi file giọng mới phải có biên nhận `series-tts` (hoặc `voice-design`) tương ứng.
 
+## Dựng lại một cảnh, duyệt nhóm cảnh
+
+Tập có `scenes` trong `project.json` (provider đọc từ `scenes/scenes.json` khi import: mỗi cảnh là id `cN`, nhãn và danh sách shot) được dựng lại và duyệt theo từng cảnh, không phải render cả tập. Series khai báo công cụ `scene-preview`:
+
+```json
+"scene-preview": { "file": "tools/scene-preview.mjs", "flags": { "--project": "project", "--scene": "word", "--from": "number", "--to": "number", "--out": "path:write" }, "writes": ["{project}/demo"], "timeout_s": 120 }
+```
+
+Công cụ kiểm cue các shot trong khoảng `[from, to)` (lỗi thì thoát mã 3 với dòng `ERROR shot@<t0> …`), rồi ghi trang xem trước `demo/scenes/preview-cN.html` chỉ chạy khoảng đó (`<base href="../../">`, `window.PREVIEW={from,to,scene}`, `data-duration` là độ dài cảnh, tiếng tắt). Studio chạy công cụ trong việc `scene` của dự án (một cảnh một lúc), render trang đó bằng `npx hyperframes render --quality draft` ra `demo/scenes/cN.mp4`, cắt 6 khung thành `demo/scenes/cN-stills.png` bằng ffmpeg, ghi `.opus/scenes/cN.json` (khoảng giây, giờ dựng, clip, ảnh ghép) và biên nhận `scene-rebuild`. Dự án không thuộc series, hoặc series chưa khai báo `scene-preview`, nhận 400.
+
+| Route | Tool | Việc |
+|---|---|---|
+| `GET /api/scenes?name=` | `scene_list` | Mọi cảnh: id, nhãn, `from`/`to`, shot, lần dựng cuối (`built`, `clip`, `stills`), `current` (lần dựng khớp khoảng giây hiện giờ; dời một câu là dời mốc cảnh), dòng duyệt và `approved_current`; `job` là việc `scene` đang chạy; `can_rebuild` |
+| `POST /api/scenes/rebuild { name, scene }` | `scene_rebuild` | Dựng lại một cảnh; đang có việc thì 409. Tool chờ xong rồi trả dòng `RESULT` |
+| `POST /api/scenes/approve { name, scenes, note? }` | | Lựa chọn của người dùng: mỗi cảnh một dòng `- cảnh N: approved user@studio <ISO> <nhãn>` phía trên `## Frames` của `DEMO.md`, biên nhận `scene-approve`, đạo diễn nhận yêu cầu "Người dùng duyệt cảnh N…". Cảnh chưa dựng, hoặc đã đổi mốc sau lần dựng cuối, là 409. Đạo diễn không có tool duyệt |
+
+Thẻ "Nhóm cảnh" hiện ở cột Đạo diễn và tab Tài sản: nhãn, khoảng giây, "Dựng lại cảnh này", ảnh ghép, trình phát clip nháp, ô chọn (chỉ cảnh đã dựng đúng khoảng giây hiện giờ) và "Duyệt các cảnh đã chọn". Thẻ tự tải lại khi việc `scene` đang chạy.
+
+Hình dựng bằng mã (`capabilities.picture_from_code` của manifest): mốc shot đi theo lời, nên timeline giấu tay kéo mép shot, menu shot bỏ mục sửa mép và phím S (cắt shot) chỉ báo "Hình dựng bằng mã: mốc shot đi theo lời. Dời câu thì được." Provider cũng từ chối `resize_shot` qua `/api/patch`.
+
+## Nghe lại khi tiếng đã đổi
+
+Lồng tiếng lại một câu sau khi animatic đã duyệt mà hình không đổi thì cổng cuối của provider chỉ cảnh báo "tiếng đã đổi sau animatic"; `GET /api/gates` trả thêm `audio_changed: true`. Hộp thoại Xuất bản khi đó có thẻ "Tiếng đã đổi sau animatic":
+
+- "Đo tiếng": `POST /api/gates/audio-check { name }` chạy lệnh `mixBalance` của provider trong việc `audio-check`, chờ xong và trả `{ level, line, code, tail }`, `line` là dòng `PASS|WARN|FAIL BALANCE … dB` (đích 4–7 dB nhạc dưới giọng). Không tốn lượt.
+- "Nghe rồi, được": `POST /api/gates/audio-review { name }` chạy `make-demo --record-audio-review user@studio` của provider (dòng `audio_review:` của `DEMO.md` ghi theo tiếng hiện giờ; dòng `approval:` giữ nguyên) và biên nhận `audio-review`.
+
+Đổi mốc cảnh hay đổi người nói của một câu vẫn làm cổng FAIL như trước: khi đó dựng lại và duyệt lại cảnh.
+
 ## Thêm một series khác
 
 Chỉ cần thêm `studio-series.json` vào thư mục series và dòng `series:` vào `BRIEF.md` của các tập. Studio không có đường dẫn hay tên series nào viết cứng.
