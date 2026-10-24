@@ -106,8 +106,15 @@ test("a batch file is checked before anything runs: ids, kinds, refs in read fol
   no(Array.from({ length: 51 }, (_, i) => pose(`p${i}`)), /tối đa 50/);
   assert.throws(() => validateBatch([pose("a")], { series: null, projectDir: dir }), /series/);
   const est = estimate(ok, { agents: [{ id: "codex-pool", found: true, logged_in: true, caps: { image: "yes" }, quota: { accounts: [{ name: "acct1", ok: true, h5: 38, reset_h5: "x" }, { name: "acct2", ok: true, h5: null }] } }], order: { image: ["codex-pool"] } });
-  assert.deepEqual([est.images, est.codex_turns, est.agent], [2, 2, "codex-pool"]);
-  assert.equal(estimateTitle("dot", est), "Đợt dot: 2 ảnh, codex-pool, ước 2 lượt vẽ; acct1 còn 62% trong 5 giờ, acct2 chưa có số liệu");
+  // Each image: a drawing and a reading, both again when the check fails; codex-pool does both.
+  assert.deepEqual([est.images, est.codex_turns, est.codex_max, est.agent], [2, 2, 8, "codex-pool"]);
+  assert.equal(estimateTitle("dot", est), "Đợt dot: 2 ảnh, codex-pool, ước 2 lượt vẽ, tối đa 8 lượt Codex (gồm vẽ lại tự động và đọc ảnh tự kiểm); acct1 còn 62% trong 5 giờ, acct2 chưa có số liệu");
+  // Four images cost at most 16 Codex turns; readings that no Codex agent can do are left out.
+  const agy = { id: "agy", found: true, logged_in: true, caps: { vision: "yes", image: "no" } };
+  assert.equal(estimate([...ok, ...ok], { agents: [{ id: "codex-pool", found: true, logged_in: true, caps: { image: "yes" }, quota: { accounts: [{ name: "a", ok: true }] } }] }).codex_max, 16);
+  assert.equal(estimate(ok, { agents: [{ id: "codex", found: true, logged_in: true, caps: { image: "yes", vision: "no" } }, agy] }).codex_max, 4);
+  assert.equal(estimate(ok, { agents: [{ id: "gemini", found: true, logged_in: true, caps: { image: "yes" } }, agy] }).codex_max, 0);
+  assert.equal(estimate(ok, null).codex_max, 8);
 });
 
 test("seven poses: parallel up to the slots, acct1 runs out midway, every image drawn, checked and keyed", async () => {
@@ -258,7 +265,7 @@ test("asset_batch only asks; the yes starts the job, the director gets a request
     assert.equal(t.ok, true, t.error);
     assert.equal(t.result.waiting_consent, true);
     assert.equal(t.result.estimate.images, 2);
-    assert.match(t.result.consent.title, /^Đợt dot: 2 ảnh, codex-pool, ước 2 lượt vẽ; acct1 còn 62% trong 5 giờ/);
+    assert.match(t.result.consent.title, /^Đợt dot: 2 ảnh, codex-pool, ước 2 lượt vẽ, tối đa 4 lượt Codex \(gồm vẽ lại tự động và đọc ảnh tự kiểm\); acct1 còn 62% trong 5 giờ/);
     assert.equal(t.result.message, "Chờ người dùng bấm Đồng ý ở tab Tài sản");
     assert.doesNotMatch(f.calls(), / exec /, "no drawing before the answer");
     const again = await callTool("asset_batch", { project: "ep", batch: "dot" }, env);

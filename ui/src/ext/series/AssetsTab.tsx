@@ -1,4 +1,5 @@
-// The Tài sản tab of a series episode: the consent cards still waiting, then one sheet per
+// The Tài sản tab of a series episode: every consent card still waiting (GET /api/consent: image
+// batches, voices, uploads), the voices waiting for a pick, then one sheet per
 // character, the backgrounds board and the props board, built from every batch of the project
 // (GET /api/assets). A running batch is followed by polling the assets and by the project's job
 // feed; when its job ends the boards load again and a toast says so. Screen cards and thumbnails
@@ -10,8 +11,9 @@ import { jobsQuery } from "@/api/queries.ts";
 import { Empty, Fail, Loading } from "@/shell/states.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { seriesKeys, useAssets, useSeries } from "./api.ts";
+import { ConsentCards } from "./ConsentCards.tsx";
+import { VoicePicks } from "./VoicePick.tsx";
 import { Board } from "./Board.tsx";
-import { ConsentCard } from "./ConsentCard.tsx";
 import type { AssetsList, BoardData, BoardItem } from "./types.ts";
 
 export const LEAD = "Ảnh của series: đồng ý đợt vẽ, duyệt tờ nhân vật, nền và đạo cụ";
@@ -69,12 +71,12 @@ function SeriesAssets({ name }: { name: string }) {
   if (q.error) return <Fail error={q.error} />;
   if (!q.data) return <Loading />;
 
-  const cards = q.data.batches.flatMap((b) => (b.consent ? [b.consent] : []));
   const running = q.data.batches.filter((b) => b.running || b.job);
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <p className="m-0 text-xs text-muted-foreground">{`Thuộc series: ${s.data.name}`}</p>
-      {cards.map((c) => <ConsentCard key={c.id} name={name} card={c} />)}
+      <ConsentCards name={name} />
+      <VoicePicks name={name} />
       {running.map((b) => <p key={b.batch} className="m-0 text-xs text-muted-foreground">{`Đợt ${b.batch} đang chạy. Bảng tự tải lại khi xong.`}</p>)}
       {q.data.batches.filter((b) => b.error).map((b) => <p key={b.batch} className="m-0 text-xs text-warn">{`Đợt ${b.batch} có lỗi: ${b.error}`}</p>)}
       {boards.length
