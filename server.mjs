@@ -50,6 +50,8 @@ import { agentStatus } from "./agent.mjs";
 import { answerCard } from "./gates.mjs";
 import { query as libraryQuery, thumbFile } from "./lib/library.mjs";
 import { checkRoutes, findRoute, loadRoutes } from "./lib/routes.mjs";
+import { sweepInterrupted } from "./lib/assets/batch.mjs";
+import { requestScope } from "./lib/scope.mjs";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const UI_DIST = join(HERE, "ui", "dist");
@@ -310,6 +312,8 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
     const extension = async (b = {}) => {
       if (!er) return send(res, 404, { error: "không có" });
       const c = { req, res, url, q, body: b, send: (status, data, headers) => send(res, status, data, headers), projectDir, withManifest, root, token, P, why, startJob, runtimeFor };
+      // A director's call names its request; Studio holds which project that request runs in.
+      if (req.method === "POST") requestScope(b?.actor, b?.name ?? b?.from);
       const out = await er.handler(c);
       if (!res.headersSent && !res.writableEnded) send(res, 200, out ?? { ok: true });
     };
@@ -567,6 +571,11 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
   // Requests queued while Studio was down (or before a restart) start once it listens.
   // Without a provider nothing is pumped; the queue waits for the next request.
   server.on("listening", async () => {
+    // An image batch whose state still says running had its job stopped with the last Studio.
+    for (const e of readdirSync(root, { withFileTypes: true })) {
+      if (!NAME.test(e.name) || !(e.isDirectory() || e.isSymbolicLink()) || running(e.name, "asset-batch")) continue;
+      try { sweepInterrupted(join(root, e.name), "Studio dừng hoặc khởi động lại khi đợt đang chạy"); } catch { /* unreadable project: left as is */ }
+    }
     const { p: P } = await current();
     if (!P) return;
     for (const p of projectsOf(root, P)) {

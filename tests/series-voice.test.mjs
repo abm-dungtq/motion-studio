@@ -14,30 +14,40 @@ import { adapterFor } from "../lib/provider.mjs";
 import { listReceipts } from "../lib/receipts.mjs";
 import { lineNumber, linesToVoice, ttsCommand } from "../lib/series-voice.mjs";
 import { seriesFor } from "../lib/series.mjs";
+import { ledgerFile } from "../lib/ledger.mjs";
 import { callTool, studioClient, toolEnv } from "../lib/tools.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
+import { holdDirector } from "./director-job.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/series", import.meta.url));
 const A = await adapterFor({});
 const TOKEN = "v".repeat(64);
-const ENV = ["OPUS_VIDEO_HOME", "MOTION_STUDIO_STATE", "FAKE_TTS_EXIT", "FAKE_TTS_LOG", "FAKE_MP3"];
-let tmp, plugin, P, series, root, ep, server, port, saved, env, queued, ttsLog;
+const ENV = ["OPUS_VIDEO_HOME", "MOTION_STUDIO_STATE", "FAKE_TTS_EXIT", "FAKE_TTS_LOG", "FAKE_MP3", "FAKE_TTS_MIX_FAIL"];
+let tmp, plugin, P, series, root, ep, server, port, saved, env, queued, ttsLog, director;
 
 // cast-tts: logs its argv and OV; FAKE_TTS_EXIT=4 is the viet-pro gate refusing, 1 a failure.
-// Otherwise the voice, its gate stamp, the mix and the visemes, and a line that looks like a key.
-const CAST_TTS = `import { appendFileSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+// FAKE_TTS_MIX_FAIL=1: the paid voice is written, then the mix chain fails (exit 1). Otherwise the
+// voice, its gate stamp, the mix and the visemes, and a line that looks like a key. --remix makes
+// no voice (no API): it mixes the existing --out again.
+const CAST_TTS = `import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
-const a = Object.fromEntries(process.argv.slice(2).map((x) => x.replace(/^--/, "").split(/=(.*)/s).slice(0, 2)));
+const a = Object.fromEntries(process.argv.slice(2).map((x) => { const [k, v] = x.replace(/^--/, "").split(/=(.*)/s); return [k, v ?? true]; }));
 appendFileSync(process.env.FAKE_TTS_LOG, JSON.stringify({ ...a, OV: process.env.OV }) + "\\n");
 console.log("xi-api-key: sk_" + "0123456789abcdef0123456789abcdef");
 const code = Number(process.env.FAKE_TTS_EXIT || 0);
 if (code) { console.error(code === 4 ? "viet-pro: chặn" : "cast-tts: lỗi"); process.exit(code); }
-const text = readFileSync(a["text-file"], "utf8");
-for (const f of [a.out, a["mix-out"]]) { mkdirSync(dirname(f), { recursive: true }); copyFileSync(process.env.FAKE_MP3, f); }
-writeFileSync(a.out + ".gate.json", JSON.stringify({ sha256: createHash("sha256").update(text.replace(/\\s+/g, " ").trim()).digest("hex"), script: a["text-file"], override: null }));
+if (a.remix) { if (!existsSync(a.out)) process.exit(1); }
+else {
+  const text = readFileSync(a["text-file"], "utf8");
+  mkdirSync(dirname(a.out), { recursive: true });
+  writeFileSync(a.out, Buffer.concat([readFileSync(process.env.FAKE_MP3), Buffer.from(String(Date.now()) + Math.random())]));
+  writeFileSync(a.out + ".gate.json", JSON.stringify({ sha256: createHash("sha256").update(text.replace(/\\s+/g, " ").trim()).digest("hex"), script: a["text-file"], override: null }));
+  if (process.env.FAKE_TTS_MIX_FAIL) { console.error("ffmpeg: lỗi chuỗi nén"); process.exit(1); }
+}
+mkdirSync(dirname(a["mix-out"]), { recursive: true }); copyFileSync(process.env.FAKE_MP3, a["mix-out"]);
 writeFileSync(a["visemes-out"], "[]\\n");
-console.log("ok " + a.role);
+console.log("ok " + (a.role ?? "remix"));
 `;
 // voice-design: design writes three previews, save locks the pick in voices/cast.json.
 const VOICE_DESIGN = `import { appendFileSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -75,6 +85,7 @@ async function jobDone(id) {
   throw new Error(`job ${id} still running`);
 }
 const resetProject = (lines) => {
+  if (existsSync(ep)) rmSync(ledgerFile(ep), { force: true });
   rmSync(ep, { recursive: true, force: true });
   mkdirSync(join(ep, "script"), { recursive: true });
   writeFileSync(join(ep, "BRIEF.md"), `---\ntitle: Tập thử\nseries: ${series}\n---\n`);
@@ -106,7 +117,7 @@ before(async () => {
   writeFileSync(join(series, "voices", "roles.json"), JSON.stringify([{ id: "hero", name: "Anh hùng", description_en: "x" }, { id: "narrator", name: "Người kể", description_en: "y" }, { id: "granny", name: "Bà", description_en: "z" }]));
   const decl = JSON.parse(readFileSync(join(series, "studio-series.json"), "utf8"));
   decl.voices = { roles: "voices/roles.json", cast: "voices/cast.json", previews: "voices/previews" };
-  decl.tools["cast-tts"] = { file: "tools/cast-tts.mjs", flags: { "--role": "id", "--text-file": "path:read", "--out": "path:write", "--mix-out": "path:write", "--visemes-out": "path:write", "--speed": "number" }, writes: ["{project}/assets"], timeout_s: 30 };
+  decl.tools["cast-tts"] = { file: "tools/cast-tts.mjs", flags: { "--role": "id", "--text-file": "path:read", "--out": "path:write", "--mix-out": "path:write", "--visemes-out": "path:write", "--speed": "number", "--remix": "bool" }, writes: ["{project}/assets"], timeout_s: 30 };
   decl.tools["voice-design"] = { file: "tools/voice-design.mjs", positional: "word", flags: { "--role": "id", "--pick": "int" }, writes: ["voices"], timeout_s: 30 };
   writeFileSync(join(series, "studio-series.json"), JSON.stringify(decl));
   root = join(tmp, "root");
@@ -116,8 +127,10 @@ before(async () => {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
   env = { ...toolEnv({ root, P, studio: studioClient({ state: { url: `http://127.0.0.1:${port}/`, token: TOKEN } }) }), actor: "director", request: "r-7" };
+  director = holdDirector("ep", "r-7");
 });
 after(() => {
+  director.stop();
   server.closeAllConnections?.(); server.close();
   for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
   rmSync(tmp, { recursive: true, force: true }); rmSync(plugin, { recursive: true, force: true });
@@ -135,13 +148,33 @@ test("a line is joined to its number; its cast-tts argv keeps every path in the 
   assert.throws(() => linesToVoice(manifest([line(1, null, "x")]), ["vo-01"], s), /Chọn người nói trước/);
 });
 
-test("one line is voiced at once: no card, set_line_audio, timing, a receipt without the key", async () => {
+// Voices lines through a card and the user's yes; answers the job.
+async function voiceWithCard(ids) {
+  const r = await callTool("series_tts", { project: "ep", ids }, env);
+  assert.equal(r.result?.waiting_consent, true, JSON.stringify(r));
+  const yes = await http("POST", "/api/consent/answer", { name: "ep", id: r.result.consent.id, ok: true });
+  assert.equal(yes.status, 200, yes.text);
+  return jobDone(yes.json.job.id);
+}
+
+test("a line never voiced asks for a card even alone; once voiced through it, re-voicing it runs at once", async () => {
   resetProject([line(1, "hero", "Câu một."), line(2, "hero", "Câu hai.")]);
+  const first = await callTool("series_tts", { project: "ep", ids: ["vo-01"] }, env);
+  assert.equal(first.ok, true, first.error);
+  assert.equal(first.result.waiting_consent, true, "the first voicing of a line always goes through a card");
+  assert.deepEqual(first.result.estimate, { lines: 1, chars: 8 });
+  assert.equal(readLines(ttsLog).length, 0, "nothing voiced before the answer");
+  assert.equal((await jobDone((await http("POST", "/api/consent/answer", { name: "ep", id: first.result.consent.id, ok: true })).json.job.id)).code, 0);
+  writeFileSync(ttsLog, "");
+  rmSync(join(ep, ".patches.jsonl"), { force: true });
+  rmSync(join(ep, ".opus", "receipts"), { recursive: true, force: true });
   const r = await callTool("series_tts", { project: "ep", ids: ["vo-01"] }, env);
   assert.equal(r.ok, true, r.error);
   assert.equal(r.result.ok, true, JSON.stringify(r.result));
   assert.deepEqual(r.result.voiced, ["vo-01"]);
-  assert.equal((await http("GET", "/api/consent?name=ep")).json.cards.length, 0, "one line needs no card");
+  assert.equal((await http("GET", "/api/consent?name=ep")).json.cards.length, 0, "re-voicing one voiced line needs no card");
+  const other = await callTool("series_tts", { project: "ep", ids: ["vo-02"] }, env);
+  assert.equal(other.result.waiting_consent, true, "the line beside it was never voiced");
   const calls = readLines(ttsLog);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].role, "hero");
@@ -156,6 +189,7 @@ test("one line is voiced at once: no card, set_line_audio, timing, a receipt wit
   const rec = listReceipts(ep, { op: "series-tts" });
   assert.equal(rec.length, 1);
   assert.equal(rec[0].params.role, "hero");
+  assert.equal(rec[0].inputs.text_written, false, "the text file already held the line");
   assert.equal(rec[0].inputs.exit, 0);
   assert.equal(rec[0].actor, "director:r-7");
   const all = readdirSync(join(ep, ".opus", "receipts"), { recursive: true }).filter((f) => String(f).endsWith(".json")).map((f) => readFileSync(join(ep, ".opus", "receipts", String(f)), "utf8")).join("\n");
@@ -188,6 +222,10 @@ test("three lines make a consent card and spend nothing until the yes; the yes v
 
 test("exit 4 of cast-tts is the gate refusing: gate blocked, no retry, no audio patch", async () => {
   resetProject([line(1, "hero", "Lời bị chặn.")]);
+  await voiceWithCard(["vo-01"]);
+  writeFileSync(ttsLog, "");
+  rmSync(join(ep, ".patches.jsonl"), { force: true });
+  rmSync(join(ep, ".opus", "receipts"), { recursive: true, force: true });
   process.env.FAKE_TTS_EXIT = "4";
   try {
     const r = await callTool("series_tts", { project: "ep", ids: ["vo-01"] }, env);
@@ -251,4 +289,88 @@ test("voice_design asks first, the yes makes three previews, the user's pick loc
   for (let i = 0; i < 50 && !readLines(queued).length; i++) await sleep(50);
   assert.equal(readLines(queued).at(-1).text, "Giọng Bà đã chọn. Lồng tiếng các câu của Bà bằng series_tts.");
   assert.deepEqual((await http("GET", "/api/voice/previews?name=ep")).json.roles, [], "a role with a voice waits for no pick");
+});
+
+test("a card voices only the text it showed: text changed after the card gets a fresh card, the old yes voices nothing", async () => {
+  resetProject([line(1, "hero", "Một."), line(2, "hero", "Hai.")]);
+  const ids = ["vo-01", "vo-02"];
+  const r = await callTool("series_tts", { project: "ep", ids }, env);
+  assert.deepEqual(r.result.estimate, { lines: 2, chars: 8 });
+  // The director rewrites a line after the card (set_line_text in the real gateway).
+  const m = JSON.parse(readFileSync(join(ep, "project.json"), "utf8"));
+  m.lines[1].text = "Hai câu dài hơn rất nhiều so với thẻ đã cho người dùng xem.";
+  writeFileSync(join(ep, "project.json"), JSON.stringify(m));
+  const stale = await http("POST", "/api/consent/answer", { name: "ep", id: r.result.consent.id, ok: true });
+  assert.equal(stale.status, 409, stale.text);
+  assert.match(stale.json.error, /đã đổi sau khi thẻ được tạo/);
+  assert.equal(readLines(ttsLog).length, 0, "nothing voiced");
+  assert.equal(stale.json.consent.estimate.chars, 4 + [..."Hai câu dài hơn rất nhiều so với thẻ đã cho người dùng xem."].length, "the fresh card counts the text as it is now");
+  // Asking again with the text changed once more does not answer the waiting card of the old text.
+  m.lines[0].text = "Một nữa.";
+  writeFileSync(join(ep, "project.json"), JSON.stringify(m));
+  const again = await callTool("series_tts", { project: "ep", ids }, env);
+  assert.notEqual(again.result.consent.id, stale.json.consent.id);
+  assert.deepEqual((await http("GET", "/api/consent?name=ep")).json.cards.map((c) => c.id), [again.result.consent.id]);
+});
+
+test("the text file is written from the line when it is missing or differs, and the receipt lists it", async () => {
+  resetProject([line(1, "hero", "Lời trong dự án."), line(2, "hero", "Câu hai.")]);
+  rmSync(join(ep, "script", "01.txt"));
+  writeFileSync(join(ep, "script", "02.txt"), "Lời cũ khác.\n");
+  assert.equal((await voiceWithCard(["vo-01", "vo-02"])).code, 0);
+  assert.equal(readFileSync(join(ep, "script", "01.txt"), "utf8"), "Lời trong dự án.\n");
+  assert.equal(readFileSync(join(ep, "script", "02.txt"), "utf8"), "Câu hai.\n");
+  const rec = listReceipts(ep, { op: "series-tts" });
+  assert.deepEqual(rec.map((x) => x.inputs.text_written), [true, true]);
+  assert.ok(rec.every((x) => x.outputs.some((o) => /script\/0[12]\.txt$/.test(o.path))), JSON.stringify(rec.map((x) => x.outputs)));
+});
+
+test("a voice paid for whose mix failed is mixed again with --remix, never paid twice", async () => {
+  resetProject([line(1, "hero", "Một câu.")]);
+  process.env.FAKE_TTS_MIX_FAIL = "1";
+  try { assert.notEqual((await voiceWithCard(["vo-01"])).code, 0); } finally { delete process.env.FAKE_TTS_MIX_FAIL; }
+  assert.equal(readLines(ttsLog).filter((c) => !c.remix).length, 1, "one paid call");
+  const r = await callTool("series_tts", { project: "ep", ids: ["vo-01"] }, env);
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.result.ok, true, JSON.stringify(r.result));
+  const calls = readLines(ttsLog);
+  assert.equal(calls.filter((c) => !c.remix).length, 1, "still one paid call");
+  assert.equal(calls.at(-1).remix, true);
+  assert.equal(calls.at(-1).role, undefined, "a remix sends no text to the voice");
+  assert.equal(readLines(join(ep, ".patches.jsonl")).at(-1).ops[0].op, "set_line_audio");
+  // Once the line is voiced, a new take is a paid call again (the remix was used up).
+  writeFileSync(ttsLog, "");
+  assert.equal((await callTool("series_tts", { project: "ep", ids: ["vo-01"] }, env)).result.ok, true);
+  assert.equal(readLines(ttsLog).filter((c) => !c.remix).length, 1);
+});
+
+test("without --remix declared the paid voice is not paid again: the line stops with what to declare", async () => {
+  resetProject([line(1, "hero", "Câu khác.")]);
+  process.env.FAKE_TTS_MIX_FAIL = "1";
+  try { assert.notEqual((await voiceWithCard(["vo-01"])).code, 0); } finally { delete process.env.FAKE_TTS_MIX_FAIL; }
+  const decl = JSON.parse(readFileSync(join(series, "studio-series.json"), "utf8"));
+  const full = structuredClone(decl);
+  delete decl.tools["cast-tts"].flags["--remix"];
+  writeFileSync(join(series, "studio-series.json"), JSON.stringify(decl));
+  try {
+    const r = await callTool("series_tts", { project: "ep", ids: ["vo-01"] }, env);
+    assert.equal(r.result?.ok, false, JSON.stringify(r));
+    assert.match(JSON.stringify(r.result), /--remix/);
+    assert.equal(readLines(ttsLog).length, 1, "no second call at all");
+  } finally { writeFileSync(join(series, "studio-series.json"), JSON.stringify(full)); }
+});
+
+test("voice_design runs only for the role as the card showed it", async () => {
+  resetProject([line(1, "narrator", "Ngày xưa.")]);
+  const r = await callTool("voice_design", { project: "ep", role: "narrator" }, env);
+  const roles = JSON.parse(readFileSync(join(series, "voices", "roles.json"), "utf8"));
+  const before = structuredClone(roles);
+  roles.find((x) => x.id === "narrator").description_en = "a much longer, different voice prompt";
+  writeFileSync(join(series, "voices", "roles.json"), JSON.stringify(roles));
+  try {
+    const stale = await http("POST", "/api/consent/answer", { name: "ep", id: r.result.consent.id, ok: true });
+    assert.equal(stale.status, 409, stale.text);
+    assert.equal(readLines(ttsLog).length, 0, "no Voice Design run");
+    assert.equal(stale.json.consent.action.args.role, "narrator");
+  } finally { writeFileSync(join(series, "voices", "roles.json"), JSON.stringify(before)); }
 });

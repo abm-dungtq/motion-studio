@@ -23,15 +23,18 @@
 //        → queues a request for the director to fix that row (text: the draft's lint errors;
 //          captions: CAPTIONS.md), with the last error of the row.
 // Consent actions: thumbnail runs the thumbnail job (kind asset-batch, so it never runs beside
-// another image batch of the project); drive-upload runs the drive job.
+// another image batch of the project); drive-upload runs the drive job. Both cards carry the digest
+// of what they show (lib/consent.mjs): changed before the yes, nothing runs and a fresh card is made.
+import { readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { queueRequest } from "../director.mjs";
 import { listJobs, startJob } from "../jobs.mjs";
 import { listAgents } from "../lib/agents/index.mjs";
 import { redact } from "../lib/agents/redact.mjs";
-import { estimate, readBatch, validateBatch } from "../lib/assets/batch.mjs";
-import { createCard, listCards, registerAction } from "../lib/consent.mjs";
-import { deliverCaptions, deliverText, deliveryOf, deliveryStatus, driveFiles, latestFinal, pickThumbnail, prepareThumbnail, THUMB_BATCH, THUMBS } from "../lib/delivery.mjs";
+import { batchFile, estimate, readBatch, validateBatch } from "../lib/assets/batch.mjs";
+import { createCard, digestOf, listCards, registerAction, waitingCard } from "../lib/consent.mjs";
+import { deliverCaptions, deliverText, deliveryOf, deliveryStatus, driveFiles, latestFinal, pickThumbnail, prepareThumbnail, THUMB_BATCH } from "../lib/delivery.mjs";
 import { maskAccount } from "../lib/series.mjs";
 
 const RUNNER = fileURLToPath(new URL("../lib/delivery.mjs", import.meta.url));
@@ -62,13 +65,60 @@ function startStep(c, ctx, step, arg) {
 const mb = (n) => (n / 1048576).toFixed(1);
 const DELIVERY_ACTIONS = ["thumbnail", "drive-upload"];
 
+// What a card approves, as it is now. Thumbnail: the bytes of the batch file (written by the
+// request, but the project's to change after it) and the words drawn on it. Drive: each file's
+// name, size and mtime, the account and the folder.
+const thumbDigest = (ctx, args) => {
+  readBatch(ctx.dir, THUMB_BATCH);
+  return digestOf({ batch: readFileSync(batchFile(ctx.dir, THUMB_BATCH)).toString("base64"), line1: args.line1, line2: args.line2, accent: args.accent });
+};
+const driveDigest = (ctx) => digestOf({
+  files: driveFiles(ctx.out).map((f) => ({ ...f, mtime: statSync(join(ctx.out, f.name)).mtimeMs })),
+  account: ctx.series.config.drive?.account ?? null, folder: ctx.series.config.drive?.folder ?? null,
+});
+
+// The thumbnail card of the batch file as it is now (args: the words). Reuses a waiting card of the
+// same content; one of other content is declined as stale.
+async function askThumbnail(ctx, args) {
+  const digest = thumbDigest(ctx, args);
+  const had = await waitingCard(ctx.dir, "thumbnail", () => true, digest);
+  if (had) return { card: had, estimate: had.estimate, reused: true };
+  const items = validateBatch(readBatch(ctx.dir, THUMB_BATCH), { series: ctx.series, projectDir: ctx.dir });
+  const est = estimate(items, await listAgents());
+  const card = createCard(ctx.dir, {
+    kind: "codex", title: `${items.length} ảnh nền thumbnail, ước ${est.codex_turns} lượt vẽ (tối đa ${est.codex_max} lượt Codex gồm tự kiểm)`, count: items.length,
+    estimate: est, quota: { accounts: est.accounts }, action: { name: "thumbnail", args }, digest,
+  });
+  return { card, estimate: est, reused: false };
+}
+async function askDrive(ctx) {
+  const drive = ctx.series.config.drive;
+  const files = driveFiles(ctx.out);
+  if (!files.length) throw bad(409, `${ctx.shown} chưa có file nào để tải lên`);
+  const digest = driveDigest(ctx);
+  const had = await waitingCard(ctx.dir, "drive-upload", () => true, digest);
+  if (had) return { card: had, reused: true };
+  const bytes = files.reduce((n, f) => n + f.size, 0);
+  const card = createCard(ctx.dir, {
+    kind: "drive", title: `Tải ${files.length} file (${mb(bytes)} MB) lên Drive ${maskAccount(drive.account)}/${drive.folder}`, count: files.length,
+    estimate: { files: files.map((f) => f.name), bytes }, action: { name: "drive-upload", args: {} }, digest,
+  });
+  return { card, reused: false };
+}
+
 registerAction("thumbnail", (c, { args, card }) => {
   const ctx = ctxOf(c, c.name);
   return { job: startStep(c, ctx, "thumbnail", { root: c.root, line1: args.line1, line2: args.line2, accent: args.accent, actor: card.by ?? "human" }) };
+}, {
+  digest: (c, { args }) => thumbDigest(ctxOf(c, c.name), args),
+  renew: async (c, { args }) => (await askThumbnail(ctxOf(c, c.name), args)).card,
 });
 registerAction("drive-upload", (c, { card }) => {
   const ctx = ctxOf(c, c.name);
   return { job: startStep(c, ctx, "drive", { dry_run: false, actor: card.by ?? "human" }) };
+}, {
+  digest: (c) => driveDigest(ctxOf(c, c.name)),
+  renew: async (c) => (await askDrive(ctxOf(c, c.name))).card,
 });
 
 const ASK = {
@@ -111,16 +161,10 @@ export const ROUTES = [
     async handler(c) {
       const b = c.body ?? {};
       const ctx = ctxOf(c, b.name);
-      const waiting = listCards(ctx.dir, { status: "waiting" }).find((x) => x.action?.name === "thumbnail");
-      if (waiting) return { waiting_consent: true, consent: waiting, message: "Đã có thẻ đồng ý vẽ thumbnail đang chờ người dùng" };
       const accent = b.accent ?? "yellow";
-      const items = prepareThumbnail(ctx, { line1: b.line1, line2: b.line2, accent, prompt: b.prompt ?? null });
-      validateBatch(readBatch(ctx.dir, THUMB_BATCH), { series: ctx.series, projectDir: ctx.dir });
-      const est = estimate(items, await listAgents());
-      const card = createCard(ctx.dir, {
-        kind: "codex", title: `${THUMBS} ảnh nền thumbnail, ước ${est.codex_turns} lượt vẽ (tối đa ${est.codex_max} lượt Codex gồm tự kiểm)`, count: items.length,
-        estimate: est, quota: { accounts: est.accounts }, action: { name: "thumbnail", args: { line1: b.line1.trim(), line2: b.line2.trim(), accent } },
-      });
+      prepareThumbnail(ctx, { line1: b.line1, line2: b.line2, accent, prompt: b.prompt ?? null });
+      const { card, estimate: est, reused } = await askThumbnail(ctx, { line1: b.line1.trim(), line2: b.line2.trim(), accent });
+      if (reused) return { waiting_consent: true, consent: card, message: "Đã có thẻ đồng ý vẽ thumbnail này đang chờ người dùng" };
       return { waiting_consent: true, consent: card, estimate: est, message: "Đã tạo thẻ đồng ý; chưa tốn lượt nào. Kết thúc lượt, chờ người dùng đồng ý ở bảng Giao nộp." };
     },
   },
@@ -130,22 +174,18 @@ export const ROUTES = [
   },
   {
     method: "POST", path: "/api/delivery/drive",
-    handler(c) {
+    async handler(c) {
       const b = c.body ?? {};
       const ctx = ctxOf(c, b.name);
       if (b.dry_run != null && typeof b.dry_run !== "boolean") throw bad(400, "dry_run: true hoặc false");
       const drive = ctx.series.config.drive;
       if (!drive?.account || !drive?.folder) throw bad(400, `series ${ctx.series.config.name} chưa khai báo drive.account và drive.folder`);
-      const files = driveFiles(ctx.out);
-      if (!files.length) throw bad(409, `${ctx.shown} chưa có file nào để tải lên`);
-      if (b.dry_run === true) return { job: startStep(c, ctx, "drive", { dry_run: true, actor: actorOf(b) }), dry_run: true };
-      const waiting = listCards(ctx.dir, { status: "waiting" }).find((x) => x.action?.name === "drive-upload");
-      if (waiting) return { waiting_consent: true, consent: waiting, message: "Đã có thẻ đồng ý tải lên Drive đang chờ người dùng" };
-      const bytes = files.reduce((n, f) => n + f.size, 0);
-      const card = createCard(ctx.dir, {
-        kind: "drive", title: `Tải ${files.length} file (${mb(bytes)} MB) lên Drive ${maskAccount(drive.account)}/${drive.folder}`, count: files.length,
-        estimate: { files: files.map((f) => f.name), bytes }, action: { name: "drive-upload", args: {} },
-      });
+      if (b.dry_run === true) {
+        if (!driveFiles(ctx.out).length) throw bad(409, `${ctx.shown} chưa có file nào để tải lên`);
+        return { job: startStep(c, ctx, "drive", { dry_run: true, actor: actorOf(b) }), dry_run: true };
+      }
+      const { card, reused } = await askDrive(ctx);
+      if (reused) return { waiting_consent: true, consent: card, message: "Đã có thẻ đồng ý tải lên Drive đang chờ người dùng" };
       return { waiting_consent: true, consent: card, message: "Đã tạo thẻ đồng ý; chưa tải gì. Chờ người dùng đồng ý ở bảng Giao nộp." };
     },
   },

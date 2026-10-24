@@ -15,6 +15,7 @@ import { listReceipts } from "../lib/receipts.mjs";
 import { callTool, studioClient, toolEnv } from "../lib/tools.mjs";
 import { fakeAgents, PNG_1PX } from "./fake-cli.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
+import { holdDirector } from "./director-job.mjs";
 
 const A = await adapterFor({});
 let tmp, seriesDir, series;
@@ -108,7 +109,7 @@ test("a batch file is checked before anything runs: ids, kinds, refs in read fol
   const est = estimate(ok, { agents: [{ id: "codex-pool", found: true, logged_in: true, caps: { image: "yes" }, quota: { accounts: [{ name: "acct1", ok: true, h5: 38, reset_h5: "x" }, { name: "acct2", ok: true, h5: null }] } }], order: { image: ["codex-pool"] } });
   // Each image: a drawing and a reading, both again when the check fails; codex-pool does both.
   assert.deepEqual([est.images, est.codex_turns, est.codex_max, est.agent], [2, 2, 8, "codex-pool"]);
-  assert.equal(estimateTitle("dot", est), "Đợt dot: 2 ảnh, codex-pool, ước 2 lượt vẽ, tối đa 8 lượt Codex (gồm vẽ lại tự động và đọc ảnh tự kiểm); acct1 còn 62% trong 5 giờ, acct2 chưa có số liệu");
+  assert.equal(estimateTitle("dot", est), "Đợt dot: 2 ảnh, codex-pool, ước 2 lượt vẽ, tối đa 8 lượt Codex (gồm một lần vẽ lại tự động khi ảnh có chữ hoặc sai số hình, và đọc ảnh tự kiểm); acct1 còn 62% trong 5 giờ, acct2 chưa có số liệu");
   // Four images cost at most 16 Codex turns; readings that no Codex agent can do are left out.
   const agy = { id: "agy", found: true, logged_in: true, caps: { vision: "yes", image: "no" } };
   assert.equal(estimate([...ok, ...ok], { agents: [{ id: "codex-pool", found: true, logged_in: true, caps: { image: "yes" }, quota: { accounts: [{ name: "a", ok: true }] } }] }).codex_max, 16);
@@ -252,6 +253,7 @@ test("asset_batch only asks; the yes starts the job, the director gets a request
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const port = server.address().port;
   const env = { ...toolEnv({ root, P, studio: studioClient({ state: { url: `http://127.0.0.1:${port}/`, token: TOKEN } }) }), actor: "director", request: "r-9" };
+  const director = holdDirector("ep", "r-9");
   const jobDone = async (id) => {
     for (let i = 0; i < 300; i++) {
       const j = (await http(port, "GET", "/api/jobs?name=ep")).json.find((x) => x.id === id);
@@ -265,7 +267,7 @@ test("asset_batch only asks; the yes starts the job, the director gets a request
     assert.equal(t.ok, true, t.error);
     assert.equal(t.result.waiting_consent, true);
     assert.equal(t.result.estimate.images, 2);
-    assert.match(t.result.consent.title, /^Đợt dot: 2 ảnh, codex-pool, ước 2 lượt vẽ, tối đa 4 lượt Codex \(gồm vẽ lại tự động và đọc ảnh tự kiểm\); acct1 còn 62% trong 5 giờ/);
+    assert.match(t.result.consent.title, /^Đợt dot: 2 ảnh, codex-pool, ước 2 lượt vẽ, tối đa 4 lượt Codex \(gồm một lần vẽ lại tự động khi ảnh có chữ hoặc sai số hình, và đọc ảnh tự kiểm\); acct1 còn 62% trong 5 giờ/);
     assert.equal(t.result.message, "Chờ người dùng bấm Đồng ý ở tab Tài sản");
     assert.doesNotMatch(f.calls(), / exec /, "no drawing before the answer");
     const again = await callTool("asset_batch", { project: "ep", batch: "dot" }, env);
@@ -309,6 +311,7 @@ test("asset_batch only asks; the yes starts the job, the director gets a request
     assert.equal((await http(port, "POST", "/api/assets/redo", { name: "ep", batch: "dot", ids: ["zz"] })).status, 400);
     assert.equal(listReceipts(join(root, "ep"), { op: "consent" }).length, 1);
   } finally {
+    director.stop();
     server.closeAllConnections?.(); server.close();
     for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
     Object.assign(process.env, saved);

@@ -12,7 +12,8 @@
 //   FAKE_IMAGE=write|none|quota|refuse|hang|json   what `exec` of codex/codex-pool does
 //   FAKE_DELAY=<s>           exec sleeps that long first and logs "end <cli>" when done
 //   FAKE_AGY=ok|quota|check  what agy -p answers; check: the image check JSON of the asset batch,
-//                            failing (no_text false) for the first FAKE_AGY_FAILS calls
+//                            failing (FAKE_AGY_FAIL_KEY false, default no_text) for the first
+//                            FAKE_AGY_FAILS calls
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -123,7 +124,8 @@ case "$1" in
     if [ "$FAKE_AGY" = "check" ]; then
       lock; N=$(count "$LOG.agy"); unlock
       if [ "$N" -lt "\${FAKE_AGY_FAILS:-0}" ]; then
-        echo '{"status":"SUCCESS","response":"{\\"right_character\\":true,\\"single_figure\\":true,\\"flat_green\\":true,\\"no_text\\":false,\\"note\\":\\"có chữ ở góc\\"}"}'
+        K="\${FAKE_AGY_FAIL_KEY:-no_text}"; T=true; [ "$K" = right_character ] && R=false || R=true; [ "$K" = single_figure ] && S1=false || S1=true; [ "$K" = flat_green ] && G=false || G=true; [ "$K" = no_text ] && T=false
+        echo '{"status":"SUCCESS","response":"{\\"right_character\\":'$R',\\"single_figure\\":'$S1',\\"flat_green\\":'$G',\\"no_text\\":'$T',\\"note\\":\\"có chữ ở góc\\"}"}'
       else
         echo '{"status":"SUCCESS","response":"{\\"right_character\\":true,\\"single_figure\\":true,\\"flat_green\\":true,\\"no_text\\":true,\\"note\\":\\"\\"}"}'
       fi

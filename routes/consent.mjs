@@ -3,7 +3,8 @@
 //   GET  /api/consent?name=<project>[&all=1]   → { cards }: the waiting ones (all=1: every card)
 //   POST /api/consent/answer { name, id, ok, by? }
 //        ok true → runs the card's action and answers { card, job }; ok false → { card } declined.
-//        Unknown card 404; a card already answered 409.
+//        Unknown card 404; a card already answered 409. A card whose content changed since it was
+//        made runs nothing: 409 { error, consent } with the fresh card made of the current content.
 import { answerCard, listCards } from "../lib/consent.mjs";
 
 const bad = (status, msg) => Object.assign(new Error(msg), { status });
@@ -26,8 +27,13 @@ export const ROUTES = [
     async handler(c) {
       const b = c.body ?? {};
       const dir = dirOf(c, b.name);
-      const { card, result } = await answerCard(dir, b.id, b.ok, { by: b.by ?? "human", ctx: { ...c, name: b.name, dir } });
-      return { card, job: result?.job ?? null };
+      try {
+        const { card, result } = await answerCard(dir, b.id, b.ok, { by: b.by ?? "human", ctx: { ...c, name: b.name, dir } });
+        return { card, job: result?.job ?? null };
+      } catch (e) {
+        if (e.status === 409 && e.card !== undefined) return c.send(409, { error: e.message, consent: e.card });
+        throw e;
+      }
     },
   },
 ];

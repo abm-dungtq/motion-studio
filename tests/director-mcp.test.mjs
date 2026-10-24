@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadProvider } from "../lib/provider.mjs";
 import { buildPrompt, claudeArgs, reader, STUDIO_PREFIX, studioMcp, studioMcpFile, studioToolNames, voiceDenied } from "../director.mjs";
@@ -44,7 +44,7 @@ test("claudeArgs points --mcp-config at a config file for Studio's server and al
   for (const t of theirs) assert.ok(!allowed.includes(`${STUDIO_PREFIX}${t}`), `no second ${t}`);
   const cfg = JSON.parse(readFileSync(file, "utf8")).mcpServers["motion-studio"];
   assert.equal(cfg.command, process.execPath);
-  assert.deepEqual(cfg.args, [SERVER, "--profile", "director", "--root", root, "--request", req.id]);
+  assert.deepEqual(cfg.args, [SERVER, "--profile", "director", "--root", root, "--request", req.id, "--project", basename(dir)], "the server knows the one project its tools may change");
   assert.deepEqual(claudeArgs(P, "prompt", "s1").slice(-2), ["--resume", "s1"]);
   assert.ok(!claudeArgs(P, "prompt", null).includes("--mcp-config"));
 });
@@ -106,7 +106,8 @@ test("a project of a series gets one more rule: series work only through Studio'
   const p = buildPrompt(withSeries, dir, req);
   assert.match(p, /^13\. Dự án thuộc series Series Thử\. .*series_file_put\.$/m);
   assert.match(p, /Không gọi codex, cast-tts, `eleven\.mjs tts` hay `eleven\.mjs voice\*` trực tiếp/);
-  assert.match(p, /`eleven\.mjs sfx` và `eleven\.mjs music` vẫn dùng được/);
+  assert.match(p, /Của eleven\.mjs chỉ được `eleven\.mjs sfx` và `eleven\.mjs music`/, "only sfx and music of eleven.mjs");
+  assert.match(p, /Không tự chạy `make-demo --record-audio-review`/);
   const brokenDir = join(root, "series-hong");
   mkdirSync(brokenDir, { recursive: true });
   writeFileSync(join(brokenDir, "studio-series.json"), "{");

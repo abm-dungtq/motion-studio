@@ -55,7 +55,7 @@ export function studioMcp(p, dir, req) {
   mkdirSync(dirname(file), { recursive: true });
   // A test Studio (own state file or port) must be the one the director's tools call.
   const pass = Object.fromEntries(MCP_ENV.filter((k) => process.env[k]).map((k) => [k, process.env[k]]));
-  const server = { command: process.execPath, args: serverArgs({ profile: "director", root: dirname(dir), request: req.id }), ...(Object.keys(pass).length ? { env: pass } : {}) };
+  const server = { command: process.execPath, args: serverArgs({ profile: "director", root: dirname(dir), request: req.id, project: basename(dir) }), ...(Object.keys(pass).length ? { env: pass } : {}) };
   const config = { mcpServers: { [SERVER_NAME]: server } };
   const tmp = `${file}.${process.pid}.tmp`;
   writeFileSync(tmp, JSON.stringify(config, null, 2) + "\n");
@@ -79,7 +79,7 @@ function seriesRule(p, dir) {
   let name = null;
   try { name = seriesFor(p, dir)?.config.name ?? null; } catch { const d = p.series?.dirOf(dir); name = d ? basename(d) : null; }
   if (!name) return null;
-  return `Dự án thuộc series ${name}. Công cụ series, vẽ ảnh, lồng tiếng, dựng cảnh và giao nộp chỉ đi qua tool motion-studio (series_*, asset_*, voice_*, scene_*, deliver_*, drive_upload). Không gọi codex, cast-tts, \`eleven.mjs tts\` hay \`eleven.mjs voice*\` trực tiếp (giọng chỉ qua series_tts, voice_design). \`eleven.mjs sfx\` và \`eleven.mjs music\` vẫn dùng được cho hiệu ứng và nhạc nền; trước khi gọi, ưu tiên thư viện shared-assets/sfx của thư mục gốc và file đã có trong dự án, và ghi số lượt đã dùng vào project_log. File cần ghi vào kho series thì viết trong dự án rồi dùng series_file_put.`;
+  return `Dự án thuộc series ${name}. Công cụ series, vẽ ảnh, lồng tiếng, dựng cảnh và giao nộp chỉ đi qua tool motion-studio (series_*, asset_*, voice_*, scene_*, deliver_*, drive_upload). Không gọi codex, cast-tts, \`eleven.mjs tts\` hay \`eleven.mjs voice*\` trực tiếp (giọng chỉ qua series_tts, voice_design). Của eleven.mjs chỉ được \`eleven.mjs sfx\` và \`eleven.mjs music\` cho hiệu ứng và nhạc nền (các lệnh khác bị chặn); trước khi gọi, ưu tiên thư viện shared-assets/sfx của thư mục gốc và file đã có trong dự án, và ghi số lượt đã dùng vào project_log. Không tự chạy \`make-demo --record-audio-review\`: xác nhận đã nghe lại là của người dùng (nút Nghe rồi, được ở cổng final). File cần ghi vào kho series thì viết trong dự án rồi dùng series_file_put.`;
 }
 
 // The provider's voice rules (P.director.voiceDeniedTools) are denied to the director of a series

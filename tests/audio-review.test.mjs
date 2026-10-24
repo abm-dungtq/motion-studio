@@ -32,6 +32,7 @@ console.log("đo giọng và nhạc…");
 console.log(process.env.FAKE_BALANCE || "PASS BALANCE nhạc dưới giọng 5.3 dB (lúc có lời), nhạc lúc không lời −18.0 dBFS");
 `;
 const DEMO = `${LOGGER}log("demo");
+appendFileSync(process.env.FAKE_LOG, JSON.stringify({ name: "demo-env", runner: [process.env.OPUS_STUDIO_RUNNER ?? null, process.env.MOTION_STUDIO_RUNNER ?? null] }) + "\\n");
 import { appendFileSync as add } from "node:fs";
 import { join } from "node:path";
 const i = process.argv.indexOf("--project");
@@ -108,10 +109,15 @@ test("Đo tiếng runs the provider's mixBalance on the project and answers its 
 
 test("Nghe rồi, được records the review through make-demo, leaves approval alone, writes a receipt", async () => {
   writeFileSync(log, "");
-  const r = await http("POST", "/api/gates/audio-review", { name: "ep" });
+  // The plugin refuses --record-audio-review under a director's runner env; Studio's run is the
+  // user's click, so make-demo never sees those variables even when Studio itself has them.
+  process.env.OPUS_STUDIO_RUNNER = "cli";
+  process.env.MOTION_STUDIO_RUNNER = "cli";
+  let r;
+  try { r = await http("POST", "/api/gates/audio-review", { name: "ep" }); } finally { delete process.env.OPUS_STUDIO_RUNNER; delete process.env.MOTION_STUDIO_RUNNER; }
   assert.equal(r.status, 200, r.text);
   assert.match(r.json.line, /audio_review: user@studio/);
-  assert.deepEqual(readLines(log), [{ name: "demo", args: ["--project", ep, "--record-audio-review", "user@studio"] }]);
+  assert.deepEqual(readLines(log), [{ name: "demo", args: ["--project", ep, "--record-audio-review", "user@studio"] }, { name: "demo-env", runner: [null, null] }]);
   const demo = readFileSync(join(ep, "DEMO.md"), "utf8");
   assert.match(demo, /^approval: user@studio 2026-10-24T09:00:00\.000Z duyệt animatic$/m);
   assert.match(demo, /^audio_review: user@studio /m);

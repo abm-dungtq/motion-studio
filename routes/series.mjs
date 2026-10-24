@@ -10,17 +10,20 @@
 //        → copies one file of the project into a writable folder of the series: to is
 //          "<writable key>/<path>". An existing file is refused (409) unless replace is true; then
 //          the old one is kept as <file>.bak-<yyyymmddHHMM> first. A symlink at the target is
-//          refused (400), never written through. Receipt op series-put.
+//          refused (400), never written through. Receipt op series-put. What the user approved is
+//          never written, replace or not (409): any approval.json, the images a character's
+//          approval.json lists, and the files Studio recorded when a board was approved (its ledger).
 //   POST /api/series/episode { from, episode, title, actor? }
 //        → runs the series' episode tool with --root = the real folder holding project `from`
 //          (episodes of a series sit side by side, also when `from` is a symlink in the root).
 //          When that folder is not Studio's root, a symlink <root>/<episode name> to the new
 //          episode is made once the tool succeeded. A name already in the root is 409. Receipt op
 //          series-episode, in the new episode (in `from` when the tool failed).
-import { constants, copyFileSync, existsSync, lstatSync, mkdirSync, realpathSync, statSync, symlinkSync } from "node:fs";
+import { constants, copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, symlinkSync } from "node:fs";
 import { basename, dirname, join, relative, sep } from "node:path";
 import { cancel, getJob, startJob } from "../jobs.mjs";
 import { redact } from "../lib/agents/redact.mjs";
+import { approvedFiles } from "../lib/ledger.mjs";
 import { writeReceipt } from "../lib/receipts.mjs";
 import { describeSeries, listSeries, seriesFor, seriesPath } from "../lib/series.mjs";
 import { buildArgv } from "../lib/series-run.mjs";
@@ -34,6 +37,23 @@ const actorOf = (b) => (typeof b.actor === "string" && ACTOR.test(b.actor) ? b.a
 const inside = (p, dir) => p === dir || p.startsWith(dir + sep);
 const entryAt = (p) => { try { return lstatSync(p); } catch { return null; } };
 const stamp = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()].map((n, i) => String(n).padStart(i ? 2 : 4, "0")).join("");
+
+// Why target (a real path in the series) holds the user's approval, or null.
+function approvedReason(series, target) {
+  const rel = relative(realpathSync(series.dir), target).split(sep).join("/");
+  if (basename(target) === "approval.json") return `${rel} là lời duyệt của người dùng; chỉ nút Duyệt bảng của Studio ghi file này`;
+  if (Object.hasOwn(approvedFiles(series.dir), rel)) return `${rel} là ảnh người dùng đã duyệt; không ghi đè. Ghi tên mới, rồi nhờ người dùng duyệt lại nếu cần thay`;
+  const chars = series.config.characters ? seriesPath(series, series.config.characters) : null;
+  let names = [];
+  try { names = chars ? readdirSync(chars) : []; } catch { /* no characters folder yet */ }
+  for (const n of names) {
+    let a = null;
+    try { a = JSON.parse(readFileSync(join(chars, n, "approval.json"), "utf8")); } catch { continue; }
+    const imgs = Array.isArray(a?.images) ? a.images.filter((x) => typeof x === "string").map((x) => x.replace(/^S\//, "")) : [];
+    if (imgs.includes(rel)) return `${rel} là ảnh người dùng đã duyệt cho ${n} (characters/${n}/approval.json); không ghi đè. Ghi tên mới, rồi nhờ người dùng duyệt lại nếu cần thay`;
+  }
+  return null;
+}
 
 const done = new Map(); // job id → { receipt, error, written: Promise }
 function remember(id, entry) {
@@ -138,10 +158,13 @@ export const ROUTES = [
         return !(inside(real, realBase) || inside(realBase, real)) || inside(real, join(series.dir, "build")) || !inside(realBase, series.dir);
       };
       if (escapes()) throw bad(400, `to: "${to}" nằm ngoài thư mục ${key}`);
+      if (basename(dest) === "approval.json") throw bad(409, `${to} là lời duyệt của người dùng; chỉ nút Duyệt bảng của Studio ghi file này`);
       mkdirSync(dirname(dest), { recursive: true });
       const realParent = realpathSync(dirname(dest));
       if (!inside(realParent, realpathSync(base)) || inside(realParent, join(series.dir, "build"))) throw bad(400, `to: "${to}" nằm ngoài thư mục ${key}`);
       const target = join(realParent, basename(dest));
+      const held = approvedReason(series, target);
+      if (held) throw bad(409, held);
       // lstat, never existsSync: a link (even a dangling one) at the target would be written through.
       const cur = entryAt(target);
       if (cur?.isSymbolicLink()) throw bad(400, `${relative(series.dir, target)} là một liên kết (symlink); Studio không ghi xuyên qua liên kết`);

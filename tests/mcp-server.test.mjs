@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adapterFor } from "../lib/provider.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
-import { parseArgs, toolsForProfile } from "../mcp/studio-mcp.mjs";
+import { parseArgs, serverArgs, toolsForProfile } from "../mcp/studio-mcp.mjs";
 import { LATEST } from "../lib/mcp/protocol.mjs";
 
 const SERVER = fileURLToPath(new URL("../mcp/studio-mcp.mjs", import.meta.url));
@@ -111,8 +111,11 @@ test("missing arguments are a tool error, bad JSON is -32700 and the server keep
 });
 
 test("argv and profile filtering", () => {
-  assert.deepEqual(parseArgs([]), { root: null, profile: "external", request: null });
+  assert.deepEqual(parseArgs([]), { root: null, profile: "external", request: null, project: null });
   assert.equal(parseArgs(["--profile", "director", "--request", "r-1"]).request, "r-1");
+  assert.equal(parseArgs(["--profile", "director", "--request", "r-1", "--project", "ep-02"]).project, "ep-02");
+  assert.throws(() => parseArgs(["--project", "../x"]), /--project/);
+  assert.deepEqual(serverArgs({ profile: "director", root: "/r", request: "r-1", project: "ep-02" }).slice(1), ["--profile", "director", "--root", "/r", "--request", "r-1", "--project", "ep-02"]);
   assert.throws(() => parseArgs(["--profile", "x"]), /--profile/);
   assert.throws(() => parseArgs(["--root"]), /cần một giá trị/);
   assert.throws(() => parseArgs(["--what"]), /không hiểu/);

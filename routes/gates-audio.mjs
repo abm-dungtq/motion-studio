@@ -21,6 +21,14 @@ export const CHECK_KIND = "audio-check";
 const REVIEW_TIMEOUT_MS = 60000;
 const SUMMARY = /^(PASS|WARN|FAIL) BALANCE\b.*$/;
 const bad = (status, msg) => Object.assign(new Error(msg), { status });
+// The env of make-demo --record-audio-review: Studio's own, minus the director runner's markers
+// (the plugin refuses the review under them; this run is the user's click).
+export function reviewEnv(base = process.env) {
+  const env = { ...base };
+  delete env.OPUS_STUDIO_RUNNER;
+  delete env.MOTION_STUDIO_RUNNER;
+  return env;
+}
 
 function projectOf(c, name) {
   const pd = c.withManifest(name);
@@ -64,7 +72,7 @@ export const ROUTES = [
       const b = c.body ?? {};
       const dir = projectOf(c, b.name);
       const t0 = new Date();
-      const r = await runFile(process.execPath, [c.P.commands.demo, "--project", dir, "--record-audio-review", BY], { cwd: dir, timeout: REVIEW_TIMEOUT_MS });
+      const r = await runFile(process.execPath, [c.P.commands.demo, "--project", dir, "--record-audio-review", BY], { cwd: dir, env: reviewEnv(), timeout: REVIEW_TIMEOUT_MS });
       const out = String(r.stderr || r.stdout).trim().split("\n").filter(Boolean);
       if (r.code !== 0) throw bad(r.code === 2 ? 400 : 500, `make-demo --record-audio-review lỗi (exit ${r.code}): ${out.slice(-2).join(" | ")}`);
       await writeReceipt(dir, { op: "audio-review", actor: "human", params: { by: BY }, inputs: { exit: r.code }, outputs: [join(dir, "DEMO.md")], started: t0, ended: new Date() });
