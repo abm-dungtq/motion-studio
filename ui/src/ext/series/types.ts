@@ -35,11 +35,17 @@ export interface ConsentCardData {
   kind: "codex" | "elevenlabs" | "drive" | string;
   title: string;
   count?: number | null;
-  estimate?: { images?: number; codex_turns?: number; agent?: string | null; [k: string]: unknown } | null;
+  estimate?: { images?: number; codex_turns?: number; codex_max?: number; agent?: string | null; [k: string]: unknown } | null;
   quota?: { accounts?: QuotaAccount[] } | null;
   status: "waiting" | "approved" | "declined" | string;
   error?: string | null;
 }
+
+// GET /api/voice/previews?name=: roles waiting for the user to pick one of their previews (file is
+// a project path), and whether the provider can set a line's speaker.
+export interface VoicePreview { n: number; file: string }
+export interface VoiceRolePreviews { role: string; name: string; previews: VoicePreview[] }
+export interface VoicePreviews { roles: VoiceRolePreviews[]; can_set_speaker: boolean }
 
 export interface BatchView {
   batch: string;

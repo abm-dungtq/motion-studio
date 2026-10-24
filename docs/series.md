@@ -20,7 +20,7 @@ Tập có thể nằm ngoài thư mục gốc của Studio, cạnh các tập kh
   "schema": "<provider>/series@1",
   "name": "Tên series",
   "characters": "characters",
-  "voices": { "cast": "voices/cast.json", "roles": "voices/roles.json" },
+  "voices": { "cast": "voices/cast.json", "roles": "voices/roles.json", "previews": "voices/previews" },
   "read": ["refs", "characters", "backgrounds"],
   "writable": { "refs": "refs", "rig_src": "characters/{char}" },
   "episode": { "tool": "new-episode", "name": "a-{NN}" },
@@ -86,6 +86,31 @@ Kiểm đường chỉ ở mức đối số. Công cụ series là mã tin cậ
 Biên nhận nằm ở `.opus/receipts/` của dự án (thư mục thật), `actor` là `director:<id yêu cầu>` khi đạo diễn gọi. Chuỗi giống khóa trong tham số bị che (`lib/agents/redact.mjs`).
 
 Với dự án thuộc series, prompt của đạo diễn có thêm một luật: công cụ series, vẽ ảnh, lồng tiếng, dựng cảnh và giao nộp chỉ đi qua tool của Studio; không gọi codex, cast-tts hay phần giọng của `eleven.mjs` trực tiếp. `eleven.mjs sfx` và `eleven.mjs music` vẫn dùng được.
+
+## Lồng tiếng theo vai
+
+Mỗi câu của tập có thể có `speaker`, id một vai trong `voices.roles` của series (provider đọc từ `scenes/roles.json` của dự án khi import và ghi lại khi đổi). Tab "Lời & giọng" có ô người nói cho từng câu, chấm màu suy từ id vai; đổi người nói gửi op `set_line_speaker` và câu thành `stale`. Ô chỉ sửa được khi dự án thuộc series, provider có op (`can_set_speaker`) và dự án sửa được.
+
+Lồng tiếng đi qua hai công cụ của series, khai báo như mọi công cụ khác:
+
+```json
+"cast-tts": { "file": "tools/cast-tts.mjs", "flags": { "--role": "id", "--text-file": "path:read", "--out": "path:write", "--mix-out": "path:write", "--visemes-out": "path:write", "--speed": "number" }, "writes": ["{project}/assets"], "timeout_s": 300 },
+"voice-design": { "file": "tools/voice-design.mjs", "positional": "word", "flags": { "--role": "id", "--pick": "int" }, "writes": ["voices"], "timeout_s": 300 }
+```
+
+- `cast-tts` nhận `--role <speaker> --text-file script/NN.txt --out assets/voice/NN.mp3 --mix-out assets/mix/voice-NN.mp3 --visemes-out assets/voice/NN.visemes.json`, chạy cổng viet-pro trước khi gọi ElevenLabs (`OV` là thư mục plugin của provider) và thoát mã 4 khi cổng chặn. Studio ghi lời câu vào `script/NN.txt` trước, đo file mix, gửi op `set_line_audio` (provider tính lại `gate` từ dấu cổng), rồi chạy lệnh `timing` của provider một lần.
+- `voice-design design --role <id>` tạo 3 giọng thử vào `voices.previews/<id>/`; `voice-design save --role <id> --pick <n>` ghi giọng đã chọn vào `voices.cast`. Cờ đứng trước từ lệnh (`buildArgv`), nên công cụ phải đọc từ lệnh như một đối số vị trí ở bất kỳ chỗ nào.
+
+| Route | Tool | Việc |
+|---|---|---|
+| `POST /api/voice/tts { name, ids }` | `series_tts` | Một câu chạy ngay (việc `tts`, tool chờ kết quả). Từ hai câu: thẻ đồng ý `elevenlabs` "Lồng tiếng N câu bằng giọng cast của series, ước X ký tự ElevenLabs", action `tts-batch`, cùng tập câu thì nhận lại thẻ cũ. Câu chưa có người nói là 400 "Chọn người nói trước"; vai chưa có trong cast là 400. Câu bị cổng chặn trả `gate: "blocked"` và không thử lại; các câu sau vẫn chạy. Biên nhận `series-tts` mỗi câu |
+| `POST /api/voice/design { name, role }` | `voice_design` | Thẻ `elevenlabs` "Tạo 3 giọng thử cho <tên>, 1 lượt Voice Design", action `voice-design`. Vai không có trong roles là 400, vai đã có giọng là 409. Đồng ý thì việc `voice-design` chạy `design`, chép 3 bản vào `.opus/voice-design/<id>/` của dự án và ghi biên nhận `voice-design` |
+| `GET /api/voice/previews?name=` | | Vai có 3 bản nghe thử mà chưa có giọng trong cast, và `can_set_speaker` |
+| `POST /api/voice/pick { name, role, pick }` | | Lựa chọn của người dùng (bấm "Chọn giọng này" là đồng ý): chạy `save`, biên nhận `voice-pick`, rồi đạo diễn nhận yêu cầu lồng tiếng các câu của vai đó bằng `series_tts`. Đạo diễn không có tool chọn giọng |
+
+Thẻ đồng ý của mọi việc (ảnh, giọng, giao nộp) đọc từ `GET /api/consent?name=` và hiện ở đầu tab Tài sản và dưới tab "Lời & giọng". Thẻ "Chọn giọng cho <tên>" có 3 trình phát và hiện ở tab Tài sản, tab "Lời & giọng" và cột Đạo diễn. Nút "Lồng tiếng lại" của một câu `stale` gọi `/api/voice/tts` với câu đó; "Lồng tiếng các câu cũ" gửi mọi câu `stale` và ra thẻ đồng ý.
+
+Studio không đọc khóa ElevenLabs; khóa chỉ nằm trong công cụ series. Đuôi log của việc và biên nhận đi qua `lib/agents/redact.mjs`. Giới hạn: luật "không gọi phần giọng của `eleven.mjs` trực tiếp" chỉ nằm trong prompt đạo diễn, Studio không chặn được một lệnh shell mà đạo diễn tự chạy. Kiểm sau mỗi tập: mọi file giọng mới phải có biên nhận `series-tts` (hoặc `voice-design`) tương ứng.
 
 ## Thêm một series khác
 

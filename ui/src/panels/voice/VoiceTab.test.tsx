@@ -1,14 +1,16 @@
 import "@/shell/test-utils.tsx";
-import { act, fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { renderUi } from "@/shell/test-utils.tsx";
+import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { actions } from "@/api/actions.ts";
 import { say } from "@/api/client.ts";
+import { SectionHost } from "@/shell/SectionHost.tsx";
+import { register as registerSeries } from "@/ext/series/index.ts";
 import type { Manifest } from "@/api/types.ts";
 import { createStudio, getTabs } from "@/ext/registry.ts";
 import { useStudio } from "@/store/studio.ts";
 import { register, VOICE_LEAD } from "./index.ts";
-import { useStaleCount, VoiceTab } from "./VoiceTab.tsx";
+import { NEEDS_VOICE, speakerColour, useStaleCount, VoiceTab } from "./VoiceTab.tsx";
 
 // The manifest the mocked useProject answers; setManifest stands in for an SSE reload.
 const store = vi.hoisted(() => {
@@ -50,6 +52,7 @@ const stale = (): Manifest => {
 };
 
 beforeEach(() => {
+  mockFetch({});
   store.m = manifest();
   useStudio.setState({ name: "thuy-mau-demo" });
   vi.mocked(actions.patch).mockClear();
@@ -148,5 +151,97 @@ describe("voice tab", () => {
     const later = manifest({ version: 6 });
     act(() => store.set(later));
     expect(screen.getByLabelText("Câu 1")).toHaveValue("Lớp thuỷ màu mới tự vẽ từng nét trên giấy.");
+  });
+});
+
+// A series episode: GET /api/series lists the roles, GET /api/voice/previews says the provider can
+// set a speaker, GET /api/consent the waiting cards; the posts are recorded.
+const VOICE_CARD = { id: "c-tts", kind: "elevenlabs", title: "Lồng tiếng 2 câu bằng giọng cast của series, ước 80 ký tự ElevenLabs", count: 2, estimate: { lines: 2, chars: 80 }, status: "waiting" };
+function seriesRoutes({ canSet = true, cards = [] as unknown[] } = {}) {
+  const posts: { path: string; body: Record<string, unknown> }[] = [];
+  const post = (path: string, answer: unknown) => (_u: URL, init?: RequestInit) => { posts.push({ path, body: JSON.parse(String(init?.body ?? "{}")) }); return answer; };
+  mockFetch({
+    "/api/series": { name: "Sóng thử", dir: "/s", characters: [], roles: ["ptv", "ba-noi"], writable: [] },
+    "/api/voice/previews": { roles: [], can_set_speaker: canSet },
+    "/api/consent": { cards },
+    "/api/voice/tts": post("/api/voice/tts", { job: { id: "j1" } }),
+  });
+  return posts;
+}
+const withSpeakers = (m: Manifest): Manifest => { m.lines[0] = { ...m.lines[0]!, speaker: "ptv" }; return m; };
+
+describe("voice tab in a series episode", () => {
+  test("a speaker box per line with the series roles; a change sends set_line_speaker and asks to voice again", async () => {
+    seriesRoutes();
+    store.m = withSpeakers(manifest());
+    renderUi(<VoiceTab />);
+    const box = await screen.findByLabelText("Người nói câu 1");
+    expect(box).toHaveValue("ptv");
+    expect([...(box as HTMLSelectElement).options].map((o) => o.value)).toEqual(["ptv", "ba-noi"]);
+    expect(screen.getByLabelText("Người nói câu 2")).toHaveValue("");
+    await act(async () => { fireEvent.change(box, { target: { value: "ba-noi" } }); });
+    expect(actions.patch).toHaveBeenCalledWith([{ op: "set_line_speaker", id: "vo-01", speaker: "ba-noi" }]);
+    expect(say).toHaveBeenCalledWith(NEEDS_VOICE);
+  });
+
+  test("the colour of a role is fixed by its id", () => {
+    expect(speakerColour("ba-noi")).toBe(speakerColour("ba-noi"));
+    expect(speakerColour("ba-noi")).toMatch(/^bg-(track|deco)-/);
+    expect(new Set(["ptv", "ba-noi", "song", "me", "bo"].map(speakerColour)).size).toBeGreaterThan(1);
+  });
+
+  test("a provider without the op, a read-only project and a project of no series only show the speaker", async () => {
+    seriesRoutes({ canSet: false });
+    store.m = withSpeakers(manifest());
+    const one = renderUi(<VoiceTab />);
+    expect(await screen.findByText("Người nói: ptv")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Người nói câu 1")).toBeNull();
+    one.unmount();
+
+    seriesRoutes();
+    store.m = withSpeakers(manifest({ capabilities: { editable: false } } as Partial<Manifest>));
+    const two = renderUi(<VoiceTab />);
+    expect(await screen.findByText("Người nói: ptv")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Người nói câu 1")).toBeNull();
+    two.unmount();
+
+    mockFetch({});
+    act(() => { useStudio.setState({ name: "le" }); });
+    store.m = withSpeakers(manifest());
+    renderUi(<VoiceTab />);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.queryByText("Người nói: ptv")).toBeNull();
+    expect(screen.queryByLabelText("Người nói câu 1")).toBeNull();
+  });
+
+  test("Lồng tiếng lại voices one stale line; Lồng tiếng các câu cũ sends every stale line", async () => {
+    const posts = seriesRoutes();
+    const m = withSpeakers(manifest({ version: 5 }));
+    m.lines[0] = { ...m.lines[0]!, gate: "stale" };
+    m.lines[2] = { ...m.lines[2]!, gate: "stale", speaker: "ba-noi" };
+    store.m = m;
+    renderUi(<VoiceTab />);
+    const redo = await screen.findAllByRole("button", { name: "Lồng tiếng lại" });
+    expect(redo).toHaveLength(2);
+    expect(screen.queryByText("Nhờ duyệt và lồng tiếng lại")).toBeNull();
+    await act(async () => { fireEvent.click(redo[0]!); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Lồng tiếng các câu cũ (2)" })); });
+    await waitFor(() => expect(posts.map((p) => p.body)).toEqual([{ name: "thuy-mau-demo", ids: ["vo-01"] }, { name: "thuy-mau-demo", ids: ["vo-01", "vo-03"] }]));
+  });
+
+  test("a stale line without a speaker cannot be voiced yet", async () => {
+    seriesRoutes();
+    store.m = stale();
+    renderUi(<VoiceTab />);
+    expect(await screen.findByRole("button", { name: "Lồng tiếng lại" })).toBeDisabled();
+  });
+
+  test("the waiting voice card of the series shows under the tab", async () => {
+    seriesRoutes({ cards: [VOICE_CARD] });
+    registerSeries(createStudio());
+    renderUi(<><VoiceTab /><SectionHost hostId="voice" /></>);
+    const card = await screen.findByRole("region", { name: "Thẻ chờ đồng ý" });
+    expect(within(card).getByText(VOICE_CARD.title)).toBeInTheDocument();
+    expect(within(card).queryByText(/lượt đọc ảnh/)).toBeNull();
   });
 });

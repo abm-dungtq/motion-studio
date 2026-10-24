@@ -30,7 +30,7 @@ Tập của một series (xem [series.md](series.md)) cần nhiều ảnh mới 
 
 ## Thẻ đồng ý
 
-`asset_batch` (hay `POST /api/assets/batch`) kiểm file đợt rồi ghi một thẻ đồng ý, chưa tốn lượt nào. Thẻ ghi số ảnh, agent sẽ vẽ, số lượt vẽ ước tính và mức dùng 5 giờ của từng tài khoản codex-pool, ví dụ "Đợt hero: 4 ảnh, codex-pool, ước 4 lượt vẽ; acct1 còn 62% trong 5 giờ". Một đợt chỉ có một thẻ đang chờ; gọi lại thì nhận lại thẻ đó.
+`asset_batch` (hay `POST /api/assets/batch`) kiểm file đợt rồi ghi một thẻ đồng ý, chưa tốn lượt nào. Thẻ ghi số ảnh, agent sẽ vẽ, số lượt vẽ ước tính, số lượt Codex tối đa và mức dùng 5 giờ của từng tài khoản codex-pool, ví dụ "Đợt hero: 4 ảnh, codex-pool, ước 4 lượt vẽ, tối đa 16 lượt Codex (gồm vẽ lại tự động và đọc ảnh tự kiểm); acct1 còn 62% trong 5 giờ". Mức tối đa (`estimate.codex_max`) theo đúng cách đợt chạy: mỗi ảnh tối đa 2 lượt vẽ và 2 lượt đọc ảnh; lượt vẽ tính khi danh sách agent vẽ có một agent Codex, lượt đọc tính khi danh sách agent đọc ảnh có một agent Codex (agent đứng trước hết lượt thì việc rơi xuống Codex). Một đợt chỉ có một thẻ đang chờ; gọi lại thì nhận lại thẻ đó.
 
 Thẻ là file `.opus/consent/<id>.json`:
 
@@ -86,7 +86,7 @@ Dòng cuối của job là `RESULT {"ok", "batch", "counts", "passed", "review",
 
 ## Duyệt bảng
 
-Tab Tài sản xếp ảnh của các đợt thành bảng: `character:<id>` gồm ảnh `pose` của nhân vật đó, `background` gồm ảnh `background`, `prop` gồm ảnh `prop`. `ui-card` và `thumbnail` không có bảng. "Duyệt cả bảng" gửi `POST /api/assets/approve { name, batch, board, ids, notes? }` với mọi ảnh `keyed` của bảng, cộng ảnh `needs_review` người dùng đã đánh dấu; mỗi đợt một lần gọi.
+Đầu tab Tài sản là mọi thẻ đang chờ của dự án (`GET /api/consent`, không riêng thẻ của đợt ảnh), mỗi thẻ một lần. Tab Tài sản xếp ảnh của các đợt thành bảng: `character:<id>` gồm ảnh `pose` của nhân vật đó, `background` gồm ảnh `background`, `prop` gồm ảnh `prop`. `ui-card` và `thumbnail` không có bảng. "Duyệt cả bảng" gửi `POST /api/assets/approve { name, batch, board, ids, notes? }` với mọi ảnh `keyed` của bảng, cộng ảnh `needs_review` người dùng đã đánh dấu; mỗi đợt một lần gọi.
 
 Route kiểm hết rồi mới ghi; một ảnh bị từ chối thì không ghi gì:
 

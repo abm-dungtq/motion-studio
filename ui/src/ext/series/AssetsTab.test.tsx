@@ -2,15 +2,18 @@ import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { useStudio } from "@/store/studio.ts";
-import { createStudio, getTabs } from "@/ext/registry.ts";
+import { createStudio, getSections, getTabs } from "@/ext/registry.ts";
 import { AssetsTab, boardsOf, LEAD } from "./AssetsTab.tsx";
 import { extraTurnsText } from "./ConsentCard.tsx";
 import { register } from "./index.ts";
 import type { AssetsList } from "./types.ts";
 
-// Shapes of GET /api/series and GET /api/assets (routes/series.mjs, routes/assets.mjs).
+// Shapes of GET /api/series, /api/assets, /api/consent and /api/voice/previews (routes/series.mjs,
+// routes/assets.mjs, routes/consent.mjs, routes/voice.mjs).
 const SERIES = { name: "Series Thử", dir: "/s", characters: ["thu"], roles: [], writable: ["refs", "rig_src", "props"] };
-const CARD = { id: "c-1", kind: "codex", title: "Đợt bà nội: 4 ảnh, codex-pool, ước 4 lượt vẽ; acct1 còn 62% trong 5 giờ", count: 4, estimate: { images: 4, codex_turns: 4, agent: "codex-pool" }, quota: { accounts: [{ name: "acct1", ok: true, h5: 38 }] }, status: "waiting" };
+const CARD = { id: "c-1", kind: "codex", title: "Đợt bà nội: 4 ảnh, codex-pool, ước 4 lượt vẽ; acct1 còn 62% trong 5 giờ", count: 4, estimate: { images: 4, codex_turns: 4, codex_max: 16, agent: "codex-pool" }, quota: { accounts: [{ name: "acct1", ok: true, h5: 38 }] }, status: "waiting" };
+const VOICE_CARD = { id: "c-2", kind: "elevenlabs", title: "Tạo 3 giọng thử cho Bà nội, 1 lượt Voice Design", count: 1, estimate: { voice_design: 1, previews: 3 }, status: "waiting" };
+const PREVIEWS = { roles: [{ role: "ba-noi", name: "Bà nội", previews: [1, 2, 3].map((n) => ({ n, file: `.opus/voice-design/ba-noi/ba-noi-${n}.mp3` })) }], can_set_speaker: true };
 const item = (id: string, kind: string, extra = {}) => ({ id, kind, character: null, target: null, status: "keyed", raw: `assets/gen/raw/${id}.png`, keyed: `assets/gen/keyed/${id}.${kind === "background" ? "png" : "pxl"}`, preview: `assets/gen/keyed/${id}.png`, reasons: [], ...extra });
 const ASSETS: AssetsList = {
   series: "Series Thử",
@@ -34,6 +37,9 @@ function routes(over: Record<string, unknown> = {}) {
   const fetch = mockFetch({
     "/api/series": SERIES,
     "/api/assets": ASSETS,
+    "/api/consent": { cards: [CARD] },
+    "/api/voice/previews": { roles: [], can_set_speaker: true },
+    "/api/voice/pick": post("/api/voice/pick", { job: { id: "j3" }, role: "ba-noi", pick: 2 }),
     "/api/consent/answer": post("/api/consent/answer", { card: { ...CARD, status: "approved" }, job: { id: "j1", status: "running" } }),
     "/api/assets/approve": post("/api/assets/approve", { ok: true, ids: ["ngoi"], copied: [] }),
     "/api/assets/redo": post("/api/assets/redo", { job: { id: "j2" } }),
@@ -65,16 +71,42 @@ describe("Tài sản tab", () => {
     const card = await screen.findByRole("region", { name: "Thẻ chờ đồng ý" });
     expect(within(card).getByText(CARD.title)).toBeInTheDocument();
     expect(within(card).getByText("acct1 còn 62% trong 5 giờ")).toBeInTheDocument();
-    expect(within(card).getByText(extraTurnsText(4))).toBeInTheDocument();
-    expect(extraTurnsText(4)).toContain("Tối đa 8 lượt vẽ và 8 lượt đọc ảnh");
+    expect(within(card).getByText(extraTurnsText(4, 16))).toBeInTheDocument();
+    expect(extraTurnsText(4, 16)).toContain("Tối đa 8 lượt vẽ và 8 lượt đọc ảnh, trong đó tối đa 16 lượt Codex");
+    expect(extraTurnsText(4)).not.toContain("lượt Codex");
     fireEvent.click(within(card).getByRole("button", { name: "Đồng ý" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/api/consent/answer", body: { name: "ep", id: "c-1", ok: true } }]));
+  });
+
+  test("every waiting card shows once: the batch card read from the consent route, not again from the batch", async () => {
+    routes({ "/api/consent": { cards: [CARD, VOICE_CARD] } });
+    open("ep");
+    expect(await screen.findByText(VOICE_CARD.title)).toBeInTheDocument();
+    expect(screen.getAllByRole("region", { name: "Thẻ chờ đồng ý" })).toHaveLength(2);
+    expect(screen.getAllByText(CARD.title)).toHaveLength(1);
+  });
+
+  test("the voices of a role wait for a pick: three players, and Chọn giọng này posts that number", async () => {
+    const { posts } = routes({ "/api/voice/previews": PREVIEWS });
+    open("ep");
+    const pick = await screen.findByRole("region", { name: "Chọn giọng cho Bà nội" });
+    expect(within(pick).getAllByRole("button", { name: /Chọn giọng \d của Bà nội/ })).toHaveLength(3);
+    expect(within(pick).getByLabelText("Nghe giọng 2 của Bà nội")).toHaveAttribute("src", "/p/ep/.opus/voice-design/ba-noi/ba-noi-2.mp3");
+    fireEvent.click(within(pick).getByRole("button", { name: "Chọn giọng 2 của Bà nội" }));
+    await waitFor(() => expect(posts).toEqual([{ path: "/api/voice/pick", body: { name: "ep", role: "ba-noi", pick: 2 } }]));
+  });
+
+  test("the pick card is also a section of the director column and of the Lời & giọng tab", () => {
+    register(createStudio());
+    expect(getSections("director").map((x) => x.id)).toContain("series-voice-pick");
+    expect(getSections("voice").map((x) => x.id)).toEqual(["series-consent", "series-voice-pick"]);
   });
 
   test("boards in order with states in words; Duyệt cả bảng sends the keyed images of the sheet", async () => {
     const { posts } = routes();
     const { container } = open("ep");
     const sheet = await screen.findByRole("region", { name: "Tờ nhân vật thu" });
+    await screen.findByRole("region", { name: "Thẻ chờ đồng ý" });
     expect(within(container).getAllByRole("region").map((r) => r.getAttribute("aria-label")).filter((l) => !l?.startsWith("Notifications"))).toEqual(["Thẻ chờ đồng ý", "Tờ nhân vật thu", "Bảng nền", "Bảng đạo cụ"]);
     expect(within(sheet).getByText("chờ duyệt")).toBeInTheDocument();
     expect(within(sheet).getByText("cần xem")).toBeInTheDocument();
