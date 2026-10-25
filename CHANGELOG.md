@@ -1,6 +1,6 @@
 # Changelog
 
-## Chưa phát hành
+## v2.0.0 (2026-10-25): giao diện React, series, bàn chất liệu, xuất NLE
 
 - Giao nộp tập của series vào thư mục `delivery_dir` (`{N}` là `episode:` của `BRIEF.md`), không bao giờ ghi đè (khác sha thì thêm `-2`, `-3`): tiêu đề và mô tả có mốc chương, kiểm bằng check-platform và lint viet-pro; phụ đề SRT từ words.json cùng `CAPTIONS.md` qua cổng viet-pro delivery; bản youtube, facebook, tiktok từ video final; thumbnail 3 ảnh sau thẻ đồng ý Codex rồi người dùng chọn một. Tải thư mục giao nộp lên Drive bằng gws sau thẻ đồng ý `drive` (kiểm tài khoản trước, so kích thước sau, `dry_run` dùng `--dry-run` của gws). Route `/api/delivery*`, tool `deliver_text`, `deliver_captions`, `deliver_export`, `deliver_thumbnail`, `delivery_status`, `drive_upload`; biên nhận `deliver-*`, `drive-upload`. Bảng "Giao nộp" trong hộp thoại Xuất bản. Biến `MOTION_STUDIO_GWS`. Xem `docs/series.md`.
 - Thẻ "Cần xử lý ngoài": một bước chạy công cụ (công cụ series, đợt ảnh, lồng tiếng, dựng cảnh, giao nộp, Drive) lỗi hai lần liền cùng mã thì Studio ghi `.opus/handoff/<bước>.md` có câu để dán vào Claude Code, biên nhận `handoff`, thẻ đỏ ở cột Đạo diễn với "Chép" và "Đã xử lý". Route `GET /api/handoff`, `POST /api/handoff/resolve`.

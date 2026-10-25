@@ -158,7 +158,7 @@ Lần đầu nạp, adapter opus-video kiểm `STUDIO_API`, schema manifest và 
 |---|---|---|
 | 1.0.x | 2.1.0 trở lên, dưới 3.0 | 2 |
 | 1.1.x | 2.3.0 trở lên, dưới 3.0 | 3 |
-| chưa phát hành | 2.3.0 trở lên, dưới 3.0 | 3 hoặc 4 |
+| 2.0.x | 2.3.0 trở lên, dưới 3.0 | 3 hoặc 4 |
 
 ## Test
 
