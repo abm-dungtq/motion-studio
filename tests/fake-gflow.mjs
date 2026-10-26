@@ -11,8 +11,10 @@
 //   FAKE_GFLOW_VERSION   version printed by --version (0.90.0)
 //   FAKE_GFLOW_AUTH      exit code of `auth status` (0)
 //   FAKE_GFLOW_MP4       a real mp4 to copy as the generated or downloaded clip (else a few bytes)
-// Scenarios: ok | exit:N[:armed|:sent[:row]] (row: the catalog has the run) | exit6 | exit6-net | notsucceeded | garbage |
-//   hang-before-typed | hang-after-typed | hang-after-sent | hang-after-sent-norow | ignore-sigint
+// Scenarios: ok | exit:N[:armed|:sent[:row]] (row: the catalog has the run) | exit6 | exit6-migrated | exit6-net |
+//   project-missing | notsucceeded | garbage | hang-before-typed | hang-after-typed | hang-after-sent |
+//   hang-after-sent-norow | ignore-sigint | sigint-leave-chrome
+// As on flow.google.com, an image run never logs submit_clicked (only the video path does).
 import { appendFileSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -48,10 +50,13 @@ if (a === "--version") {
   out([{ name: "p1", google_account: "x@y.z", is_default: true, cookies_present: true, last_used_at: null, profile_dir: "/x/profiles/p1" }]);
   exit(0);
 } else if (a === "auth" && b === "status") {
-  const code = Number(env.FAKE_GFLOW_AUTH ?? 0);
-  if (code) out({ status: "fail", error: { class: "AuthError", exit_code: code, retryable: false, detail: "session expired for x@y.z" } });
-  else out({ status: "ok", profile: opt("--profile"), account: "x@y.z" });
-  exit(code);
+  // The real command has no --json: an unknown option is a usage error.
+  if (argv.includes("--json")) { process.stderr.write("Error: No such option: --json\n"); exit(2); }
+  else {
+    const code = Number(env.FAKE_GFLOW_AUTH ?? 0);
+    process.stdout.write(code ? "not signed in (x@y.z)\n" : `signed in: ${opt("--profile")} (x@y.z)\n`);
+    exit(code ? 1 : 0);
+  }
 } else if (a === "project" && b === "create") {
   const rec = { status: "ok", project_id: `proj-${randomBytes(3).toString("hex")}`, title: opt("--name"), profile: opt("--profile") };
   if (dir) appendFileSync(file("projects.jsonl"), JSON.stringify(rec) + "\n");
@@ -95,7 +100,7 @@ function writeOutput(kind) {
   return o;
 }
 
-function hang({ ignoreSigint = false } = {}) {
+function hang({ ignoreSigint = false, leaveChrome = false } = {}) {
   const chrome = spawn(process.execPath, ["-e", "setInterval(()=>{},1e3)"], { detached: true, stdio: "ignore" });
   chrome.unref();
   if (dir) {
@@ -104,7 +109,7 @@ function hang({ ignoreSigint = false } = {}) {
   }
   process.on("SIGINT", () => {
     if (ignoreSigint) return;
-    try { process.kill(chrome.pid, "SIGKILL"); } catch { /* gone */ }
+    if (!leaveChrome) try { process.kill(chrome.pid, "SIGKILL"); } catch { /* gone */ }
     event("cli.interrupted");
     setTimeout(() => process.exit(130), 100);
   });
@@ -114,7 +119,7 @@ function hang({ ignoreSigint = false } = {}) {
 function generate(kind) {
   const mediaId = randomUUID();
   const armed = () => event("migrated.prompt_typed");
-  const sent = () => event("migrated.submit_clicked");
+  const sent = () => { if (kind === "video") event("migrated.submit_clicked"); };
   const fail = (code, error) => { out({ status: "fail", error: { exit_code: code, class: "X", retryable: false, detail: "x", ...error } }); exit(code); };
   const m = /^exit:(\d+)(?::(armed|sent))?(:row)?$/.exec(scenario);
   if (m) {
@@ -136,6 +141,12 @@ function generate(kind) {
       armed(); sent();
       catalogRow(kind, mediaId, "MEDIA_GENERATION_STATUS_SUCCESSFUL");
       return fail(6, { class: "MediaDownloadError", retryable: false, detail: `video download returned HTTP 403 for '${mediaId}' via media.getMediaUrlRedirect`, remediation_hint: `Retry later: gflow data download ${mediaId}` });
+    case "exit6-migrated":
+      armed(); sent();
+      catalogRow(kind, mediaId, "MEDIA_GENERATION_STATUS_SUCCESSFUL");
+      return fail(6, { class: "MediaDownloadError", retryable: false, detail: "migrated host: signed media URL returned HTTP 403", remediation_hint: `The clip was generated; fetch it later with gflow data download ${mediaId} --out <dir>` });
+    case "project-missing":
+      return fail(11, { class: "ConfigurationError", retryable: false, detail: `Flow answered with its project-not-found page (https://labs.google/fx/tools/flow/project/${opt("--project")}?x=1, reason=project): that project id is not found for this account` });
     case "exit6-net":
       return fail(6, { class: "NetworkError", retryable: true, detail: "connection reset" });
     case "notsucceeded":
@@ -151,6 +162,9 @@ function generate(kind) {
     case "hang-after-typed":
       armed();
       return hang();
+    case "sigint-leave-chrome":
+      armed();
+      return hang({ leaveChrome: true });
     case "ignore-sigint":
       armed();
       return hang({ ignoreSigint: true });

@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { classify, createProject, defaultProfile, genArgv, gflowEnv, gflowVersion, listCatalog, matchCatalog, parseEvents, parseResult, scrub, spawnGflow } from "../lib/videogen/gflow.mjs";
+import { authStatus, classify, createProject, defaultProfile, genArgv, gflowEnv, gflowVersion, listCatalog, matchCatalog, parseEvents, parseResult, scrub, spawnGflow } from "../lib/videogen/gflow.mjs";
 
 const FAKE = fileURLToPath(new URL("./fake-gflow.mjs", import.meta.url));
 let tmp;
@@ -193,4 +193,49 @@ test("free calls: version, default profile without email, project, catalog", asy
   assert.equal(rows.length, 1);
   assert.equal(rows[0].project_id, pr.id);
   assert.equal(JSON.stringify(rows).includes("@"), false);
+});
+
+test("image: the composer counts as sent (flow.google.com logs no submit for images)", async () => {
+  const armed = { armed: true, sent: false };
+  // exit 11 after the prompt (file could not be written) and a dropped download: maybe paid.
+  assert.equal(classify({ code: 11, ev: armed, kind: "image", version: "0.90.0", result: { status: "fail", error: { class: "OutputError" } } }).state, "reconcile");
+  assert.equal(classify({ code: 6, ev: armed, kind: "image", version: "0.90.0", result: { status: "fail", error: { class: "NetworkError", retryable: true } } }).state, "reconcile");
+  assert.equal(classify({ code: 130, aborted: true, ev: armed, kind: "image", version: "0.90.0" }).state, "reconcile");
+  // The same codes before the prompt stay free.
+  assert.equal(classify({ code: 11, ev: { armed: false, sent: false }, kind: "image", version: "0.90.0" }).charge, "none");
+  const { c, r } = await run("exit:11:armed", { spec: image });
+  assert.equal(parseEvents(r.stderr).sent, false);
+  assert.equal(c.state, "reconcile");
+  assert.equal((await run("ok", { spec: image })).c.state, "collected");
+});
+
+test("exit 6: made only for MediaDownloadError after the submit; id from the hint on flow.google.com", async () => {
+  const m = await run("exit6-migrated");
+  assert.equal(m.c.state, "made");
+  assert.match(m.c.media_id, /^[0-9a-f-]{36}$/);
+  assert.equal(classify({ code: 6, ev: { armed: true, sent: false }, version: "0.90.0", result: { status: "fail", error: { class: "MediaDownloadError", media_id: "a" } } }).state === "made", false);
+  assert.equal(classify({ code: 6, ev: { armed: true, sent: true }, version: "0.90.0", result: { status: "fail", error: { class: "X", retryable: false, media_id: "a" } } }).state === "made", false);
+});
+
+test("project-not-found is read from the raw detail; no reason field", async () => {
+  const { r, c } = await run("project-missing");
+  const e = parseResult(r.stdout).error;
+  assert.equal(e.project_missing, true);
+  assert.equal("reason" in e, false);
+  assert.equal(c.state, "failed");
+  assert.equal(c.charge, "none");
+  assert.equal(parseResult(JSON.stringify({ status: "fail", error: { class: "FlowAppError", exit_code: 31, detail: "redirected to /about" } })).error.project_missing, false);
+});
+
+test("auth status has no --json: exit 0 signed in, 1 not", async () => {
+  assert.deepEqual(await authStatus(FAKE, "p1"), { ok: true, code: 0 });
+  assert.deepEqual(await authStatus(FAKE, "p1", { env: { ...gflowEnv(), FAKE_GFLOW_AUTH: "1" } }), { ok: false, code: 1 });
+});
+
+test("abort: a browser left alive after gflow exits on SIGINT is killed too", async () => {
+  const { r, self, chrome } = await runHang("sigint-leave-chrome", { killAfterMs: 300 });
+  assert.equal(r.killed, true);
+  assert.equal(r.code, 130);
+  assert.ok(await waitDead(self), "fake alive");
+  assert.ok(await waitDead(chrome, 1500), "browser alive");
 });
