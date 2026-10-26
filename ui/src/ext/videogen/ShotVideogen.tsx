@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, say, type SendResult } from "@/api/client.ts";
+import type { Manifest } from "@/api/types.ts";
 import type { InspectorSectionProps } from "@/ext/registry.ts";
 import { Button, Textarea } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
@@ -21,19 +22,26 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <label className="flex items-center gap-2 text-sm"><span className="w-24 shrink-0 text-muted-foreground">{label}</span>{children}</label>;
 }
 
+// The inspector keeps one section mounted across shots and projects; the form is keyed on both so
+// its length, images, frame and prompt never carry over to another shot.
 export function ShotVideogen({ pick, m }: InspectorSectionProps) {
   const name = useStudio((s) => s.name);
   const shot = m?.shots?.find((s) => s.id === pick.id);
+  if (!shot || !name || !m) return null;
+  return <VgForm key={`${name}:${shot.id}`} name={name} shot={shot} m={m} />;
+}
+
+function VgForm({ name, shot, m }: { name: string; shot: Manifest["shots"][number]; m: Manifest }) {
   const status = useQuery({ queryKey: ["videogen", "status"], queryFn: vgStatus, refetchInterval: 5000 });
   const st = status.data;
   const busyHere = Boolean(st?.job && st.job.name === name);
-  const items = useQuery({ queryKey: ["videogen", "items", name], queryFn: () => vgItems(name!), enabled: Boolean(name), refetchInterval: busyHere ? 2000 : false });
-  const len = shot ? Number(shot.end) - Number(shot.start) : 0;
+  const items = useQuery({ queryKey: ["videogen", "items", name], queryFn: () => vgItems(name), refetchInterval: busyHere ? 2000 : false });
+  const len = Number(shot.end) - Number(shot.start);
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState("t2v");
   const [seconds, setSeconds] = useState(() => pickSeconds(len));
   const [resolution, setResolution] = useState("720p");
-  const [aspect, setAspect] = useState((m?.height ?? 0) > (m?.width ?? 0) ? "9:16" : "16:9");
+  const [aspect, setAspect] = useState((m.height ?? 0) > (m.width ?? 0) ? "9:16" : "16:9");
   const [refs, setRefs] = useState<string[]>(["", ""]);
   const [sending, setSending] = useState(false);
   // The job's end settles its item (attached, indeterminate…): fetch the list once more.
@@ -42,11 +50,10 @@ export function ShotVideogen({ pick, m }: InspectorSectionProps) {
     if (wasBusy.current && !busyHere) void refresh();
     wasBusy.current = busyHere;
   }, [busyHere]);
-  if (!shot || !name) return null;
 
   const need = MODES.find((x) => x.v === mode)?.refs ?? 0;
   const images = (shot.assets ?? []).filter((a) => IMAGE.test(a));
-  const chosen = refs.slice(0, need);
+  const chosen = refs.slice(0, need).map((x) => (images.includes(x) ? x : ""));
   const mine = (items.data?.items ?? []).filter((x) => x.shot === shot.id);
   const idle = !st?.job;
 
@@ -62,10 +69,10 @@ export function ShotVideogen({ pick, m }: InspectorSectionProps) {
   const create = async () => {
     if (!st) return;
     const res = resolution === "360p" && mode !== "t2v" ? "720p" : resolution;
-    if (!window.confirm(`Tạo clip ${seconds}s ${res} bằng Omni Flash qua G-Labs? Lượt này tốn credit Flow (app ghi "Omni −4 ~ 15 credit"). Hôm nay: ${st.today}/${st.cap}.`)) return;
+    if (!window.confirm(`Tạo clip ${seconds}s ${res} bằng Omni Flash qua G-Labs? Lượt này tốn credit Flow (app ghi "Omni −4 ~ 15 credit"; 1080p có thể tốn thêm, xem giá trong G-Labs). Hôm nay: ${st.today}/${st.cap}.`)) return;
     setSending(true);
     try {
-      const body = { name, shot: shot.id, base: m!.version, prompt, mode, aspect, seconds, resolution: res, refs: chosen };
+      const body = { name, shot: shot.id, base: m.version, prompt, mode, aspect, seconds, resolution: res, refs: chosen };
       const r = await vgCreate(body);
       if (r.code === "DUPLICATE") {
         if (window.confirm("Lần trước của đúng yêu cầu này chưa rõ kết quả và có thể đã tốn credit. Vẫn tạo lại (có thể tốn credit lần hai)?")) fail(await vgCreate({ ...body, again: String(r.id) }));
@@ -80,7 +87,7 @@ export function ShotVideogen({ pick, m }: InspectorSectionProps) {
   const act = async (p: Promise<SendResult>) => { fail(await p); void refresh(); };
   const importFile = (it: VgItem) => {
     const path = window.prompt("Đường dẫn file mp4 đã tải từ G-Labs (thư mục lưu trong Cài đặt của G-Labs):");
-    if (path) void act(vgImport(name, it.id, m!.version, path.trim()));
+    if (path) void act(vgImport(name, it.id, m.version, path.trim()));
   };
 
   return (
@@ -117,12 +124,12 @@ export function ShotVideogen({ pick, m }: InspectorSectionProps) {
           <option value="9:16">9:16</option>
         </select>
       </Field>
-      <div><Button variant="primary" disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo clip AI</Button></div>
-      {why && <p className="m-0 text-sm text-muted-foreground">{why}</p>}
+      <div><Button variant="primary" aria-describedby={why ? "vg-why" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo clip AI</Button></div>
+      {why && <p id="vg-why" className="m-0 text-sm text-muted-foreground">{why}</p>}
       {busyHere && (
         <div className="flex items-center gap-2 text-sm">
           <span>Đang tạo clip AI…</span>
-          <Button onClick={() => void act(vgCancel(name))}>Huỷ</Button>
+          <Button aria-label="Huỷ clip AI đang tạo" onClick={() => { if (window.confirm("Huỷ clip đang tạo? Nếu G-Labs đã nhận task, credit có thể đã bị trừ.")) void act(vgCancel(name)); }}>Huỷ</Button>
         </div>
       )}
       {mine.length > 0 && (
@@ -139,9 +146,9 @@ export function ShotVideogen({ pick, m }: InspectorSectionProps) {
                 {it.note && <div className="text-muted-foreground">{it.note}</div>}
                 {state === "indeterminate" && <div className="text-warn">Có thể đã tốn credit. Kiểm tra trong G-Labs trước khi tạo lại.</div>}
                 <div className="flex flex-wrap gap-2">
-                  {(state === "submitted" || state === "running") && idle && <Button onClick={() => void act(vgResume(name, it.id))}>Theo dõi tiếp</Button>}
-                  {(state === "collected" || (state === "cancelled" && it.charge === "charged" && it.files.length > 0)) && <Button onClick={() => void act(vgAttach(name, it.id, m!.version))}>Gắn vào shot</Button>}
-                  {(state === "indeterminate" || state === "failed" || state === "cancelled") && idle && <Button onClick={() => importFile(it)}>Nhập file đã tải</Button>}
+                  {(state === "submitted" || state === "running") && idle && <Button aria-label={`Theo dõi tiếp: ${it.prompt_head}`} onClick={() => void act(vgResume(name, it.id))}>Theo dõi tiếp</Button>}
+                  {(state === "collected" || (state === "cancelled" && it.charge === "charged" && it.files.length > 0)) && <Button aria-label={`Gắn vào shot: ${it.prompt_head}`} onClick={() => void act(vgAttach(name, it.id, m.version))}>Gắn vào shot</Button>}
+                  {(state === "indeterminate" || state === "failed" || state === "cancelled") && !(state === "cancelled" && it.files.length > 0) && idle && <Button aria-label={`Nhập file đã tải: ${it.prompt_head}`} onClick={() => importFile(it)}>Nhập file đã tải</Button>}
                 </div>
               </li>
             );

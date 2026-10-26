@@ -1,11 +1,13 @@
 import { renderUi, resetAll } from "@/shell/test-utils.tsx";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Manifest } from "@/api/types.ts";
 import { useStudio } from "@/store/studio.ts";
 import { ShotVideogen } from "./ShotVideogen.tsx";
 import type { VgItem, VgStatus } from "./api.ts";
 
+const M2 = (shots: unknown[]) => ({ version: 7, width: 1920, height: 1080, capabilities: { editable: true }, lines: [], shots }) as unknown as Manifest;
 const M = { version: 7, width: 1920, height: 1080, capabilities: { editable: true }, lines: [], shots: [{ id: "s1", start: 0, end: 5, assets: ["assets/a.png"] }] } as unknown as Manifest;
 const UP: VgStatus = { glabs_url: "http://127.0.0.1:8765", up: true, error: null, key: true, today: 3, cap: 40, job: null };
 const item = (o: Partial<VgItem>): VgItem => ({ id: "vg-1", shot: "s1", state: "collected", charge: "charged", task_id: "0a1b2c3d", error: null, files: ["assets/gen/video/x.mp4"], prompt_head: "sóng vỗ", created: "2026-10-26T03:00:00.000Z", updated: "2026-10-26T03:00:00.000Z", version: null, ...o });
@@ -47,6 +49,37 @@ describe("shot inspector AI clip section", () => {
     open();
     expect(await screen.findByText("Mở G-Labs Studio và bấm Start ở tab Webhook")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tạo clip AI" })).toBeDisabled();
+  });
+
+  it("says when today's cap is reached", async () => {
+    serve({ "/api/videogen/status": { ...UP, today: 40 }, "/api/videogen/items": { items: [] } });
+    open();
+    expect(await screen.findByText("Đã đủ 40 clip hôm nay")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tạo clip AI" })).toBeDisabled();
+  });
+
+  it("asks for an image when the shot has none", () => {
+    serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
+    renderUi(<ShotVideogen pick={{ kind: "shot", id: "s1" }} m={M2([{ id: "s1", start: 0, end: 4, assets: ["footage/raw/a.mp4"] }])} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Kiểu" }), { target: { value: "start" } });
+    expect(screen.getByText("Shot chưa có ảnh; thêm ảnh vào shot hoặc dùng Chỉ chữ")).toBeInTheDocument();
+  });
+
+  it("starts fresh on another shot: its own length, no images of the old one", () => {
+    serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
+    const m = M2([{ id: "s1", start: 0, end: 5, assets: ["assets/a.png"] }, { id: "s2", start: 5, end: 13, assets: ["assets/b.png"] }]);
+    function Host() {
+      const [id, setId] = useState("s1");
+      return <><button onClick={() => setId("s2")}>sang s2</button><ShotVideogen pick={{ kind: "shot", id }} m={m} /></>;
+    }
+    renderUi(<Host />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Kiểu" }), { target: { value: "start" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Ảnh đầu" }), { target: { value: "assets/a.png" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Mô tả chuyển động" }), { target: { value: "cũ" } });
+    fireEvent.click(screen.getByRole("button", { name: "sang s2" }));
+    expect((screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).value).toBe("8");
+    expect((screen.getByRole("combobox", { name: "Kiểu" }) as HTMLSelectElement).value).toBe("t2v");
+    expect((screen.getByRole("textbox", { name: "Mô tả chuyển động" }) as HTMLTextAreaElement).value).toBe("");
   });
 
   it("picks the shortest clip that covers the shot, 360p only for text", () => {
@@ -96,12 +129,14 @@ describe("shot inspector AI clip section", () => {
       item({ id: "b", state: "intent", task_id: null, files: [] }),
       item({ id: "c", state: "submitted" }),
       item({ id: "d", shot: "s9", state: "collected" }),
+      item({ id: "e", state: "cancelled", charge: "charged" }),
     ] } });
     open();
     expect(await screen.findByText("đã tải về, chưa gắn")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Gắn vào shot" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Gắn vào shot: / })).toHaveLength(2);
     expect(screen.getByText("chưa rõ kết quả")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Nhập file đã tải" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Theo dõi tiếp" })).toBeInTheDocument();
+    expect(screen.getByText("Có thể đã tốn credit. Kiểm tra trong G-Labs trước khi tạo lại.")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Nhập file đã tải: / })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Theo dõi tiếp: sóng vỗ" })).toBeInTheDocument();
   });
 });

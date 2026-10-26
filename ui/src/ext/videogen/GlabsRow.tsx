@@ -8,7 +8,7 @@ export function GlabsRow(_: AgentRowProps) {
   return (
     <div className="flex flex-col gap-0.5 text-xs" data-testid="glabs-row">
       <div>
-        <strong>G-Labs (clip AI)</strong>: {st ? (st.up ? "đang chạy" : "chưa mở") : "đang kiểm…"}
+        <strong>G-Labs (clip AI)</strong>: {st ? (st.up ? "webhook đang mở" : "webhook chưa mở") : "đang kiểm…"}
         {st && <> · khoá: {st.key ? "có" : "chưa"} · hôm nay: {st.today}/{st.cap}</>}
       </div>
       <div className="text-muted-foreground">Trần chỉ tính lượt gửi từ Studio; lượt tạo trong app G-Labs hay script khác không tính.</div>
