@@ -69,9 +69,9 @@ test("Studio core reaches the provider only through lib/provider.mjs", () => {
 });
 
 // Allowed: the adapter itself, test fixtures (a real project.json names its schema), the
-// changelog and plans (history), and README where it names the default provider.
+// changelog and plans (history), and the READMEs (English and Vietnamese) where they name the default provider.
 test("the default provider's name appears nowhere outside its adapter", () => {
-  const allowed = new Set([`lib/providers/${A.ID}.mjs`, "CHANGELOG.md", "README.md"]);
+  const allowed = new Set([`lib/providers/${A.ID}.mjs`, "CHANGELOG.md", "README.md", "README.vi.md"]);
   const skipDirs = new Set([".git", ".claude", "node_modules", "plans", "tests/fixtures"]);
   const text = new Set([".mjs", ".js", ".ts", ".tsx", ".json", ".html", ".css", ".md", ".sh", ".txt", ""]);
   const hits = [];
