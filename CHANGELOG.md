@@ -2,7 +2,7 @@
 
 ## Chưa phát hành
 
-- Clip AI cho shot qua webhook G-Labs Studio (Omni Flash): sổ ghi ngoài dự án, mỗi yêu cầu chỉ gửi một lần, trần clip mỗi ngày, gắn vào shot có Undo. Mục "Clip AI (G-Labs)" trong inspector của shot, dòng G-Labs trong chip agent, route `/api/videogen/*`, biên nhận `videogen` và `videogen-import`, khoá `videogen` trong `studio.json`. Xem `docs/videogen.md`.
+- Ảnh và clip AI cho shot qua gflow-cli (Google Flow): Studio chạy `gflow` cho một ảnh (nano) hoặc một clip (Veo, Omni Flash), theo dõi log để biết lệnh đã gửi chưa, đối chiếu danh mục gflow khi kết quả chưa rõ, tải lại clip đã tạo mà không tốn credit. Sổ ghi ngoài dự án, mỗi yêu cầu chỉ chạy một lần, trần ảnh và clip mỗi ngày riêng, chặn 45 phút khi Flow báo gửi quá nhiều, gắn vào shot có Undo. Mục "AI (Google Flow)" trong inspector của shot (Ảnh | Video), dòng gflow trong chip agent, route `/api/videogen/*`, biên nhận `videogen`, `videogen-recover`, `videogen-import`, khoá `videogen` trong `studio.json`. Đạo diễn bị chặn chạy gflow. Xem `docs/videogen.md`.
 
 ## v2.0.0 (2026-10-25): giao diện React, series, bàn chất liệu, xuất NLE
 

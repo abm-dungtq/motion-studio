@@ -1,25 +1,18 @@
-# Clip AI cho shot qua G-Labs Studio
+# Ảnh và clip AI cho shot qua gflow-cli
 
-Studio tạo một clip Omni Flash cho một shot. Việc tạo đi qua webhook của G-Labs Studio chạy trên cùng máy: Studio gửi yêu cầu, chờ G-Labs tạo xong, tải clip về `assets/gen/video/` rồi gắn clip vào shot thành một phiên bản mới (Undo được). Sau đó đạo diễn nhận yêu cầu đặt clip vào timeline với tiếng tắt.
+Studio tạo một ảnh hoặc một clip AI cho một shot bằng [gflow-cli](https://github.com/ffroliva/gflow-cli) (lệnh `gflow`). gflow điều khiển Google Flow bằng trình duyệt, dùng tài khoản Google đã đăng nhập sẵn trong gflow. Studio chạy `gflow` như một tiến trình con, chờ nó xong rồi xử lý file. Ảnh vào `assets/gen/image/`, clip vào `assets/gen/video/`. Sau đó file được gắn vào shot thành một phiên bản mới, Undo được. Với clip, đạo diễn nhận thêm một yêu cầu đặt clip vào timeline, tắt tiếng.
 
-Mỗi lần tạo tốn credit Flow của tài khoản trong G-Labs; chất lượng 1080p có thể tốn hơn, xem giá trong G-Labs. Studio chỉ gửi khi bạn bấm nút và xác nhận. Prompt và ảnh tham chiếu rời khỏi máy: G-Labs gửi chúng lên dịch vụ Flow.
+Mỗi clip tốn credit Flow. Theo tài liệu gflow, ảnh nano miễn phí theo thực nghiệm nhưng có quota ngày. Studio chỉ gửi khi bạn bấm nút và xác nhận. Prompt và ảnh tham chiếu rời khỏi máy và đi lên Google Flow.
 
 ## Cần gì
 
-- G-Labs Studio đang mở, gói MAX, tab Webhook đã bấm Start (hoặc bật Auto-start).
-- Khoá webhook của G-Labs. Studio tìm khoá theo thứ tự:
-  1. biến môi trường `G_LABS_WEBHOOK_API_KEY`;
-  2. file `glabs.env` nằm cạnh `studio.json` (mặc định `~/.config/motion-studio/glabs.env`), một dòng `G_LABS_WEBHOOK_API_KEY=...`, đặt `chmod 600`.
+- `gflow` bản 0.90 (đã kiểm với 0.90.0), mặc định ở `~/.local/bin/gflow`. Bản khác vẫn chạy, nhưng chip agent ghi "chưa kiểm với Studio". Khi đó Studio không tin mã thoát mà luôn đối chiếu danh mục trước khi kết luận.
+- Đã chạy `gflow auth login` một lần cho profile sẽ dùng.
+- Một profile gflow: đặt `videogen.profile`, hoặc để trống thì Studio dùng profile mặc định của gflow.
 
-Nên dùng file khoá. Job đạo diễn (`claude -p`) thừa hưởng env của Studio, còn file thì không. File chấp nhận tiền tố `export ` và giá trị trong nháy đơn hoặc kép; mode khác 600 thì Studio in cảnh báo.
+Studio không đọc thư mục profile, cookie hay cấu hình của gflow. Của danh sách profile, Studio chỉ lấy tên. Email tài khoản không đi vào sổ, biên nhận, log job hay API.
 
-Tạo file mà không để khoá hiện ra màn hình:
-
-```bash
-read -s K && printf 'G_LABS_WEBHOOK_API_KEY=%s\n' "$K" > ~/.config/motion-studio/glabs.env && chmod 600 ~/.config/motion-studio/glabs.env && unset K
-```
-
-Chạy Studio thử với `MOTION_STUDIO_STATE` riêng thì file khoá phải nằm cạnh file state đó.
+Đừng để một app tự động hoá Flow khác và gflow cùng điều khiển một tài khoản Google một lúc.
 
 ## Cấu hình
 
@@ -27,68 +20,128 @@ Khoá `videogen` trong `studio.json`:
 
 | Khoá | Mặc định | Nghĩa |
 |---|---|---|
-| `glabs_url` | `http://127.0.0.1:8765` | Địa chỉ webhook. Chỉ nhận `http` tới máy này (`127.0.0.1`, `localhost`, `[::1]`). |
-| `daily_clips` | `40` | Số clip tối đa mỗi ngày gửi từ Studio. |
+| `gflow_bin` | `~/.local/bin/gflow` | Đường dẫn tuyệt đối tới `gflow`; nhận `~/`. |
+| `profile` | (profile mặc định của gflow) | Tên profile gflow. Chỉ chữ, số, `.`, `_`, `-`. |
+| `model` | `veo-lite` | Model video mặc định: `omni-flash`, `veo-lite`, `veo-fast`, `veo-quality`. |
+| `image_model` | `nano2` | Model ảnh mặc định: `nano2`, `nano2.1`, `nano-pro`, `nano2-lite`. |
+| `daily_clips` | `20` | Số clip tối đa mỗi ngày gửi từ Studio (0–500). |
+| `daily_images` | `30` | Số ảnh tối đa mỗi ngày gửi từ Studio (0–500). |
 
-Chip agent (góc phải) có dòng "G-Labs (clip AI)": webhook đang chạy hay chưa, có khoá chưa, số clip hôm nay trên trần.
+Chip agent (góc phải) có dòng "Google Flow (gflow)": có `gflow` chưa, phiên bản, profile, số video và ảnh hôm nay trên trần, Flow có đang chặn không. Nút "Kiểm đăng nhập" chạy `gflow auth status` (miễn phí, không mở trình duyệt). Lệnh chỉ chạy khi bạn bấm.
 
 ## Dùng thế nào
 
-1. Chọn shot, mở mục "Clip AI (G-Labs)" trong inspector.
-2. Điền mô tả chuyển động.
-3. Chọn kiểu: Chỉ chữ, Ảnh đầu, hoặc Ảnh đầu + cuối (ảnh lấy từ ảnh đang gắn vào shot).
-4. Chọn độ dài (4, 6, 8, 10 s; mặc định là mức ngắn nhất phủ hết shot), chất lượng (720p, 720p + 1080p, 360p nháp chỉ cho Chỉ chữ) và khung 16:9 hoặc 9:16.
-5. Bấm "Tạo clip AI" rồi xác nhận.
+Chọn shot, mở mục "AI (Google Flow)" trong inspector, rồi chọn Ảnh hoặc Video. Mỗi phần giữ nguyên chữ đã gõ khi bạn chuyển qua lại.
 
-Mỗi lúc chỉ một clip được tạo trên toàn Studio. Đang tạo thì mục này hiện "Đang tạo clip AI…" kèm nút Huỷ. Huỷ sẽ báo G-Labs dừng task. Credit không được hoàn nếu G-Labs đã nhận task. Nếu G-Labs đã tạo xong và clip đã tải về thì clip vẫn gắn được.
+**Ảnh**
 
-Tắt Studio trong lúc đang tạo không huỷ task: G-Labs vẫn tạo tiếp. Mở Studio lại rồi bấm "Theo dõi tiếp" ở lần tạo đó.
+1. Điền mô tả ảnh.
+2. Chọn kiểu: Chỉ chữ hoặc Theo ảnh mẫu (lấy một ảnh đang gắn vào shot).
+3. Chọn model và khung: 16:9, 9:16, 1:1, 4:3 hoặc 3:4.
+4. Bấm "Tạo ảnh AI" rồi xác nhận.
 
-Danh sách bên dưới là các lần tạo của shot trong 7 ngày, kèm việc làm được với từng lần: Gắn vào shot, Theo dõi tiếp, Nhập file đã tải.
+Hai ảnh phải cách nhau ít nhất 30 s, vì Flow chặn khi tạo ảnh dồn dập. Ảnh đã gắn vào shot dùng được ngay làm ảnh đầu hoặc ảnh cuối cho clip.
+
+**Video**
+
+1. Điền mô tả chuyển động.
+2. Chọn kiểu: Chỉ chữ, Ảnh đầu, hoặc Ảnh đầu + cuối.
+3. Chọn model.
+4. Chọn độ dài: 4, 6 hoặc 8 s. Riêng `omni-flash` có thêm 10 s. Mặc định là mức ngắn nhất phủ hết shot.
+5. Chọn khung 16:9 hoặc 9:16. Riêng `omni-flash` chọn thêm chất lượng 720p hoặc 360p nháp; model khác không nhận chất lượng (gflow dừng nếu gửi `--resolution`).
+6. Bấm "Tạo clip AI" rồi xác nhận.
+
+Mỗi lúc chỉ có một lượt gflow trên toàn Studio, vì gflow giữ một khoá cho mỗi profile.
+
+## Huỷ và "Ngừng chờ"
+
+Đang tạo thì mục này hiện "Đang tạo … AI…" kèm một nút:
+
+- **Huỷ**, trước khi prompt được điền: chưa gửi gì tới Flow, không tốn credit.
+- **Huỷ**, khi prompt đã điền: nếu Flow kịp nhận lệnh thì vẫn tính credit. Lần đó thành "chưa rõ".
+- **Ngừng chờ**, sau khi đã gửi: Studio dừng gflow, nhưng Flow vẫn tạo và vẫn tính credit. Không có hoàn credit. Với clip, Studio tự đối chiếu ngay (xem dưới), rồi bạn bấm "Tải về từ Flow" (miễn phí). Với ảnh, mở Flow, lưu ảnh rồi dùng "Nhập file đã tải".
+
+Studio dừng gflow bằng SIGINT, để gflow tự đóng trình duyệt. Sau vài giây, nếu gflow hay trình duyệt còn sống, Studio giết cả cây tiến trình.
+
+Tắt Studio giữa lúc đang tạo cũng dừng gflow như trên. Lần đó thành "chưa rõ" và Studio không tự đối chiếu; mở lại rồi bấm "Đối chiếu".
 
 ## Khi kết quả "chưa rõ"
 
-Studio ghi một dòng vào sổ (ngoài dự án, trong thư mục state, mỗi ngày một file) trước khi gửi, và chỉ gửi một lần cho mỗi dòng. Kết quả thành "chưa rõ" khi:
+Studio ghi một dòng vào sổ trước khi chạy gflow. Sổ nằm ngoài dự án, trong thư mục state, mỗi ngày một file. Mỗi dòng chỉ chạy gflow một lần. Studio theo dõi log của gflow để biết prompt đã điền chưa và lệnh đã gửi chưa. Mã thoát trước khi gửi (đăng nhập hết hạn, profile đang bận, hết credit…) được tính là không tốn. Lỗi sau khi gửi được tính là có thể đã tốn.
 
-- G-Labs không trả lời lần gửi, và danh sách task của G-Labs không cho thấy đúng một task khớp;
-- G-Labs báo không còn task đó (ví dụ G-Labs khởi động lại);
-- Studio bị tắt giữa lúc đang gửi.
+Trên flow.google.com, gflow không ghi sự kiện gửi cho ảnh. Vì vậy ảnh được coi là đã gửi ngay khi prompt đã điền.
 
-Studio không tự gửi lại. Lần chưa rõ có thể đã tốn credit. Kiểm trong G-Labs trước, rồi chọn một trong hai:
+Studio không bao giờ tự gửi lại. Với một lần chưa rõ hoặc đã tạo trên Flow, danh sách bên dưới cho các việc sau:
 
-- "Nhập file đã tải": chọn file mp4 G-Labs đã lưu (thư mục lưu xem trong Cài đặt của G-Labs). Studio chép file vào `assets/gen/video/` và gắn vào shot.
-- Bấm lại "Tạo clip AI" với đúng yêu cầu ấy: Studio hỏi thêm một lần vì có thể tốn credit lần hai.
+- **Đối chiếu** (miễn phí): Studio đọc danh mục cục bộ của gflow (`gflow data list`). Một dòng được coi là khớp khi cùng project Flow, đúng prompt, tạo không sớm hơn 5 s trước lúc gửi, không lỗi, và chưa có trong sổ. Thấy đúng một dòng khớp thì lần đó thành "đã tạo trên Flow, chưa tải về". Không thấy, hoặc thấy nhiều dòng, thì vẫn là "chưa rõ"; khi đó mở Flow kiểm.
+- **Tải về từ Flow** (chỉ clip, miễn phí): chạy `gflow data download` rồi gắn clip vào shot. Tải hỏng thì đợi vài phút, vì Flow có thể còn đang tạo. Ảnh không tải lại được bằng gflow.
+- **Nhập file đã tải**: chọn file bạn đã lưu từ Flow (`.mp4` cho clip; `.png`, `.jpg` cho ảnh). Studio chép file vào `assets/gen/<kind>/`, không ghi đè, rồi gắn vào shot.
+- **Tạo lại**: bấm lại nút tạo với đúng yêu cầu ấy. Studio hỏi thêm một lần vì có thể tốn credit lần hai.
 
-"Đúng yêu cầu ấy" nghĩa là trùng shot, prompt, kiểu, khung, độ dài, chất lượng và nội dung ảnh. Studio chỉ hỏi thêm khi lần mới nhất của yêu cầu đó trong 7 ngày chưa rõ kết quả. Tạo lại sau khi đã có clip tải về thì Studio không hỏi, và lượt đó tốn credit thêm lần nữa (mỗi lần ra một biến thể).
+"Đúng yêu cầu ấy" nghĩa là trùng shot, prompt, kiểu, model, khung, độ dài, chất lượng và nội dung ảnh tham chiếu. Studio chỉ xét lần mới nhất của yêu cầu đó trong 7 ngày:
 
-Nếu G-Labs vẫn đang giữ task của đúng yêu cầu ấy, Studio không gửi lại mà đề nghị theo dõi tiếp task đó (không tốn thêm credit).
+- Lần đó là clip đã tạo trên Flow: Studio không cho tạo lại mà đề nghị tải về (miễn phí). Chỉ khi một lần tải về đã hỏng thì mới tạo lại được, sau khi xác nhận.
+- Lần đó chưa rõ, hoặc là ảnh đã tạo trên Flow: tạo lại sau khi xác nhận lần hai.
+- Lần đó đã có file: tạo lại không hỏi thêm, và tốn credit thêm lần nữa (mỗi lần ra một biến thể).
+
+Nếu `history_prompts = "redacted"` trong cấu hình gflow, danh mục không lưu prompt, nên Đối chiếu luôn ra "chưa rõ".
+
+## Flow chặn (WAF)
+
+Khi gflow báo Flow chặn vì gửi quá nhiều (mã 10), Studio không gửi gì trong 45 phút. gflow tự khuyên chờ vài giờ; 45 phút chỉ là mức tối thiểu Studio chặn. Lần bị chặn tính là không tốn.
+
+## Project Flow
+
+Mỗi dự án Studio có một project Flow riêng cho mỗi profile, tên `<tên dự án>-<6 ký tự>`. Studio tạo project ở lần tạo đầu tiên. Nếu project bị xoá trên Flow, lần sau gflow báo không tìm thấy; Studio quên project đó và lần bấm kế tiếp tạo project mới.
+
+## Đạo diễn
+
+Đạo diễn (`claude -p`) không chạy được gflow:
+
+- `Bash(*gflow*)` nằm trong danh sách tool bị chặn;
+- env của job trỏ `GFLOW_CLI_HOME` vào một thư mục rỗng, nên gflow không thấy profile nào và dừng trước khi mở trình duyệt.
+
+Ảnh và clip AI chỉ được tạo qua nút của Studio.
 
 ## Biên nhận
 
-Clip tải về có biên nhận `op: "videogen"`, file nhập tay có `op: "videogen-import"` (xem [receipts.md](receipts.md)). Omni Flash có thể trả clip lệch độ dài vài khung, nên biên nhận có thể báo `duration-match` fail. Đó là cảnh báo; clip vẫn dùng được.
+File tạo xong có biên nhận `op: "videogen"`. File tải lại có `op: "videogen-recover"`, file nhập tay có `op: "videogen-import"`. Cả ba ghi `tool.name: "gflow"` (xem [receipts.md](receipts.md)). Clip có thể lệch độ dài vài khung so với độ dài đã chọn, nên biên nhận có thể báo `duration-match` fail. Đó chỉ là cảnh báo; clip vẫn dùng được.
 
 ## HTTP
 
 | Route | Việc |
 |---|---|
-| `GET /api/videogen/status` | Webhook, khoá, số clip hôm nay, job đang chạy |
-| `POST /api/videogen/shot` | Tạo clip cho shot (`name`, `shot`, `base`, `prompt`, `mode`, `aspect`, `seconds`, `resolution`, `refs`, `again?`). 409 `DUPLICATE` khi lần trước chưa rõ, 409 `RESUMABLE` khi G-Labs còn task |
-| `POST /api/videogen/resume` | Theo dõi tiếp một task đã gửi |
-| `POST /api/videogen/cancel` | Huỷ clip đang tạo của dự án |
-| `GET /api/videogen/items?name=` | Các lần tạo trong 7 ngày |
-| `POST /api/videogen/attach` | Gắn clip đã tải về |
-| `POST /api/videogen/import` | Nhập file mp4 cho lần chưa rõ, lỗi hoặc đã huỷ |
+| `GET /api/videogen/status` | `gflow` có chưa, phiên bản, profile, số clip và ảnh hôm nay, WAF, job đang chạy |
+| `POST /api/videogen/auth` | `gflow auth status` của profile (miễn phí) |
+| `POST /api/videogen/shot` | Tạo clip (`name`, `shot`, `base`, `prompt`, `mode`, `model`, `aspect`, `seconds`, `resolution?`, `refs`, `again?`) |
+| `POST /api/videogen/image` | Tạo ảnh (`name`, `shot`, `base`, `prompt`, `mode`, `model`, `aspect`, `refs`, `again?`) |
+| `POST /api/videogen/recover` | Tải lại một clip đã tạo trên Flow |
+| `POST /api/videogen/reconcile` | Đối chiếu một lần chưa rõ với danh mục gflow |
+| `POST /api/videogen/cancel` | Huỷ hoặc ngừng chờ lượt đang chạy của dự án |
+| `GET /api/videogen/items?name=` | Các lần tạo của dự án trong 7 ngày |
+| `POST /api/videogen/attach` | Gắn file đã tải về |
+| `POST /api/videogen/import` | Nhập file đã lưu từ Flow |
 
-G-Labs đóng thì route tạo trả 503, thiếu khoá trả 412, quá trần ngày trả 403.
+Mã lỗi của các route tạo:
+
+| Mã | Khi nào |
+|---|---|
+| 503 | Không có `gflow` |
+| 412 | Chưa có profile |
+| 429 | Flow đang chặn, hoặc ảnh cách lần trước dưới 30 s |
+| 403 | Quá trần ngày |
+| 409 `DUPLICATE` | Lần trước của đúng yêu cầu ấy chưa rõ |
+| 409 `RECOVERABLE` | Flow đã tạo clip; tải về thay vì tạo lại |
+| 409 (không mã) | Đang có lượt khác |
 
 ## Giới hạn
 
-- Chỉ `omni_flash`; chưa có `components` hay nhân vật.
-- Mỗi lúc một clip trên toàn Studio.
-- Trần ngày chỉ đếm lượt gửi từ Studio, không đếm lượt tạo trong app G-Labs hay script khác.
-- Studio không đọc dữ liệu trong thư mục của G-Labs (tài khoản, token, cấu hình).
-- Shot dài hơn 10 s chỉ được phủ 10 s đầu; nên tách shot.
+- Mỗi lần một ảnh hoặc một clip, mỗi lúc một lượt trên toàn Studio.
+- Chưa có nối dài clip, nâng độ phân giải, nhân vật hay `components`.
+- Trần ngày chỉ đếm lượt gửi từ Studio, không đếm lượt tạo trên Flow hay script khác.
+- Shot dài hơn độ dài clip chỉ được phủ phần đầu; nên tách shot.
+- Chưa chạy thật với tài khoản: mọi kiểm thử dùng một `gflow` giả (`tests/fake-gflow.mjs`) mô phỏng log, mã thoát và JSON của bản 0.90.
 
 ## Nguồn
 
-[WEBHOOK_INTEGRATION.en.md](https://github.com/duckmartians/G-Labs-Studio/blob/main/WEBHOOK_INTEGRATION.en.md) của G-Labs Studio.
+[ffroliva/gflow-cli](https://github.com/ffroliva/gflow-cli): USAGE.md (mã thoát, biến môi trường) và mã nguồn bản 0.90.
