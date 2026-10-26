@@ -24,7 +24,7 @@ export function seriesDirOf(dir) {
   return _se(_sj(d, SERIES_FILE)) ? d : null;
 }`;
 
-// gateway: true makes load read <dir>/project.json and patch apply set_line_speaker and
+// gateway: true makes load read <dir>/project.json and patch apply set_shot, set_line_speaker and
 // set_line_audio to it (gate "pass" for a new take) as the next version, logging each call to
 // <dir>/.patches.jsonl; scripts/timing.mjs appends its argv to <project>/.timing-runs.
 const GATEWAY = `
@@ -36,6 +36,7 @@ export function patch(dir, { actor, base, ops, note }) {
   const m = load(dir);
   if (!m || m.version !== base) return { code: 3, error: "CONFLICT" };
   for (const op of ops) {
+    if (op.op === "set_shot") { const s = (m.shots ?? []).find((x) => x.id === op.id); if (!s) return { code: 5, error: "INVALID: không có shot " + op.id }; s[op.field] = op.value; continue; }
     const l = m.lines.find((x) => x.id === op.id);
     if (!l) return { code: 5, error: "INVALID: không có câu " + op.id };
     if (op.op === "set_line_speaker") Object.assign(l, { speaker: op.speaker, gate: "stale" });
