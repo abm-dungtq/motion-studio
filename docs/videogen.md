@@ -78,6 +78,9 @@ Studio không bao giờ tự gửi lại. Với một lần chưa rõ hoặc đ�
 - **Đối chiếu** (miễn phí): Studio đọc danh mục cục bộ của gflow (`gflow data list`). Một dòng được coi là khớp khi cùng project Flow, đúng prompt, tạo không sớm hơn 5 s trước lúc gửi, không lỗi, và chưa có trong sổ. Thấy đúng một dòng khớp thì lần đó thành "đã tạo trên Flow, chưa tải về". Không thấy, hoặc thấy nhiều dòng, thì vẫn là "chưa rõ"; khi đó mở Flow kiểm.
 - **Tải về từ Flow** (chỉ clip, miễn phí): chạy `gflow data download` rồi gắn clip vào shot. Tải hỏng thì đợi vài phút, vì Flow có thể còn đang tạo. Ảnh không tải lại được bằng gflow.
 - **Nhập file đã tải**: chọn file bạn đã lưu từ Flow (`.mp4` cho clip; `.png`, `.jpg` cho ảnh). Studio chép file vào `assets/gen/<kind>/`, không ghi đè, rồi gắn vào shot.
+- **Dùng file tạm**: hiện khi gflow đã ghi được file trước khi lượt tạo dừng hoặc lỗi sau lúc điền prompt. File đó có thể là kết quả đã trả tiền, nên Studio giữ lại thay vì xoá. Bấm để gắn file này vào shot như Nhập file.
+
+Flow trả ảnh dạng JPEG, nên ảnh thường lưu là `.jpg`. Khi gflow trả nhiều kết quả, Studio giữ hết (`<shot>-<id>.jpg`, `<shot>-<id>-2.jpg`, ...) và gắn file đầu.
 - **Tạo lại**: bấm lại nút tạo với đúng yêu cầu ấy. Studio hỏi thêm một lần vì có thể tốn credit lần hai.
 
 "Đúng yêu cầu ấy" nghĩa là trùng shot, prompt, kiểu, model, khung, độ dài, chất lượng và nội dung ảnh tham chiếu. Studio chỉ xét lần mới nhất của yêu cầu đó trong 7 ngày:
@@ -90,7 +93,7 @@ Nếu `history_prompts = "redacted"` trong cấu hình gflow, danh mục không 
 
 ## Flow chặn (WAF)
 
-Khi gflow báo Flow chặn vì gửi quá nhiều (mã 10), Studio không gửi gì trong 45 phút. gflow tự khuyên chờ vài giờ; 45 phút chỉ là mức tối thiểu Studio chặn. Lần bị chặn tính là không tốn.
+Khi gflow báo Flow chặn vì gửi quá nhiều (mã 10), Studio không gửi gì trong 45 phút. gflow tự khuyên chờ vài giờ; 45 phút chỉ là mức tối thiểu Studio chặn. Lần bị chặn lúc gửi tính là không tốn. Riêng ảnh: Flow tạo ảnh xong rồi mới tải về, nên nếu bị chặn sau khi đã điền prompt thì ảnh có thể đã được tạo. Studio vẫn chặn 45 phút, đồng thời đối chiếu danh mục và tính lần đó là có thể đã tốn.
 
 ## Project Flow
 
@@ -122,7 +125,7 @@ File tạo xong có biên nhận `op: "videogen"`. File tải lại có `op: "vi
 | `POST /api/videogen/cancel` | Huỷ hoặc ngừng chờ lượt đang chạy của dự án |
 | `GET /api/videogen/items?name=` | Các lần tạo của dự án trong 7 ngày |
 | `POST /api/videogen/attach` | Gắn file đã tải về |
-| `POST /api/videogen/import` | Nhập file đã lưu từ Flow |
+| `POST /api/videogen/import` | Nhập file đã lưu từ Flow (`path`), hoặc file tạm của chính lượt đó (`part: true`) |
 
 Mã lỗi của các route tạo:
 

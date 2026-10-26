@@ -12,6 +12,8 @@ export interface VgItem {
   id: string; shot: string; kind?: VgKind; model?: string | null; state: VgState; charge: string | null; media_id?: string | null;
   flow_project?: string | null; phase?: "spawned" | "typed" | "sent" | null; reconcile?: boolean; recover_failed?: number;
   error: string | null; files: string[]; prompt_head: string; created: string; updated: string; version: number | null; note?: string;
+  // The run left a non-empty temp file (gflow may have made it before the run stopped).
+  part?: boolean;
 }
 export interface VgCreate { name: string; shot: string; base: number; prompt: string; mode: string; model: string; aspect: string; seconds: number; resolution?: string; refs: string[]; again?: string }
 export interface VgImageCreate { name: string; shot: string; base: number; prompt: string; mode: string; model: string; aspect: string; refs: string[]; again?: string }
@@ -36,6 +38,7 @@ export const vgAuth = () => send("/api/videogen/auth", {});
 export const vgCancel = (name: string) => send("/api/videogen/cancel", { name });
 export const vgAttach = (name: string, id: string, base: number) => send("/api/videogen/attach", { name, id, base });
 export const vgImport = (name: string, id: string, base: number, path: string) => send("/api/videogen/import", { name, id, base, path });
+export const vgUsePart = (name: string, id: string, base: number) => send("/api/videogen/import", { name, id, base, part: true });
 
 const LABEL: Record<VgState, string> = {
   intent: "đang chuẩn bị",

@@ -13,7 +13,10 @@
 //   FAKE_GFLOW_MP4       a real mp4 to copy as the generated or downloaded clip (else a few bytes)
 // Scenarios: ok | exit:N[:armed|:sent[:row]] (row: the catalog has the run) | exit6 | exit6-migrated | exit6-net |
 //   project-missing | notsucceeded | garbage | hang-before-typed | hang-after-typed | hang-after-sent |
-//   hang-after-sent-norow | ignore-sigint | sigint-leave-chrome
+//   hang-after-sent-norow | ignore-sigint | sigint-leave-chrome | ok-jpg (the image saved as .jpg,
+//   as gflow does for Flow's JPEG) | ok-multi (two results, <stem>_1, <stem>_2) | waf-after-image
+//   (the image is made, its download gets 403, reported as WAF) | file-then-16 (the file is
+//   written, then a DataStoreError)
 // As on flow.google.com, an image run never logs submit_clicked (only the video path does).
 import { appendFileSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -92,8 +95,10 @@ function catalogRow(kind, mediaId, status) {
   appendFileSync(file("catalog.jsonl"), JSON.stringify(row) + "\n");
 }
 
-function writeOutput(kind) {
-  const o = opt("-o");
+function writeOutput(kind, ext = null, n = 0) {
+  let o = opt("-o");
+  if (ext) o = o.replace(/\.[^./]+$/, `.${ext}`);
+  if (n) o = o.replace(/(\.[^./]+)$/, `_${n}$1`);
   mkdirSync(dirname(o), { recursive: true });
   if (kind === "video" && env.FAKE_GFLOW_MP4) copyFileSync(env.FAKE_GFLOW_MP4, o);
   else writeFileSync(o, Buffer.from(kind === "video" ? "fake mp4 bytes" : "fake png bytes"));
@@ -139,6 +144,25 @@ function generate(kind) {
       else out({ status: "ok", command: "image", project_id: opt("--project"), model: opt("--model"), images: [{ media_name: mediaId, workflow_id: "wf", seed: 1, dimensions: [1024, 576], fife_url: "https://x.test/i?Signature=abc", local_path: p }] });
       return exit(0);
     }
+    case "ok-jpg":
+    case "ok-multi": {
+      armed();
+      catalogRow(kind, mediaId, "MEDIA_GENERATION_STATUS_SUCCESSFUL");
+      const ps = scenario === "ok-jpg" ? [writeOutput(kind, "jpg")] : [writeOutput(kind, "jpg", 1), writeOutput(kind, "jpg", 2)];
+      out({ status: "ok", command: "image", project_id: opt("--project"), model: opt("--model"), images: ps.map((p, i) => ({ media_name: i ? randomUUID() : mediaId, workflow_id: "wf", seed: 1, dimensions: [1024, 576], fife_url: null, local_path: p })) });
+      return exit(0);
+    }
+    case "waf-after-image":
+      armed();
+      catalogRow(kind, mediaId, "MEDIA_GENERATION_STATUS_SUCCESSFUL");
+      return fail(10, { class: "WafRejectionError", detail: "HTTP 403" });
+    case "waf-submit":
+      armed();
+      return fail(10, { class: "WafRejectionError", detail: "Flow refused the submit: unusual activity (gRPC 7)" });
+    case "file-then-16":
+      armed(); sent();
+      writeOutput(kind);
+      return fail(16, { class: "DataStoreError", detail: "catalog write failed" });
     case "exit6":
       armed(); sent();
       catalogRow(kind, mediaId, "MEDIA_GENERATION_STATUS_SUCCESSFUL");

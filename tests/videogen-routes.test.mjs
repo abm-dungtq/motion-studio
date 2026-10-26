@@ -287,6 +287,39 @@ test("import: a png for an image item, attached", async () => {
   assert.equal(getVideogen(it.id).state, "attached");
 });
 
+test("Dùng file tạm: the run's own .jpg temp file is attached; items show no path, profile or prompt", async () => {
+  const it = await itemFor("route: file tạm", { state: "indeterminate", charge: "indeterminate", phase: "sent" }, { kind: "image" });
+  mkdirSync(join(ep, "assets", "gen", "image"), { recursive: true });
+  writeFileSync(join(ep, "assets", "gen", "image", `.part-${it.id}.jpg`), Buffer.from("jpg bytes"));
+  const row = (await items()).find((x) => x.id === it.id);
+  assert.equal(row.part, true);
+  for (const k of ["project", "profile", "prompt", "out_rel", "spec_summary"]) assert.equal(k in row, false, k);
+  const r = await http("POST", "/api/videogen/import", { name: "ep", id: it.id, base: await version(), part: true });
+  assert.equal(r.status, 200, r.text);
+  assert.match(r.json.rel, /^assets\/gen\/image\/s1-import-.+\.jpg$/);
+  assert.equal(getVideogen(it.id).state, "attached");
+  const again = await http("POST", "/api/videogen/import", { name: "ep", id: (await itemFor("route: không file tạm", { state: "failed" }, { kind: "image" })).id, base: await version(), part: true });
+  assert.equal(again.status, 404, again.text);
+});
+
+test("a running job shows no argv: its arguments are in a file the runner removed", async () => {
+  scenario("hang-after-typed");
+  const r = await shot("route: không lộ prompt");
+  assert.equal(r.status, 200, r.text);
+  try {
+    await until(async () => getVideogen((await items()).find((x) => x.prompt_head === "route: không lộ prompt")?.id ?? "")?.phase === "typed", "typed");
+    const st = await http("GET", "/api/videogen/status");
+    assert.deepEqual(Object.keys(st.json.job).sort(), ["id", "meta", "name", "status"]);
+    const all = await http("GET", "/api/jobs?name=ep");
+    assert.equal(all.text.includes("không lộ prompt"), false);
+    assert.equal(all.text.includes(FAKE), false);
+  } finally {
+    await http("POST", "/api/videogen/cancel", { name: "ep" });
+    await waitJob(r.json.job.id);
+    await idle();
+  }
+});
+
 test("a running item a dead runner left: status sweeps it; a new request first sees a duplicate", async () => {
   const a = await itemFor("route: mồ côi", { state: "running", phase: "sent" });
   // No GET status in between: the POST sweeps it itself and the guard holds.

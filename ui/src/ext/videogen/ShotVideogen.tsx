@@ -12,7 +12,7 @@ import { Button, Textarea } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 import {
   DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL, hhmm, IMAGE_ASPECTS, IMAGE_MODELS, kindOf, pickSeconds, SECONDS, stateLabel, VIDEO_MODELS,
-  vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, vgReconcile, vgRecover, vgStatus, type VgItem, type VgKind, type VgStatus,
+  vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, vgReconcile, vgRecover, vgStatus, vgUsePart, type VgItem, type VgKind, type VgStatus,
 } from "./api.ts";
 
 const SELECT = "h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50";
@@ -244,6 +244,7 @@ function Items({ name, m, items, busyHere, idle }: { name: string; m: Manifest; 
                 {canAttach && <Button aria-label={`Gắn vào shot: ${it.prompt_head}`} onClick={() => void act(vgAttach(name, it.id, m.version))}>Gắn vào shot</Button>}
                 {canRecover && <Button aria-label={`Tải về từ Flow: ${it.prompt_head}`} onClick={() => void act(vgRecover(name, it.id))}>Tải về từ Flow</Button>}
                 {canReconcile && <Button aria-label={`Đối chiếu: ${it.prompt_head}`} onClick={() => void act(vgReconcile(name, it.id))}>Đối chiếu</Button>}
+                {canImport && it.part && <Button aria-label={`Dùng file tạm: ${it.prompt_head}`} onClick={() => void act(vgUsePart(name, it.id, m.version))}>Dùng file tạm</Button>}
                 {canImport && <Button aria-label={`Nhập file đã tải: ${it.prompt_head}`} onClick={() => importFile(it)}>Nhập file đã tải</Button>}
               </div>
             )}

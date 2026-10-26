@@ -12,13 +12,15 @@
 //                                          interrupts gflow (after the submit Flow still makes it)
 //   GET  /api/videogen/items?name=       → the project's images and clips of the last 7 days
 //   POST /api/videogen/attach {name, id, base} → puts a collected file into its shot again
-//   POST /api/videogen/import {name, id, base, path} → copies a file the user saved from Flow, then attaches it
+//   POST /api/videogen/import {name, id, base, path | part: true} → copies a file the user saved from Flow
+//                                          (or the run's own temp file, part: true), then attaches it
 // A collected file goes into the shot's assets (set_shot, actor human, Undo takes it back); for a
 // clip the director is then asked to place it muted.
 // One videogen job at a time in the whole Studio (gflow holds one lease per profile); the caps,
 // the WAF block and the 30 s gap between images are checked here, the caps again in the runner.
-import { accessSync, constants as FS, copyFileSync, mkdirSync, statSync } from "node:fs";
-import { basename, isAbsolute, join } from "node:path";
+import { accessSync, constants as FS, copyFileSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { basename, extname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cancel, jobLog, listJobs } from "../jobs.mjs";
 import { videogenSettings } from "../lib/config.mjs";
@@ -27,7 +29,7 @@ import {
   videogenCancelRequested, videogenCount, videogenItems, videogenWafUntil,
 } from "../lib/ledger.mjs";
 import { normalizeSpec, specDigest } from "../lib/videogen/spec.mjs";
-import { GFLOW_TESTED, authStatus, defaultProfile, gflowVersion } from "../lib/videogen/gflow.mjs";
+import { GFLOW_TESTED, authStatus, defaultProfile, gflowVersion, partFiles } from "../lib/videogen/gflow.mjs";
 import { attachAsset } from "../lib/attach.mjs";
 import { writeReceipt } from "../lib/receipts.mjs";
 import { askDirector, gatewayStatus } from "./fx.mjs";
@@ -48,6 +50,13 @@ const live = (j) => j.kind === VIDEOGEN_KIND && (j.status === "running" || j.sta
 let authBusy = false;
 const runningVideogen = () => listJobs().find(live) ?? (authBusy ? { kind: VIDEOGEN_KIND, status: "running", meta: { action: "auth" } } : null);
 const kindOf = (it) => it.kind ?? "video";
+// What the API shows of a job and of an item: no prompt, no local path, no profile.
+const jobView = (j) => (j ? { id: j.id ?? null, name: j.name ?? null, status: j.status, meta: j.meta ?? {} } : null);
+const ITEM_FIELDS = ["id", "shot", "kind", "model", "state", "charge", "media_id", "flow_project", "phase", "reconcile", "recover_failed", "error", "files", "prompt_head", "created", "updated", "version", "note", "imported"];
+const IMPORTABLE = ["indeterminate", "failed", "cancelled", "intent", "made"];
+const itemView = (dir, it) => ({ ...Object.fromEntries(ITEM_FIELDS.filter((k) => k in it).map((k) => [k, it[k]])),
+  part: IMPORTABLE.includes(it.state) && partFiles(dir, kindOf(it), it.id).length > 0 });
+const tilde = (p) => (p && p.startsWith(homedir() + "/") ? `~${p.slice(homedir().length)}` : p);
 const resultOf = (job) => {
   const l = [...(job.tail ?? [])].reverse().find((x) => x.startsWith(RESULT));
   try { return l ? JSON.parse(l.slice(RESULT.length)) : null; } catch { return null; }
@@ -91,11 +100,14 @@ function sweepStuck() {
   if (runningVideogen()) return;
   for (const it of stuckVideogen()) {
     let tmp = false;
-    try { tmp = Boolean(it.out_rel) && statSync(join(it.project, it.out_rel)).size > 0; } catch { tmp = false; }
+    const parts = it.project ? partFiles(it.project, kindOf(it), it.id) : [];
+    const free = (it.state === "intent" && !it.phase) || it.phase === "spawned";
     const patch = it.state === "intent" && !it.phase
       ? { state: "cancelled", charge: "none", error: "Studio tắt trước khi chạy gflow" }
       : { state: "indeterminate", charge: "indeterminate", reconcile: kindOf(it) === "video", error: "Studio tắt giữa chừng" };
-    if (tmp) patch.note = "có file tạm của lần này; bấm Đối chiếu, hoặc Nhập file nếu file dùng được";
+    // Before the prompt was typed nothing was made; after, a temp file may be paid output.
+    if (parts.length && free && patch.state === "cancelled") for (const f of parts) rmSync(f, { force: true });
+    else if (parts.length) patch.note = "có file tạm của lần này; bấm Đối chiếu, hoặc Dùng file tạm nếu file dùng được";
     updateVideogen(it.id, patch);
   }
 }
@@ -116,10 +128,18 @@ function attachDone(c, name, dir, r) {
   }
 }
 
+// The runner's arguments (prompt, paths) go in a 0600 file it reads and removes: the job list
+// shows a job's argv.
+function argFile(arg) {
+  const f = join(mkdtempSync(join(tmpdir(), "ms-vg-")), "arg.json");
+  writeFileSync(f, JSON.stringify(arg), { mode: 0o600 });
+  return f;
+}
 function startRun(c, name, dir, arg) {
+  const f = argFile(arg);
   try {
     return c.startJob({
-      name, kind: VIDEOGEN_KIND, cmd: process.execPath, args: [RUN, "run", JSON.stringify(arg)], cwd: dir,
+      name, kind: VIDEOGEN_KIND, cmd: process.execPath, args: [RUN, "run", `@${f}`], cwd: dir,
       meta: { step: "videogen", action: arg.action, shot: arg.spec?.shot ?? null, id: arg.id ?? null },
       onExit: (job) => {
         const r = resultOf(job);
@@ -134,6 +154,7 @@ function startRun(c, name, dir, arg) {
       },
     });
   } catch (e) {
+    rmSync(join(f, ".."), { recursive: true, force: true });
     throw e.code === "BUSY" ? fail(409, BUSY) : e;
   }
 }
@@ -228,9 +249,9 @@ export const ROUTES = [
       const { found, version } = binInfo(v.gflow_bin);
       const profile = found ? await profileOf(v) : null;
       return {
-        bin: v.gflow_bin, found, version, tested: Boolean(version?.startsWith(GFLOW_TESTED)), profile,
+        bin: tilde(v.gflow_bin), found, version, tested: Boolean(version?.startsWith(GFLOW_TESTED)), profile,
         today: videogenCount(today()), cap: v.daily_clips, images_today: videogenCount(today(), { kind: "image" }), image_cap: v.daily_images,
-        waf_until: videogenWafUntil(), job: runningVideogen(),
+        waf_until: videogenWafUntil(), job: jobView(runningVideogen()),
       };
     },
   },
@@ -282,7 +303,7 @@ export const ROUTES = [
       const pd = c.projectDir(c.q("name"));
       if (pd.error) return c.send(pd.status, { error: pd.error });
       sweepStuck();
-      return { items: videogenItems(pd.dir).map(({ prompt, ...x }) => x) };
+      return { items: videogenItems(pd.dir).map((it) => itemView(pd.dir, it)) };
     },
   },
   {
@@ -312,21 +333,29 @@ export const ROUTES = [
       if (runningVideogen()) throw fail(409, BUSY);
       sweepStuck();
       const it = itemOf(pd.dir, b.id);
-      if (!["indeterminate", "failed", "cancelled", "intent", "made"].includes(it.state)) throw fail(409, "chỉ nhập file cho lần tạo chưa rõ kết quả, lỗi, đã huỷ hoặc đã tạo trên Flow");
+      if (!IMPORTABLE.includes(it.state)) throw fail(409, "chỉ nhập file cho lần tạo chưa rõ kết quả, lỗi, đã huỷ hoặc đã tạo trên Flow");
       const kind = kindOf(it);
-      const ext = typeof b.path === "string" ? (/\.[A-Za-z0-9]+$/.exec(b.path)?.[0] ?? "").toLowerCase() : "";
-      if (typeof b.path !== "string" || !isAbsolute(b.path) || !IMPORT_EXT[kind].includes(ext)) throw fail(400, `path: đường dẫn tuyệt đối tới file ${IMPORT_EXT[kind].join(", ")}`);
+      // part: the run's own temp file (gflow may have made it before the run stopped).
+      let src = b.path;
+      if (b.part === true) {
+        const parts = partFiles(pd.dir, kind, it.id);
+        if (!parts.length) throw fail(404, "lần tạo này không còn file tạm");
+        src = parts[0];
+      }
+      const ext = typeof src === "string" ? extname(src).toLowerCase() : "";
+      if (typeof src !== "string" || !isAbsolute(src) || !IMPORT_EXT[kind].includes(ext)) throw fail(400, `path: đường dẫn tuyệt đối tới file ${IMPORT_EXT[kind].join(", ")}`);
       let st;
-      try { st = statSync(b.path); } catch { st = null; }
+      try { st = statSync(src); } catch { st = null; }
       if (!st?.isFile() || !st.size) throw fail(404, "không có file này (hoặc file rỗng)");
       const rel = `assets/gen/${kind}/${String(it.shot).replace(/[^A-Za-z0-9._-]/g, "-")}-import-${it.id}${ext}`;
       const dest = join(pd.dir, rel);
       mkdirSync(join(pd.dir, "assets", "gen", kind), { recursive: true });
-      try { copyFileSync(b.path, dest, FS.COPYFILE_EXCL); } catch (e) {
+      try { copyFileSync(src, dest, FS.COPYFILE_EXCL); } catch (e) {
         if (e.code === "EEXIST") throw fail(409, `đã có ${rel}, không ghi đè`);
         throw e;
       }
-      const rec = await writeReceipt(pd.dir, { op: "videogen-import", actor: "human", tool: { name: "gflow" }, inputs: { source: basename(b.path) }, params: { id: it.id, kind }, outputs: [dest] });
+      const rec = await writeReceipt(pd.dir, { op: "videogen-import", actor: "human", tool: { name: "gflow" }, inputs: { source: b.part === true ? "file tạm của gflow" : basename(src) }, params: { id: it.id, kind }, outputs: [dest] });
+      if (b.part === true) rmSync(src, { force: true });
       updateVideogen(it.id, { state: "collected", files: [rel], imported: true, receipt: { file: rec.file, pass: rec.pass } });
       const r = attachNow(c, b.name, pd.dir, getVideogen(it.id), b.base, rel);
       return r.error ? c.send(r.status, { error: r.error }) : r;

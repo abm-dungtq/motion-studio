@@ -100,6 +100,40 @@ test("ok image: png in assets/gen/image, counted apart from clips", async () => 
   assert.equal(im.argv[im.argv.indexOf("-n") + 1], "1");
 });
 
+test("an image gflow saved as .jpg, or as several results, is collected with its own extension", async () => {
+  const gen = join(proj, "assets", "gen", "image");
+  const r = await go("ok-jpg", arg("ca 2b: ảnh jpg", { kind: "image" }));
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.rel, `assets/gen/image/s1-${r.id}.jpg`);
+  assert.ok(existsSync(join(proj, r.rel)));
+  const m = await go("ok-multi", arg("ca 2c: hai ảnh", { kind: "image" }));
+  assert.equal(m.ok, true, m.error);
+  assert.deepEqual(getVideogen(m.id).files, [`assets/gen/image/s1-${m.id}.jpg`, `assets/gen/image/s1-${m.id}-2.jpg`]);
+  for (const f of getVideogen(m.id).files) assert.ok(existsSync(join(proj, f)));
+  assert.match(getVideogen(m.id).note, /2 kết quả/);
+  assert.deepEqual(readdirSync(gen).filter((f) => f.startsWith(".part-")), []);
+});
+
+test("an image WAF after the prompt is typed is not free: matched, block set; a refused submit is free", async () => {
+  const r = await go("waf-after-image", arg("ca 2d: ảnh bị chặn tải", { kind: "image" }));
+  assert.deepEqual([getVideogen(r.id).state, getVideogen(r.id).charge], ["made", "charged"]);
+  assert.ok(videogenWafUntil());
+  rmSync(join(ledgerDir(), "videogen-waf.json"));
+  const s = await go("waf-submit", arg("ca 2e: ảnh bị từ chối", { kind: "image" }));
+  assert.deepEqual([getVideogen(s.id).state, getVideogen(s.id).charge], ["failed", "none"]);
+  assert.ok(videogenWafUntil());
+  rmSync(join(ledgerDir(), "videogen-waf.json"));
+});
+
+test("a file gflow wrote before failing after the submit stays for Dùng file tạm", async () => {
+  const r = await go("file-then-16", arg("ca 2f: có file rồi lỗi"));
+  const it = getVideogen(r.id);
+  assert.equal(it.charge, "indeterminate");
+  assert.match(it.note, /Dùng file tạm/);
+  assert.equal(parts().length, 1);
+  rmSync(join(proj, "assets", "gen", "video", parts()[0]));
+});
+
 test("exit 6: made with the id from the error, no part file; recover downloads it", async () => {
   const r = await go("exit6", arg("ca 3: sông"));
   const it = getVideogen(r.id);

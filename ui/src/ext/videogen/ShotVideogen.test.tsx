@@ -188,6 +188,15 @@ describe("shot inspector AI clip section", () => {
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toEqual({ path: "/api/videogen/reconcile", body: { name: "ep", id: "u" } });
   });
+
+  it("Dùng file tạm only when the run left a temp file; it imports that file", async () => {
+    const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [item({ id: "p", state: "indeterminate", files: [], part: true }), item({ id: "q", state: "indeterminate", files: [], prompt_head: "mây" })] } });
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Dùng file tạm: sóng vỗ" }));
+    expect(screen.queryByRole("button", { name: "Dùng file tạm: mây" })).toBeNull();
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toEqual({ path: "/api/videogen/import", body: { name: "ep", id: "p", base: M.version, part: true } });
+  });
 });
 
 describe("agent row for gflow", () => {
