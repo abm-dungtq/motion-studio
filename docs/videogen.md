@@ -2,7 +2,7 @@
 
 Studio tạo một clip Omni Flash cho một shot. Việc tạo đi qua webhook của G-Labs Studio chạy trên cùng máy: Studio gửi yêu cầu, chờ G-Labs tạo xong, tải clip về `assets/gen/video/` rồi gắn clip vào shot thành một phiên bản mới (Undo được). Sau đó đạo diễn nhận yêu cầu đặt clip vào timeline với tiếng tắt.
 
-Mỗi lần tạo tốn credit Flow của tài khoản trong G-Labs. Studio chỉ gửi khi bạn bấm nút và xác nhận.
+Mỗi lần tạo tốn credit Flow của tài khoản trong G-Labs; chất lượng 1080p có thể tốn hơn, xem giá trong G-Labs. Studio chỉ gửi khi bạn bấm nút và xác nhận. Prompt và ảnh tham chiếu rời khỏi máy: G-Labs gửi chúng lên dịch vụ Flow.
 
 ## Cần gì
 
@@ -40,7 +40,9 @@ Chip agent (góc phải) có dòng "G-Labs (clip AI)": webhook đang chạy hay 
 4. Chọn độ dài (4, 6, 8, 10 s; mặc định là mức ngắn nhất phủ hết shot), chất lượng (720p, 720p + 1080p, 360p nháp chỉ cho Chỉ chữ) và khung 16:9 hoặc 9:16.
 5. Bấm "Tạo clip AI" rồi xác nhận.
 
-Mỗi lúc chỉ một clip được tạo trên toàn Studio. Đang tạo thì mục này hiện "Đang tạo clip AI…" kèm nút Huỷ. Huỷ sẽ báo G-Labs dừng task; nếu G-Labs đã tạo xong và clip đã tải về thì clip vẫn gắn được.
+Mỗi lúc chỉ một clip được tạo trên toàn Studio. Đang tạo thì mục này hiện "Đang tạo clip AI…" kèm nút Huỷ. Huỷ sẽ báo G-Labs dừng task. Credit không được hoàn nếu G-Labs đã nhận task. Nếu G-Labs đã tạo xong và clip đã tải về thì clip vẫn gắn được.
+
+Tắt Studio trong lúc đang tạo không huỷ task: G-Labs vẫn tạo tiếp. Mở Studio lại rồi bấm "Theo dõi tiếp" ở lần tạo đó.
 
 Danh sách bên dưới là các lần tạo của shot trong 7 ngày, kèm việc làm được với từng lần: Gắn vào shot, Theo dõi tiếp, Nhập file đã tải.
 
@@ -56,6 +58,8 @@ Studio không tự gửi lại. Lần chưa rõ có thể đã tốn credit. Ki�
 
 - "Nhập file đã tải": chọn file mp4 G-Labs đã lưu (thư mục lưu xem trong Cài đặt của G-Labs). Studio chép file vào `assets/gen/video/` và gắn vào shot.
 - Bấm lại "Tạo clip AI" với đúng yêu cầu ấy: Studio hỏi thêm một lần vì có thể tốn credit lần hai.
+
+"Đúng yêu cầu ấy" nghĩa là trùng shot, prompt, kiểu, khung, độ dài, chất lượng và nội dung ảnh. Studio chỉ hỏi thêm khi lần mới nhất của yêu cầu đó trong 7 ngày chưa rõ kết quả. Tạo lại sau khi đã có clip tải về thì Studio không hỏi, và lượt đó tốn credit thêm lần nữa (mỗi lần ra một biến thể).
 
 Nếu G-Labs vẫn đang giữ task của đúng yêu cầu ấy, Studio không gửi lại mà đề nghị theo dõi tiếp task đó (không tốn thêm credit).
 
