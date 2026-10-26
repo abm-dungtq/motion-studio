@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ffmpegBin } from "../lib/anime/keying.mjs";
-import { getVideogen, newVideogenIntent, updateVideogen, videogenCount } from "../lib/ledger.mjs";
+import { getVideogen, newVideogenIntent, requestVideogenCancel, updateVideogen, videogenCount } from "../lib/ledger.mjs";
 import { normalizeSpec } from "../lib/videogen/spec.mjs";
 import { readKey, runVideogen } from "../lib/videogen/run.mjs";
 import { fakeGlabs } from "./fake-glabs.mjs";
@@ -166,7 +166,7 @@ async function spawnRunner(prompt) {
 test("SIGTERM after the user cancelled stops the task", async () => {
   fake.statusCalls = 0;
   const { child, id, lines, done } = await spawnRunner("ca 12: huỷ");
-  updateVideogen(id, { cancel_requested: true });
+  requestVideogenCancel(id);
   child.kill("SIGTERM");
   await done;
   assert.deepEqual(fake.stops, [getVideogen(id).task_id]);

@@ -5,7 +5,7 @@
 //                                        → starts the "videogen" job (node lib/videogen/run.mjs
 //                                          run …): one POST to G-Labs, follow, download, receipt
 //   POST /api/videogen/resume {name, id} → follows a submitted task again (no new POST)
-//   POST /api/videogen/cancel {name}     → marks the item cancel_requested, then SIGTERM: the
+//   POST /api/videogen/cancel {name}     → marks the item cancelled by the user, then SIGTERM: the
 //                                          runner stops its own G-Labs task
 //   GET  /api/videogen/items?name=       → the project's clips of the last 7 days
 //   POST /api/videogen/attach {name, id, base}
@@ -23,7 +23,7 @@ import { basename, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cancel, jobLog, listJobs } from "../jobs.mjs";
 import { glabsKeyFile, videogenSettings } from "../lib/config.mjs";
-import { getVideogen, today, updateVideogen, videogenCount, videogenItems } from "../lib/ledger.mjs";
+import { getVideogen, requestVideogenCancel, today, updateVideogen, videogenCount, videogenItems } from "../lib/ledger.mjs";
 import { normalizeSpec, specDigest } from "../lib/videogen/spec.mjs";
 import { checkUrl, health } from "../lib/videogen/glabs.mjs";
 import { attachAsset } from "../lib/attach.mjs";
@@ -133,8 +133,15 @@ export const ROUTES = [
       const { v, base } = await ready();
       if (videogenCount() >= v.daily_clips) throw fail(403, `đã đủ ${v.daily_clips} clip AI hôm nay (studio.json videogen.daily_clips)`);
       const digest = await specDigest(pd.dir, spec);
-      const dup = videogenItems(pd.dir).find((x) => x.digest === digest && x.state === "indeterminate");
-      if (dup && b.again !== dup.id) return c.send(409, { error: "Lần trước của đúng yêu cầu này chưa rõ kết quả và có thể đã tốn credit. Nhập file đã tải, hoặc xác nhận Tạo lại.", code: "DUPLICATE", id: dup.id });
+      // The same request before: an unknown result (or an intent whose runner died while sending)
+      // may have cost credits; a task G-Labs still has is followed, not sent again. No job runs
+      // now (checked above), so no runner owns such an item.
+      const dup = videogenItems(pd.dir).find((x) => x.digest === digest && ["indeterminate", "intent", "submitted", "running"].includes(x.state));
+      if (dup && b.again !== dup.id) {
+        return ["submitted", "running"].includes(dup.state)
+          ? c.send(409, { error: "G-Labs đang có task của đúng yêu cầu này. Bấm Theo dõi tiếp thay vì tạo lại.", code: "RESUMABLE", id: dup.id })
+          : c.send(409, { error: "Lần trước của đúng yêu cầu này chưa rõ kết quả và có thể đã tốn credit. Nhập file đã tải, hoặc xác nhận Tạo lại.", code: "DUPLICATE", id: dup.id });
+      }
       // No await between this check and the start.
       if (runningVideogen()) throw fail(409, BUSY);
       const job = startRun(c, b.name, pd.dir, { action: "new", dir: pd.dir, spec, digest, base_url: base, cap: v.daily_clips, ...pollMs(b) });
@@ -164,8 +171,11 @@ export const ROUTES = [
       if (pd.error) return c.send(pd.status, { error: pd.error });
       const j = listJobs(b.name).find(live);
       if (!j) throw fail(404, "không có clip AI nào đang tạo trong dự án này");
-      const id = j.meta?.id ?? (jobLog(j.id) ?? []).find((l) => l.startsWith("INTENT "))?.slice(7) ?? null;
-      if (id) updateVideogen(id, { cancel_requested: true });
+      // The item: resume jobs carry it; a new job prints INTENT <id>, or (cancelled before that
+      // line arrived) it is the newest unfinished item since the job started.
+      const id = j.meta?.id ?? (jobLog(j.id) ?? []).find((l) => l.startsWith("INTENT "))?.slice(7)
+        ?? videogenItems(pd.dir).find((x) => x.created >= j.started && ["intent", "submitted", "running"].includes(x.state))?.id ?? null;
+      if (id) requestVideogenCancel(id);
       return { job: cancel(j.id) };
     },
   },
@@ -202,7 +212,7 @@ export const ROUTES = [
       if (typeof b.path !== "string" || !isAbsolute(b.path) || !b.path.toLowerCase().endsWith(".mp4")) throw fail(400, "path: đường dẫn tuyệt đối tới file .mp4");
       let st;
       try { st = statSync(b.path); } catch { st = null; }
-      if (!st?.isFile()) throw fail(404, "không có file này");
+      if (!st?.isFile() || !st.size) throw fail(404, "không có file này (hoặc file rỗng)");
       const rel = `assets/gen/video/${String(it.shot).replace(/[^A-Za-z0-9._-]/g, "-")}-import-${it.id}.mp4`;
       const dest = join(pd.dir, rel);
       mkdirSync(join(pd.dir, "assets", "gen", "video"), { recursive: true });
