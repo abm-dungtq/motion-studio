@@ -1,10 +1,11 @@
 // The videogen routes over HTTP with a fake provider (gateway: set_shot) and a fake G-Labs:
 // status, one clip end to end (attached, Undo-able version), one job at a time, cancel, the
-// daily cap, G-Labs down, no key, the duplicate guard for an unknown result, and resume.
+// daily cap, G-Labs down, no key, the duplicate guard for an unknown result (newest item only,
+// never past a live task), resume, and attaching a clip cancelled after its download.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createServer as netServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,7 +14,7 @@ import { createServer } from "../server.mjs";
 import { adapterFor } from "../lib/provider.mjs";
 import { ffmpegBin } from "../lib/anime/keying.mjs";
 import { getVideogen, newVideogenIntent, updateVideogen } from "../lib/ledger.mjs";
-import { normalizeSpec } from "../lib/videogen/spec.mjs";
+import { normalizeSpec, specDigest } from "../lib/videogen/spec.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
 import { fakeGlabs } from "./fake-glabs.mjs";
 
@@ -179,4 +180,45 @@ test("resume follows a submitted task without a new POST", async () => {
   await waitJob(r.json.job.id);
   assert.equal(getVideogen(it.id).state, "attached");
   assert.equal(fake.posts.length, before);
+});
+
+// An item of the digest the route computes for shot(prompt).
+async function itemFor(prompt, patch) {
+  const spec = normalizeSpec(ep, { shot: "s1", prompt, seconds: 6 });
+  const it = newVideogenIntent({ project: ep, shot: "s1", digest: await specDigest(ep, spec), prompt });
+  updateVideogen(it.id, { spec_summary: { ...spec, prompt_head: prompt }, ...patch });
+  return it;
+}
+
+test("again never sends a second POST for a task G-Labs still has", async () => {
+  reset();
+  const it = await itemFor("route 9: còn task", { state: "running", task_id: "abcdef12" });
+  const before = fake.posts.length;
+  const r = await shot("route 9: còn task", { again: it.id });
+  assert.equal(r.status, 409, r.text);
+  assert.equal(r.json.code, "RESUMABLE"); assert.equal(r.json.id, it.id);
+  assert.equal(fake.posts.length, before);
+  updateVideogen(it.id, { state: "cancelled", charge: "none" });
+});
+
+test("an old unknown result settled by a newer clip no longer guards the request", async () => {
+  reset();
+  const old = await itemFor("route 10: đã xong", { state: "indeterminate", charge: "unknown" });
+  updateVideogen(old.id, { created: "2000-01-01T00:00:00.000Z" });
+  await itemFor("route 10: đã xong", { state: "attached", charge: "charged" });
+  const r = await shot("route 10: đã xong");
+  assert.equal(r.status, 200, r.text);
+  await waitJob(r.json.job.id);
+});
+
+test("a clip cancelled after its download attaches like a collected one", async () => {
+  const rel = "assets/gen/video/s1-cancel-720p.mp4";
+  mkdirSync(join(ep, "assets", "gen", "video"), { recursive: true });
+  copyFileSync(join(tmp, "clip.mp4"), join(ep, rel));
+  const it = await itemFor("route 11: huỷ khi tải", { state: "cancelled", charge: "charged", files: [rel] });
+  const r = await http("POST", "/api/videogen/attach", { name: "ep", id: it.id, base: await version() });
+  assert.equal(r.status, 200, r.text);
+  assert.equal(getVideogen(it.id).state, "attached");
+  const m = JSON.parse(readFileSync(join(ep, "project.json"), "utf8"));
+  assert.ok(m.shots[0].assets.includes(rel));
 });

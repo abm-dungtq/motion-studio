@@ -136,8 +136,11 @@ export const ROUTES = [
       // The same request before: an unknown result (or an intent whose runner died while sending)
       // may have cost credits; a task G-Labs still has is followed, not sent again. No job runs
       // now (checked above), so no runner owns such an item.
-      const dup = videogenItems(pd.dir).find((x) => x.digest === digest && ["indeterminate", "intent", "submitted", "running"].includes(x.state));
-      if (dup && b.again !== dup.id) {
+      // Only the newest item of this digest counts: an old unknown result followed by a good retry
+      // is settled. `again` overrides an unknown result only, never a task G-Labs still has.
+      const last = videogenItems(pd.dir).find((x) => x.digest === digest);
+      const dup = last && ["indeterminate", "intent", "submitted", "running"].includes(last.state) ? last : null;
+      if (dup && (["submitted", "running"].includes(dup.state) || b.again !== dup.id)) {
         return ["submitted", "running"].includes(dup.state)
           ? c.send(409, { error: "G-Labs đang có task của đúng yêu cầu này. Bấm Theo dõi tiếp thay vì tạo lại.", code: "RESUMABLE", id: dup.id })
           : c.send(409, { error: "Lần trước của đúng yêu cầu này chưa rõ kết quả và có thể đã tốn credit. Nhập file đã tải, hoặc xác nhận Tạo lại.", code: "DUPLICATE", id: dup.id });
@@ -195,7 +198,9 @@ export const ROUTES = [
       if (pd.error) return c.send(pd.status, { error: pd.error });
       if (!Number.isInteger(b.base)) throw fail(400, "cần base (số phiên bản vừa đọc)");
       const it = itemOf(pd.dir, b.id);
-      if (it.state !== "collected" || !it.files?.length) throw fail(409, "clip này chưa tải về hoặc đã gắn rồi");
+      // A clip cancelled after its download is paid for and on disk: it attaches like a collected one.
+      const ok = it.state === "collected" || (it.state === "cancelled" && it.charge === "charged");
+      if (!ok || !it.files?.length) throw fail(409, "clip này chưa tải về hoặc đã gắn rồi");
       const r = attachNow(c, b.name, pd.dir, it, b.base, it.files.at(-1));
       return r.error ? c.send(r.status, { error: r.error }) : r;
     },
