@@ -142,7 +142,7 @@ Thêm tính năng bằng cách thêm file, không sửa `server.mjs` hay khung g
 - `lib/quality/*.mjs`: bài kiểm chạy trên mọi file Studio tạo ra; kết quả nằm trong `<dự án>/.opus/receipts/`.
 - `lib/agents/cli/*.mjs`: agent CLI trên máy (claude, codex, codex-pool, agy, gemini, cursor-agent, opencode) để viết chữ, đọc ảnh và sinh ảnh.
 
-Ví dụ chạy được: [docs/extensions.md](docs/extensions.md). Agent và thứ tự thử: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Biên nhận: [docs/receipts.md](docs/receipts.md).
+Ví dụ chạy được: [docs/extensions.md](docs/extensions.md). Agent và thứ tự thử: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Biên nhận: [docs/receipts.md](docs/receipts.md). Clip AI cho shot qua G-Labs Studio: [docs/videogen.md](docs/videogen.md).
 
 </details>
 

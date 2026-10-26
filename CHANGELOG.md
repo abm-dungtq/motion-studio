@@ -1,5 +1,9 @@
 # Changelog
 
+## Chưa phát hành
+
+- Clip AI cho shot qua webhook G-Labs Studio (Omni Flash): sổ ghi ngoài dự án, mỗi yêu cầu chỉ gửi một lần, trần clip mỗi ngày, gắn vào shot có Undo. Mục "Clip AI (G-Labs)" trong inspector của shot, dòng G-Labs trong chip agent, route `/api/videogen/*`, biên nhận `videogen` và `videogen-import`, khoá `videogen` trong `studio.json`. Xem `docs/videogen.md`.
+
 ## v2.0.0 (2026-10-25): giao diện React, series, bàn chất liệu, xuất NLE
 
 - Giao nộp tập của series vào thư mục `delivery_dir` (`{N}` là `episode:` của `BRIEF.md`), không bao giờ ghi đè (khác sha thì thêm `-2`, `-3`): tiêu đề và mô tả có mốc chương, kiểm bằng check-platform và lint viet-pro; phụ đề SRT từ words.json cùng `CAPTIONS.md` qua cổng viet-pro delivery; bản youtube, facebook, tiktok từ video final; thumbnail 3 ảnh sau thẻ đồng ý Codex rồi người dùng chọn một. Tải thư mục giao nộp lên Drive bằng gws sau thẻ đồng ý `drive` (kiểm tài khoản trước, so kích thước sau, `dry_run` dùng `--dry-run` của gws). Route `/api/delivery*`, tool `deliver_text`, `deliver_captions`, `deliver_export`, `deliver_thumbnail`, `delivery_status`, `drive_upload`; biên nhận `deliver-*`, `drive-upload`. Bảng "Giao nộp" trong hộp thoại Xuất bản. Biến `MOTION_STUDIO_GWS`. Xem `docs/series.md`.
