@@ -5,12 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Manifest } from "@/api/types.ts";
 import { useStudio } from "@/store/studio.ts";
 import { ShotVideogen } from "./ShotVideogen.tsx";
+import { GflowRow } from "./GflowRow.tsx";
 import type { VgItem, VgStatus } from "./api.ts";
+import type { AgentRowProps } from "@/ext/registry.ts";
 
 const M2 = (shots: unknown[]) => ({ version: 7, width: 1920, height: 1080, capabilities: { editable: true }, lines: [], shots }) as unknown as Manifest;
 const M = { version: 7, width: 1920, height: 1080, capabilities: { editable: true }, lines: [], shots: [{ id: "s1", start: 0, end: 5, assets: ["assets/a.png"] }] } as unknown as Manifest;
-const UP: VgStatus = { glabs_url: "http://127.0.0.1:8765", up: true, error: null, key: true, today: 3, cap: 40, job: null };
-const item = (o: Partial<VgItem>): VgItem => ({ id: "vg-1", shot: "s1", state: "collected", charge: "charged", task_id: "0a1b2c3d", error: null, files: ["assets/gen/video/x.mp4"], prompt_head: "sóng vỗ", created: "2026-10-26T03:00:00.000Z", updated: "2026-10-26T03:00:00.000Z", version: null, ...o });
+const UP: VgStatus = { bin: "/u/.local/bin/gflow", found: true, version: "0.90.0", tested: true, profile: "p1", today: 3, cap: 20, images_today: 1, image_cap: 30, waf_until: null, job: null };
+const item = (o: Partial<VgItem>): VgItem => ({ id: "vg-1", shot: "s1", kind: "video", state: "collected", charge: "charged", flow_project: "proj-1", error: null, files: ["assets/gen/video/x.mp4"], prompt_head: "sóng vỗ", created: "2026-10-26T03:00:00.000Z", updated: "2026-10-26T03:00:00.000Z", version: null, ...o });
 
 // GET answers by path; POST answers by path as [status, body] (one per call, the last repeats).
 // Every POST body is kept for the assertions.
@@ -44,17 +46,17 @@ beforeEach(() => {
 });
 
 describe("shot inspector AI clip section", () => {
-  it("says why it cannot send while G-Labs is closed", async () => {
-    serve({ "/api/videogen/status": { ...UP, up: false, error: "Mở G-Labs Studio và bấm Start ở tab Webhook" }, "/api/videogen/items": { items: [] } });
+  it("says why it cannot send without gflow", async () => {
+    serve({ "/api/videogen/status": { ...UP, found: false }, "/api/videogen/items": { items: [] } });
     open();
-    expect(await screen.findByText("Mở G-Labs Studio và bấm Start ở tab Webhook")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Tạo clip AI" })).toHaveAccessibleDescription("Chưa có gflow ở /u/.local/bin/gflow"));
     expect(screen.getByRole("button", { name: "Tạo clip AI" })).toBeDisabled();
   });
 
   it("says when today's cap is reached", async () => {
-    serve({ "/api/videogen/status": { ...UP, today: 40 }, "/api/videogen/items": { items: [] } });
+    serve({ "/api/videogen/status": { ...UP, today: 20 }, "/api/videogen/items": { items: [] } });
     open();
-    expect(await screen.findByText("Đã đủ 40 clip hôm nay")).toBeInTheDocument();
+    expect(await screen.findByText("Đã đủ 20 clip hôm nay")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tạo clip AI" })).toBeDisabled();
   });
 
@@ -82,14 +84,19 @@ describe("shot inspector AI clip section", () => {
     expect((screen.getByRole("textbox", { name: "Mô tả chuyển động" }) as HTMLTextAreaElement).value).toBe("");
   });
 
-  it("picks the shortest clip that covers the shot, 360p only for text", () => {
+  it("picks the shortest clip that covers the shot; 10 s and quality only with omni-flash", () => {
     serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
     open();
+    const len = () => [...(screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).options].map((o) => o.value);
     expect((screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).value).toBe("6");
-    const res = () => [...(screen.getByRole("combobox", { name: "Chất lượng" }) as HTMLSelectElement).options].map((o) => o.value);
-    expect(res()).toContain("360p");
-    fireEvent.change(screen.getByRole("combobox", { name: "Kiểu" }), { target: { value: "start" } });
-    expect(res()).not.toContain("360p");
+    expect(len()).not.toContain("10");
+    expect(screen.queryByRole("combobox", { name: "Chất lượng" })).toBeNull();
+    fireEvent.change(screen.getByRole("combobox", { name: "Model" }), { target: { value: "omni-flash" } });
+    expect(len()).toContain("10");
+    fireEvent.change(screen.getByRole("combobox", { name: "Độ dài" }), { target: { value: "10" } });
+    expect([...(screen.getByRole("combobox", { name: "Chất lượng" }) as HTMLSelectElement).options].map((o) => o.value)).toEqual(["720p", "360p"]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Model" }), { target: { value: "veo-fast" } });
+    expect((screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).value).toBe("8");
   });
 
   it("sends one request after the confirm, with the shown version", async () => {
@@ -99,8 +106,9 @@ describe("shot inspector AI clip section", () => {
     await create();
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(confirm).toHaveBeenCalledTimes(1);
-    expect(posts[0]).toMatchObject({ path: "/api/videogen/shot", body: { name: "ep", shot: "s1", base: 7, prompt: "sóng vỗ", seconds: 6, resolution: "720p", mode: "t2v" } });
+    expect(posts[0]).toMatchObject({ path: "/api/videogen/shot", body: { name: "ep", shot: "s1", base: 7, prompt: "sóng vỗ", seconds: 6, model: "veo-lite", mode: "t2v" } });
     expect(posts[0].body).not.toHaveProperty("again");
+    expect(posts[0].body).not.toHaveProperty("resolution");
   });
 
   it("an unknown earlier result needs a second confirm before sending again", async () => {
@@ -113,30 +121,86 @@ describe("shot inspector AI clip section", () => {
     expect(posts[1].body).toMatchObject({ again: "vg-old" });
   });
 
-  it("a task G-Labs still has is followed, never sent again", async () => {
-    const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } }, { "/api/videogen/shot": [[409, { code: "RESUMABLE", id: "vg-live", error: "x" }]] });
+  it("a clip Flow already made is downloaded, never made again", async () => {
+    const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } }, { "/api/videogen/shot": [[409, { code: "RECOVERABLE", id: "vg-made", error: "x" }]] });
     vi.spyOn(window, "confirm").mockReturnValue(true);
     open();
     await create();
     await waitFor(() => expect(posts).toHaveLength(2));
-    expect(posts[1]).toEqual({ path: "/api/videogen/resume", body: { name: "ep", id: "vg-live" } });
+    expect(posts[1]).toEqual({ path: "/api/videogen/recover", body: { name: "ep", id: "vg-made" } });
     expect(posts.some((p) => "again" in p.body)).toBe(false);
+  });
+
+  it("switches between image and video; an image goes to /image with its model and frame", async () => {
+    const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    open();
+    expect(screen.queryByRole("textbox", { name: "Mô tả ảnh" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Ảnh" }));
+    expect(screen.getByRole("button", { name: "Ảnh" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("textbox", { name: "Mô tả chuyển động" })).toBeNull();
+    fireEvent.change(screen.getByRole("textbox", { name: "Mô tả ảnh" }), { target: { value: "biển" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Khung ảnh" }), { target: { value: "1:1" } });
+    const b = screen.getByRole("button", { name: "Tạo ảnh AI" });
+    await waitFor(() => expect(b).toBeEnabled());
+    fireEvent.click(b);
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toMatchObject({ path: "/api/videogen/image", body: { prompt: "biển", mode: "t2i", model: "nano2", aspect: "1:1", refs: [] } });
+    fireEvent.click(screen.getByRole("button", { name: "Video" }));
+    expect((screen.getByRole("textbox", { name: "Mô tả chuyển động" }) as HTMLTextAreaElement).value).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "Ảnh" }));
+    expect((screen.getByRole("textbox", { name: "Mô tả ảnh" }) as HTMLTextAreaElement).value).toBe("biển");
+  });
+
+  it("after the submit the running item offers Ngừng chờ, with what it still costs", async () => {
+    const posts = serve({ "/api/videogen/status": { ...UP, job: { id: "j1", name: "ep" } }, "/api/videogen/items": { items: [item({ id: "r", state: "running", phase: "sent", files: [] })] } });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Ngừng chờ lượt AI đang tạo" }));
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(confirm.mock.calls[0][0]).toMatch(/vẫn tính credit/);
+    expect(posts[0]).toEqual({ path: "/api/videogen/cancel", body: { name: "ep" } });
   });
 
   it("lists this shot's clips with what can be done with each", async () => {
     serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [
       item({ id: "a", state: "collected" }),
-      item({ id: "b", state: "intent", task_id: null, files: [] }),
-      item({ id: "c", state: "submitted" }),
+      item({ id: "b", state: "intent", files: [] }),
+      item({ id: "c", state: "made", files: [], prompt_head: "đã tạo" }),
       item({ id: "d", shot: "s9", state: "collected" }),
       item({ id: "e", state: "cancelled", charge: "charged" }),
+      item({ id: "f", kind: "image", state: "made", files: [], prompt_head: "ảnh đã tạo" }),
     ] } });
     open();
     expect(await screen.findByText("đã tải về, chưa gắn")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^Gắn vào shot: / })).toHaveLength(2);
     expect(screen.getByText("chưa rõ kết quả")).toBeInTheDocument();
-    expect(screen.getByText("Có thể đã tốn credit. Kiểm tra trong G-Labs trước khi tạo lại.")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /^Nhập file đã tải: / })).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "Theo dõi tiếp: sóng vỗ" })).toBeInTheDocument();
+    expect(screen.getByText("Có thể đã tốn credit. Bấm Đối chiếu hoặc mở Flow kiểm trước khi tạo lại.")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Tải về từ Flow: / }).map((b) => b.getAttribute("aria-label"))).toEqual(["Tải về từ Flow: đã tạo"]);
+    expect(screen.getAllByRole("button", { name: /^Nhập file đã tải: / })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: /^Đối chiếu: / })).toHaveLength(1);
+  });
+
+  it("Đối chiếu asks the server to look in the catalog", async () => {
+    const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [item({ id: "u", state: "indeterminate", files: [] })] } });
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Đối chiếu: sóng vỗ" }));
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toEqual({ path: "/api/videogen/reconcile", body: { name: "ep", id: "u" } });
+  });
+});
+
+describe("agent row for gflow", () => {
+  it("shows version, profile and counts; Kiểm đăng nhập calls auth once", async () => {
+    const posts = serve({ "/api/videogen/status": UP }, { "/api/videogen/auth": [[200, { ok: true, code: 0 }]] });
+    renderUi(<GflowRow {...({} as AgentRowProps)} />);
+    const row = await screen.findByTestId("gflow-row");
+    await waitFor(() => expect(row).toHaveTextContent("profile: p1"));
+    expect(row).toHaveTextContent("video hôm nay: 3/20");
+    expect(row).toHaveTextContent("ảnh: 1/30");
+    expect(posts).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm đăng nhập" }));
+    expect(await screen.findByText("đăng nhập còn hạn")).toBeInTheDocument();
+    expect(posts).toEqual([{ path: "/api/videogen/auth", body: {} }]);
   });
 });

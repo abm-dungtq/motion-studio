@@ -12,7 +12,7 @@ import { say } from "@/api/client.ts";
 import type { ProjectEntry } from "@/api/types.ts";
 import { useAgentRows, useInspectorSections, useSections } from "@/ext/registry.ts";
 import { AgentTable } from "@/ext/agents/AgentTable.tsx";
-import { GlabsRow } from "@/ext/videogen/GlabsRow.tsx";
+import { GflowRow } from "@/ext/videogen/GflowRow.tsx";
 import { AgentStatus } from "@/panels/agent/AgentStatus.tsx";
 import { manifest, NAME } from "@/panels/director/fixtures.ts";
 import { SLOTS } from "./slots.ts";
@@ -46,7 +46,7 @@ const routes = {
   "/api/receipts": [],
   "/api/fx/catalog": { transitions: [], footage: [] },
   "/api/fx/luts": [],
-  "/api/videogen/status": { up: false, error: "x", key: false, today: 0, cap: 40, job: null },
+  "/api/videogen/status": { bin: "/x/gflow", found: false, version: null, tested: false, profile: null, today: 0, cap: 20, images_today: 0, image_cap: 30, waf_until: null, job: null },
   "/api/videogen/items": { items: [] },
   "/api/lemo/styles": { fetched: false, styles: [] },
   "/api/broll/suggest": { hits: [] },
@@ -114,7 +114,7 @@ describe("integration: every panel and extension through the real loader", () =>
   it("has two agent rows, the built-in status before the agents table", async () => {
     await bootApp();
     const rows = renderHook(() => useAgentRows()).result.current;
-    expect(rows.map((r) => r.component)).toEqual([AgentStatus, AgentTable, GlabsRow]);
+    expect(rows.map((r) => r.component)).toEqual([AgentStatus, AgentTable, GflowRow]);
   });
 
   it("fills every slot when its place is open", async () => {
