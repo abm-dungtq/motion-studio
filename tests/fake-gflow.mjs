@@ -10,9 +10,10 @@
 //   FAKE_GFLOW_LOG       JSONL file: one line per call with argv, cwd and the GFLOW_CLI_* env
 //   FAKE_GFLOW_VERSION   version printed by --version (0.90.0)
 //   FAKE_GFLOW_AUTH      exit code of `auth status` (0)
-// Scenarios: ok | exit:N[:armed|:sent] | exit6 | exit6-net | notsucceeded | garbage |
+//   FAKE_GFLOW_MP4       a real mp4 to copy as the generated or downloaded clip (else a few bytes)
+// Scenarios: ok | exit:N[:armed|:sent[:row]] (row: the catalog has the run) | exit6 | exit6-net | notsucceeded | garbage |
 //   hang-before-typed | hang-after-typed | hang-after-sent | hang-after-sent-norow | ignore-sigint
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
@@ -68,7 +69,7 @@ if (a === "--version") {
     const d = opt("--out");
     mkdirSync(d, { recursive: true });
     const p = join(d, `${id}.mp4`);
-    writeFileSync(p, Buffer.from("fake mp4 bytes"));
+    if (env.FAKE_GFLOW_MP4) copyFileSync(env.FAKE_GFLOW_MP4, p); else writeFileSync(p, Buffer.from("fake mp4 bytes"));
     out({ media_id: id, workflow_id: "wf", profile: opt("--profile"), project_id: "proj", path: p, bytes: 14 });
     exit(0);
   }
@@ -89,7 +90,8 @@ function catalogRow(kind, mediaId, status) {
 function writeOutput(kind) {
   const o = opt("-o");
   mkdirSync(dirname(o), { recursive: true });
-  writeFileSync(o, Buffer.from(kind === "video" ? "fake mp4 bytes" : "fake png bytes"));
+  if (kind === "video" && env.FAKE_GFLOW_MP4) copyFileSync(env.FAKE_GFLOW_MP4, o);
+  else writeFileSync(o, Buffer.from(kind === "video" ? "fake mp4 bytes" : "fake png bytes"));
   return o;
 }
 
@@ -114,10 +116,11 @@ function generate(kind) {
   const armed = () => event("migrated.prompt_typed");
   const sent = () => event("migrated.submit_clicked");
   const fail = (code, error) => { out({ status: "fail", error: { exit_code: code, class: "X", retryable: false, detail: "x", ...error } }); exit(code); };
-  const m = /^exit:(\d+)(?::(armed|sent))?$/.exec(scenario);
+  const m = /^exit:(\d+)(?::(armed|sent))?(:row)?$/.exec(scenario);
   if (m) {
     if (m[2]) armed();
     if (m[2] === "sent") sent();
+    if (m[3]) catalogRow(kind, mediaId, "pending");
     return fail(Number(m[1]));
   }
   switch (scenario) {

@@ -1,213 +1,199 @@
+// lib/videogen/run.mjs with tests/fake-gflow.mjs: a run per outcome, recover, reconcile, and a stop
+// (SIGTERM of the runner) at every phase, with no process left behind.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ffmpegBin } from "../lib/anime/keying.mjs";
-import { getVideogen, newVideogenIntent, requestVideogenCancel, updateVideogen, videogenCount } from "../lib/ledger.mjs";
+import { flowProjectOf, getVideogen, ledgerDir, videogenCount, videogenWafUntil, today } from "../lib/ledger.mjs";
 import { normalizeSpec } from "../lib/videogen/spec.mjs";
-import { readKey, runVideogen } from "../lib/videogen/run.mjs";
-import { fakeGlabs } from "./fake-glabs.mjs";
+import { runVideogen } from "../lib/videogen/run.mjs";
 
 const RUN = fileURLToPath(new URL("../lib/videogen/run.mjs", import.meta.url));
-let tmp, proj, fake;
+const FAKE = fileURLToPath(new URL("./fake-gflow.mjs", import.meta.url));
+let tmp, proj, fdir, flog;
 const saved = {};
 const ff = (args) => { const r = spawnSync(ffmpegBin(), ["-v", "error", "-y", ...args]); assert.equal(r.status, 0, String(r.stderr)); };
-before(async () => {
+before(() => {
   tmp = mkdtempSync(join(tmpdir(), "ms-vg-run-"));
   proj = join(tmp, "proj");
+  fdir = join(tmp, "fake");
+  flog = join(tmp, "fake.log");
   mkdirSync(join(proj, "assets"), { recursive: true });
-  ff(["-f", "lavfi", "-i", "testsrc2=size=320x180:rate=24", "-t", "6", "-pix_fmt", "yuv420p", join(tmp, "clip.mp4")]);
+  mkdirSync(fdir);
+  ff(["-f", "lavfi", "-i", "testsrc2=size=320x180:rate=24", "-t", "4", "-pix_fmt", "yuv420p", join(tmp, "clip.mp4")]);
   for (const n of ["key.png", "end.png"]) ff(["-f", "lavfi", "-i", "color=c=red:s=64x36", "-frames:v", "1", join(proj, "assets", n)]);
-  for (const k of ["MOTION_STUDIO_STATE", "G_LABS_WEBHOOK_API_KEY"]) saved[k] = process.env[k];
-  process.env.MOTION_STUDIO_STATE = join(tmp, "state", "studio.json");
-  fake = await fakeGlabs();
-  process.env.G_LABS_WEBHOOK_API_KEY = fake.key;
-  fake.set({ file: join(tmp, "clip.mp4") });
+  for (const k of ["MOTION_STUDIO_STATE", "FAKE_GFLOW", "FAKE_GFLOW_DIR", "FAKE_GFLOW_LOG", "FAKE_GFLOW_MP4"]) saved[k] = process.env[k];
+  Object.assign(process.env, { MOTION_STUDIO_STATE: join(tmp, "state", "studio.json"), FAKE_GFLOW_DIR: fdir, FAKE_GFLOW_LOG: flog, FAKE_GFLOW_MP4: join(tmp, "clip.mp4") });
 });
-after(async () => {
-  await fake?.close();
+after(() => {
   for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
   rmSync(tmp, { recursive: true, force: true });
 });
 
 const quiet = () => {};
-function reset(o = {}) { fake.posts.length = 0; fake.stops.length = 0; fake.set({ submit: "accept", statuses: ["completed"], tasks: "answer", ...o }); }
-const arg = (prompt, extra = {}, specIn = {}) => {
-  const spec = normalizeSpec(proj, { shot: "s1", prompt, seconds: 6, ...specIn });
-  return { action: "new", dir: proj, spec, digest: `d-${prompt}`, base_url: fake.url, cap: 50, poll_ms: 20, deadline_ms: 3000, ...extra };
+const calls = () => (existsSync(flog) ? readFileSync(flog, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
+const arg = (prompt, specIn = {}, extra = {}) => {
+  const spec = normalizeSpec(proj, { shot: "s1", prompt, seconds: 4, ...specIn });
+  return { action: "new", dir: proj, spec, digest: `d-${prompt}`, bin: FAKE, profile: "p1", cap: 50, image_cap: 50, ...extra };
 };
-const go = (a) => runVideogen(a, { log: quiet });
+const go = (scenario, a) => { process.env.FAKE_GFLOW = scenario; return runVideogen(a, { log: quiet }); };
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const waitDead = async (pid, ms = 6000) => { const t = Date.now(); while (alive(pid) && Date.now() - t < ms) await new Promise((r) => setTimeout(r, 50)); return !alive(pid); };
+const parts = () => readdirSync(join(proj, "assets", "gen", "video")).filter((f) => f.startsWith(".part-"));
 
-test("success t2v: one POST, file, collected, receipt", async () => {
-  reset();
-  const r = await go(arg("ca 1: biển"));
+// The runner as a job process, stopped with SIGTERM once the fake hangs. Returns its output.
+async function stopped(scenario, a) {
+  rmSync(join(fdir, "child.pid"), { force: true });
+  const child = spawn(process.execPath, [RUN, "run", JSON.stringify(a)], { env: { ...process.env, FAKE_GFLOW: scenario }, stdio: ["ignore", "pipe", "pipe"] });
+  let out = "";
+  child.stdout.on("data", (d) => { out += d; });
+  child.stderr.on("data", (d) => { out += d; });
+  const t = Date.now();
+  while (!existsSync(join(fdir, "child.pid")) && Date.now() - t < 8000) await new Promise((r) => setTimeout(r, 30));
+  await new Promise((r) => setTimeout(r, 300));
+  const self = Number(readFileSync(join(fdir, "self.pid"), "utf8"));
+  const chrome = Number(readFileSync(join(fdir, "child.pid"), "utf8"));
+  child.kill("SIGTERM");
+  const code = await new Promise((r) => child.on("close", r));
+  const line = out.split("\n").reverse().find((l) => l.startsWith("RESULT "));
+  return { code, out, self, chrome, result: line ? JSON.parse(line.slice(7)) : null };
+}
+
+test("ok video: collected, file, receipt by gflow, argv and cwd, one Flow project", async () => {
+  const r = await go("ok", arg("ca 1: biển"));
   assert.equal(r.ok, true, r.error);
-  assert.equal(fake.posts.length, 1);
-  assert.match(r.rel, /^assets\/gen\/video\/s1-[0-9a-f]{8}-720p\.mp4$/);
+  assert.match(r.rel, /^assets\/gen\/video\/s1-vg-\d{8}-[0-9a-f]{6}\.mp4$/);
   assert.ok(existsSync(join(proj, r.rel)));
-  assert.equal(getVideogen(r.id).state, "collected");
-  const days = readdirSync(join(proj, ".opus", "receipts"));
-  const recs = days.flatMap((d) => readdirSync(join(proj, ".opus", "receipts", d)));
-  assert.ok(recs.some((f) => f.startsWith("videogen-")));
-});
-
-test("start_end sends two base64 refs", async () => {
-  reset();
-  const r = await go(arg("ca 2: núi", {}, { refs: ["assets/key.png", "assets/end.png"] }));
-  assert.equal(r.ok, true, r.error);
-  assert.equal(fake.posts[0].mode, "start_end_image");
-  assert.equal(fake.posts[0].reference_images.length, 2);
-});
-
-test("rejected 400: failed, no charge, not counted", async () => {
-  reset({ submit: "reject:400" });
-  const before = videogenCount();
-  const r = await go(arg("ca 3: sông"));
-  assert.equal(r.ok, false);
   const it = getVideogen(r.id);
-  assert.equal(it.state, "failed"); assert.equal(it.charge, "none");
-  assert.equal(videogenCount(), before);
+  assert.equal(it.state, "collected");
+  assert.equal(it.phase, "sent");
+  assert.match(it.media_id, /^[0-9a-f-]{36}$/);
+  assert.equal(it.prompt, "ca 1: biển");
+  const days = readdirSync(join(proj, ".opus", "receipts"));
+  const recs = days.flatMap((d) => readdirSync(join(proj, ".opus", "receipts", d)).map((f) => join(proj, ".opus", "receipts", d, f)));
+  const rec = recs.map((f) => JSON.parse(readFileSync(f, "utf8"))).find((x) => x.op === "videogen");
+  assert.equal(rec.tool.name, "gflow");
+  const gen = calls().filter((c) => c.argv[0] === "video");
+  const last = gen.at(-1);
+  assert.equal(last.argv[last.argv.indexOf("--project") + 1], flowProjectOf("p1", proj).id);
+  assert.notEqual(last.cwd, proj);
+  assert.ok(!last.cwd.startsWith(proj));
+  assert.equal(last.env.GFLOW_CLI_LOG_FORMAT, "json");
+  await go("ok", arg("ca 1b: biển chiều"));
+  assert.equal(calls().filter((c) => c.argv[0] === "project").length, 1);
+  assert.equal(parts().length, 0);
 });
 
-test("POST without answer and no matching task: indeterminate, one POST", async () => {
-  reset({ submit: "hang" });
-  const r = await go(arg("ca 4: rừng", { submit_timeout_ms: 300 }));
-  assert.equal(r.indeterminate, true);
-  assert.equal(getVideogen(r.id).state, "indeterminate");
-  assert.equal(fake.posts.length, 1);
-});
-
-test("POST without answer but a matching task: followed to collected", async () => {
-  reset({ submit: "hang-after-create" });
-  const r = await go(arg("ca 5: phố", { submit_timeout_ms: 300 }));
+test("ok image: png in assets/gen/image, counted apart from clips", async () => {
+  const v = videogenCount(today()), i = videogenCount(today(), { kind: "image" });
+  const r = await go("ok", arg("ca 2: ảnh núi", { kind: "image", aspect: "1:1" }));
   assert.equal(r.ok, true, r.error);
+  assert.match(r.rel, /^assets\/gen\/image\/s1-.*\.png$/);
+  assert.equal(getVideogen(r.id).kind, "image");
+  assert.equal(videogenCount(today()), v);
+  assert.equal(videogenCount(today(), { kind: "image" }), i + 1);
+  const im = calls().filter((c) => c.argv[0] === "image").at(-1);
+  assert.equal(im.argv[im.argv.indexOf("-n") + 1], "1");
+});
+
+test("exit 6: made with the id from the error, no part file; recover downloads it", async () => {
+  const r = await go("exit6", arg("ca 3: sông"));
+  const it = getVideogen(r.id);
+  assert.equal(it.state, "made");
+  assert.equal(it.charge, "charged");
+  assert.match(it.media_id, /^[0-9a-f-]{36}$/);
+  assert.equal(parts().length, 0);
+  process.env.FAKE_GFLOW = "download-fail";
+  const bad = await runVideogen({ action: "recover", id: r.id, dir: proj, bin: FAKE, profile: "p1" }, { log: quiet });
+  assert.equal(bad.ok, false);
+  assert.equal(getVideogen(r.id).state, "made");
+  assert.equal(getVideogen(r.id).recover_failed, 1);
+  process.env.FAKE_GFLOW = "ok";
+  const ok = await runVideogen({ action: "recover", id: r.id, dir: proj, bin: FAKE, profile: "p1" }, { log: quiet });
+  assert.equal(ok.ok, true, ok.error);
+  assert.equal(ok.rel, `assets/gen/video/s1-${r.id}.mp4`);
+  assert.ok(existsSync(join(proj, ok.rel)));
   assert.equal(getVideogen(r.id).state, "collected");
-  assert.equal(fake.posts.length, 1);
 });
 
-test("task failed by timeout: indeterminate, one POST", async () => {
-  reset({ statuses: ["running", { failed: { error_code: 0, error: "Timeout: no result generated" } }] });
-  const r = await go(arg("ca 6: mưa"));
+test("exit 9 after the submit: matched in the catalog or left unknown", async () => {
+  const m = await go("exit:9:sent:row", arg("ca 4a: rừng già"));
+  assert.deepEqual([getVideogen(m.id).state, getVideogen(m.id).charge], ["made", "charged"]);
+  assert.match(getVideogen(m.id).media_id, /^[0-9a-f-]{36}$/);
+  const r = await go("exit:9:sent", arg("ca 4: rừng"));
   assert.equal(getVideogen(r.id).state, "indeterminate");
-  assert.equal(fake.posts.length, 1);
+  assert.equal(getVideogen(r.id).reconcile, false);
+  const before = calls().length;
+  const n = await go("notsucceeded", arg("ca 5: mưa"));
+  const it = getVideogen(n.id);
+  assert.deepEqual([it.state, it.charge], ["failed", "indeterminate"]);
+  assert.equal(calls().slice(before).filter((c) => c.argv[0] === "data").length, 0);
 });
 
-test("status 404: indeterminate", async () => {
-  reset({ statuses: "gone" });
-  const r = await go(arg("ca 7: gió"));
-  assert.equal(getVideogen(r.id).state, "indeterminate");
+test("pre-submit failures are free; WAF blocks; exit 11 after the submit is matched", async () => {
+  const a = await go("exit:28", arg("ca 6: đồi"));
+  assert.deepEqual([getVideogen(a.id).state, getVideogen(a.id).charge], ["failed", "none"]);
+  assert.equal(videogenWafUntil(), null);
+  const w = await go("exit:10:sent", arg("ca 7: phố"));
+  assert.deepEqual([getVideogen(w.id).state, getVideogen(w.id).charge], ["failed", "none"]);
+  assert.ok(videogenWafUntil());
+  rmSync(join(ledgerDir(), "videogen-waf.json"));
+  const before = calls().length;
+  const e = await go("exit:11:sent", arg("ca 8: cầu"));
+  assert.equal(getVideogen(e.id).charge, "indeterminate");
+  assert.ok(calls().slice(before).some((c) => c.argv[0] === "data" && c.argv[1] === "list"));
 });
 
-test("resume follows a submitted task without a POST", async () => {
-  reset();
-  const res = await fetch(`${fake.url}/api/video/generate`, { method: "POST", headers: { "X-API-Key": fake.key, "content-type": "application/json" }, body: JSON.stringify({ prompt: "ca 8: trăng", resolution: ["720p"] }) });
-  const { task_id } = await res.json();
-  fake.posts.length = 0;
-  const a = arg("ca 8: trăng");
-  const it = newVideogenIntent({ project: proj, shot: "s1", digest: "d8", prompt: "ca 8: trăng" });
-  updateVideogen(it.id, { state: "submitted", task_id, spec_summary: { ...a.spec, prompt_head: "ca 8: trăng" } });
-  const r = await go({ action: "resume", id: it.id, dir: proj, base_url: fake.url, cap: 50, poll_ms: 20, deadline_ms: 3000 });
-  assert.equal(r.ok, true, r.error);
-  assert.equal(getVideogen(it.id).state, "collected");
-  assert.equal(fake.posts.length, 0);
+test("stop before the prompt is typed: free cancel, nothing left alive", async () => {
+  const s = await stopped("hang-before-typed", arg("ca 9: gió"));
+  assert.equal(s.result?.cancelled, true, s.out);
+  assert.deepEqual([getVideogen(s.result.id).state, getVideogen(s.result.id).charge], ["cancelled", "none"]);
+  assert.ok(await waitDead(s.self));
+  assert.ok(await waitDead(s.chrome));
 });
 
-test("over the daily cap: 403, no POST", async () => {
-  reset();
-  const r = await go(arg("ca 9: mây", { cap: 0 }));
-  assert.equal(r.status, 403);
-  assert.equal(fake.posts.length, 0);
+test("stop after the prompt is typed: unknown, to reconcile", async () => {
+  const s = await stopped("hang-after-typed", arg("ca 10: mây"));
+  const it = getVideogen(s.result.id);
+  assert.deepEqual([it.state, it.reconcile, it.phase], ["indeterminate", true, "typed"]);
+  assert.equal(s.result.reconcile, true);
+  assert.ok(await waitDead(s.self));
+  assert.ok(await waitDead(s.chrome));
 });
 
-test("no key: 412, no POST", async () => {
-  reset();
-  const state = process.env.MOTION_STUDIO_STATE;
-  delete process.env.G_LABS_WEBHOOK_API_KEY;
-  process.env.MOTION_STUDIO_STATE = join(tmp, "nokey", "studio.json");
-  try {
-    const r = await go(arg("ca 10: sao"));
-    assert.equal(r.status, 412);
-    assert.equal(fake.posts.length, 0);
-  } finally {
-    process.env.MOTION_STUDIO_STATE = state;
-    process.env.G_LABS_WEBHOOK_API_KEY = fake.key;
-  }
+test("stop after the submit: reconcile finds the clip, or not", async () => {
+  const s = await stopped("hang-after-sent", arg("ca 11: sao"));
+  assert.equal(getVideogen(s.result.id).phase, "sent");
+  assert.match(getVideogen(s.result.id).error, /ngừng chờ/);
+  assert.ok(await waitDead(s.chrome));
+  const r = await runVideogen({ action: "reconcile", id: s.result.id, dir: proj, bin: FAKE, profile: "p1" }, { log: quiet });
+  assert.equal(r.state, "made");
+  assert.match(getVideogen(s.result.id).media_id, /^[0-9a-f-]{36}$/);
+  const n = await stopped("hang-after-sent-norow", arg("ca 12: trăng"));
+  await runVideogen({ action: "reconcile", id: n.result.id, dir: proj, bin: FAKE, profile: "p1" }, { log: quiet });
+  assert.equal(getVideogen(n.result.id).state, "indeterminate");
+  assert.equal(getVideogen(n.result.id).reconcile, false);
+  const img = await stopped("hang-after-sent", arg("ca 13: ảnh", { kind: "image" }));
+  assert.equal(getVideogen(img.result.id).reconcile, false);
+  assert.equal(getVideogen(img.result.id).state, "indeterminate");
 });
 
-test("readKey reads glabs.env beside the state file", () => {
-  const dir = join(tmp, "keyfile");
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "glabs.env"), `export G_LABS_WEBHOOK_API_KEY="${fake.key}"\n`, { mode: 0o600 });
-  assert.equal(readKey({ MOTION_STUDIO_STATE: join(dir, "studio.json") }), fake.key);
+test("a gflow that ignores SIGINT is killed with its browser; the runner still settles", async () => {
+  const s = await stopped("ignore-sigint", arg("ca 14: sấm", {}, { kill_after_ms: 300 }));
+  assert.ok(s.result, s.out);
+  assert.equal(getVideogen(s.result.id).state, "indeterminate");
+  assert.ok(await waitDead(s.self));
+  assert.ok(await waitDead(s.chrome));
 });
 
-// Spawns the runner, waits until G-Labs has the task and was polled; returns { child, id, lines, done }.
-async function spawnRunner(prompt) {
-  reset({ statuses: ["running"] });
-  const a = arg(prompt, { deadline_ms: 10000, poll_ms: 50 });
-  const child = spawn(process.execPath, [RUN, "run", JSON.stringify(a)], { env: { ...process.env } });
-  const lines = [];
-  let buf = "";
-  child.stdout.on("data", (d) => { buf += d; const parts = buf.split("\n"); buf = parts.pop(); lines.push(...parts); });
-  const done = new Promise((r) => child.on("exit", (code) => r(code)));
-  const t0 = Date.now();
-  while (!(fake.posts.length === 1 && fake.statusCalls >= 1 && lines.some((l) => l.startsWith("INTENT ")))) {
-    if (Date.now() - t0 > 8000) throw new Error(`runner did not start: ${lines.join("\n")}`);
-    await new Promise((r) => setTimeout(r, 20));
-  }
-  const id = lines.find((l) => l.startsWith("INTENT ")).slice(7);
-  while (getVideogen(id)?.state !== "running") await new Promise((r) => setTimeout(r, 20));
-  return { child, id, lines, done };
-}
-
-test("SIGTERM after the user cancelled stops the task", async () => {
-  fake.statusCalls = 0;
-  const { child, id, lines, done } = await spawnRunner("ca 12: huỷ");
-  requestVideogenCancel(id);
-  child.kill("SIGTERM");
-  await done;
-  assert.deepEqual(fake.stops, [getVideogen(id).task_id]);
-  assert.ok(lines.some((l) => l.startsWith("RESULT ") && l.includes('"cancelled":true')), lines.join("\n"));
-  assert.equal(getVideogen(id).state, "cancelled");
-});
-
-test("SIGTERM from Studio shutting down leaves the task to resume", async () => {
-  fake.statusCalls = 0;
-  const { child, id, lines, done } = await spawnRunner("ca 13: tắt");
-  child.kill("SIGTERM");
-  await done;
-  assert.equal(fake.stops.length, 0);
-  assert.ok(lines.some((l) => l.startsWith("RESULT ") && l.includes('"resumable":true')), lines.join("\n"));
-  assert.ok(["running", "submitted"].includes(getVideogen(id).state));
-});
-
-// Spawns the runner with `a`; returns { child, lines, done }.
-function spawnArg(a) {
-  const child = spawn(process.execPath, [RUN, "run", JSON.stringify(a)], { env: { ...process.env } });
-  const lines = [];
-  let buf = "";
-  child.stdout.on("data", (d) => { buf += d; const parts = buf.split("\n"); buf = parts.pop(); lines.push(...parts); });
-  return { child, lines, done: new Promise((r) => child.on("exit", (code) => r(code))) };
-}
-
-test("a cancel while an unanswered POST is being matched is an unknown result, not free", async () => {
-  reset({ submit: "500", tasks: "hang" });
-  fake.tasksCalls = 0;
-  const { child, lines, done } = spawnArg(arg("ca 14: huỷ khi đang khớp", { deadline_ms: 10000 }));
-  const t0 = Date.now();
-  while (!(fake.posts.length === 1 && fake.tasksCalls >= 1 && lines.some((l) => l.startsWith("INTENT ")))) {
-    if (Date.now() - t0 > 8000) throw new Error(`runner did not reach the match: ${lines.join("\n")}`);
-    await new Promise((r) => setTimeout(r, 20));
-  }
-  const id = lines.find((l) => l.startsWith("INTENT ")).slice(7);
-  requestVideogenCancel(id);
-  child.kill("SIGTERM");
-  await done;
-  const it = getVideogen(id);
-  assert.equal(it.state, "indeterminate", JSON.stringify(it));
-  assert.notEqual(it.charge, "none");
-  reset();
+test("no email, signed URL or profile path in ledger, receipts or job output", async () => {
+  const s = await stopped("hang-after-sent", arg("ca 15: sóng"));
+  const texts = [s.out, ...readdirSync(ledgerDir()).filter((f) => f.endsWith(".json")).map((f) => readFileSync(join(ledgerDir(), f), "utf8"))];
+  const rdir = join(proj, ".opus", "receipts");
+  for (const d of readdirSync(rdir)) for (const f of readdirSync(join(rdir, d))) texts.push(readFileSync(join(rdir, d, f), "utf8"));
+  for (const t of texts) for (const bad of ["Signature=", "fife_url", "x@y.z", "profile_dir"]) assert.ok(!t.includes(bad), bad);
 });
