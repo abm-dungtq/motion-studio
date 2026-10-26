@@ -12,6 +12,7 @@ import { say } from "@/api/client.ts";
 import type { ProjectEntry } from "@/api/types.ts";
 import { useAgentRows, useInspectorSections, useSections } from "@/ext/registry.ts";
 import { AgentTable } from "@/ext/agents/AgentTable.tsx";
+import { GlabsRow } from "@/ext/videogen/GlabsRow.tsx";
 import { AgentStatus } from "@/panels/agent/AgentStatus.tsx";
 import { manifest, NAME } from "@/panels/director/fixtures.ts";
 import { SLOTS } from "./slots.ts";
@@ -45,6 +46,8 @@ const routes = {
   "/api/receipts": [],
   "/api/fx/catalog": { transitions: [], footage: [] },
   "/api/fx/luts": [],
+  "/api/videogen/status": { up: false, error: "x", key: false, today: 0, cap: 40, job: null },
+  "/api/videogen/items": { items: [] },
   "/api/lemo/styles": { fetched: false, styles: [] },
   "/api/broll/suggest": { hits: [] },
 };
@@ -93,7 +96,7 @@ describe("integration: every panel and extension through the real loader", () =>
   it("orders the shot inspector: core, B-roll, fx, lemo, receipts", async () => {
     await bootApp();
     expect(renderHook(() => useInspectorSections("shot")).result.current.map((s) => [s.id, s.order])).toEqual([
-      ["shot", 0], ["broll-suggest", 30], ["fx", 40], ["lemo", 50], ["receipts", 60],
+      ["shot", 0], ["broll-suggest", 30], ["fx", 40], ["videogen", 45], ["lemo", 50], ["receipts", 60],
     ]);
     // A click on a shot block of the timeline picks it, opens the Shot tab and shows them in order.
     const block = await waitFor(() => {
@@ -105,13 +108,13 @@ describe("integration: every panel and extension through the real loader", () =>
     fireEvent.click(block);
     await waitFor(() => expect(useStudio.getState()).toMatchObject({ rightTab: "shot", pick: { kind: "shot", id: "s1" } }));
     const shown = Array.from(slot("right.shot")!.querySelectorAll("[data-section]"), (e) => e.getAttribute("data-section"));
-    expect(shown).toEqual(["inspector/shot", "inspector/broll-suggest", "inspector/fx", "inspector/lemo", "inspector/receipts"]);
+    expect(shown).toEqual(["inspector/shot", "inspector/broll-suggest", "inspector/fx", "inspector/videogen", "inspector/lemo", "inspector/receipts"]);
   });
 
   it("has two agent rows, the built-in status before the agents table", async () => {
     await bootApp();
     const rows = renderHook(() => useAgentRows()).result.current;
-    expect(rows.map((r) => r.component)).toEqual([AgentStatus, AgentTable]);
+    expect(rows.map((r) => r.component)).toEqual([AgentStatus, AgentTable, GlabsRow]);
   });
 
   it("fills every slot when its place is open", async () => {
