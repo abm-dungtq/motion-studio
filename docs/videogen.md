@@ -77,7 +77,7 @@ Studio không bao giờ tự gửi lại. Với một lần chưa rõ hoặc đ�
 
 - **Đối chiếu** (miễn phí): Studio đọc danh mục cục bộ của gflow (`gflow data list`). Một dòng được coi là khớp khi cùng project Flow, đúng prompt, tạo không sớm hơn 5 s trước lúc gửi, không lỗi, và chưa có trong sổ. Thấy đúng một dòng khớp thì lần đó thành "đã tạo trên Flow, chưa tải về". Không thấy, hoặc thấy nhiều dòng, thì vẫn là "chưa rõ"; khi đó mở Flow kiểm.
 - **Tải về từ Flow** (chỉ clip, miễn phí): chạy `gflow data download` rồi gắn clip vào shot. Tải hỏng thì đợi vài phút, vì Flow có thể còn đang tạo. Ảnh không tải lại được bằng gflow.
-- **Nhập file đã tải**: chọn file bạn đã lưu từ Flow (`.mp4` cho clip; `.png`, `.jpg` cho ảnh). Studio chép file vào `assets/gen/<kind>/`, không ghi đè, rồi gắn vào shot.
+- **Nhập file đã tải**: chọn file bạn đã lưu từ Flow (`.mp4` cho clip; `.png`, `.jpg`, `.webp` cho ảnh). Studio chép file vào `assets/gen/<kind>/`, không ghi đè, rồi gắn vào shot.
 - **Dùng file tạm**: hiện khi gflow đã ghi được file trước khi lượt tạo dừng hoặc lỗi sau lúc điền prompt. File đó có thể là kết quả đã trả tiền, nên Studio giữ lại thay vì xoá. Bấm để gắn file này vào shot như Nhập file.
 
 Flow trả ảnh dạng JPEG, nên ảnh thường lưu là `.jpg`. Khi gflow trả nhiều kết quả, Studio giữ hết (`<shot>-<id>.jpg`, `<shot>-<id>-2.jpg`, ...) và gắn file đầu.

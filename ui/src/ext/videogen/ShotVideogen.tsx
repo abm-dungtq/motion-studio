@@ -218,7 +218,7 @@ function Items({ name, m, items, busyHere, idle }: { name: string; m: Manifest; 
   const act = async (p: Promise<SendResult>) => { fail(await p); void refresh(); };
   const importFile = (it: VgItem) => {
     const image = kindOf(it) === "image";
-    const path = window.prompt(image ? "Đường dẫn file ảnh (png, jpg) đã lưu từ Flow:" : "Đường dẫn file mp4 đã tải từ Flow:");
+    const path = window.prompt(image ? "Đường dẫn file ảnh (png, jpg, webp) đã lưu từ Flow:" : "Đường dẫn file mp4 đã tải từ Flow:");
     if (path) void act(vgImport(name, it.id, m.version, path.trim()));
   };
   return (

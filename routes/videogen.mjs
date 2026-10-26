@@ -43,7 +43,7 @@ const PROFILE_TTL_MS = 60e3;
 // A clip matched in the catalog right after a stop may still be in the making: a failed download
 // unlocks making it again only after this long.
 const RECOVER_GRACE_MS = 10 * 60e3;
-const IMPORT_EXT = { video: [".mp4"], image: [".png", ".jpg", ".jpeg"] };
+const IMPORT_EXT = { video: [".mp4"], image: [".png", ".jpg", ".jpeg", ".webp"] };
 const fail = (status, msg, extra = {}) => Object.assign(new Error(msg), { status, ...extra });
 const live = (j) => j.kind === VIDEOGEN_KIND && (j.status === "running" || j.status === "cancelling");
 // `auth status` runs in the server, not as a job; it touches the profile like a run does.
@@ -319,7 +319,7 @@ export const ROUTES = [
       // A file finished before a cancel is paid for and on disk: it attaches like a collected one.
       const ok = it.state === "collected" || (it.state === "cancelled" && it.charge === "charged");
       if (!ok || !it.files?.length) throw fail(409, "file này chưa tải về hoặc đã gắn rồi");
-      const r = attachNow(c, b.name, pd.dir, it, b.base, it.files.at(-1));
+      const r = attachNow(c, b.name, pd.dir, it, b.base, it.files[0]);
       return r.error ? c.send(r.status, { error: r.error }) : r;
     },
   },
@@ -355,7 +355,7 @@ export const ROUTES = [
         throw e;
       }
       const rec = await writeReceipt(pd.dir, { op: "videogen-import", actor: "human", tool: { name: "gflow" }, inputs: { source: b.part === true ? "file tạm của gflow" : basename(src) }, params: { id: it.id, kind }, outputs: [dest] });
-      if (b.part === true) rmSync(src, { force: true });
+      if (b.part === true) for (const f of partFiles(pd.dir, kind, it.id)) rmSync(f, { force: true });
       updateVideogen(it.id, { state: "collected", files: [rel], imported: true, receipt: { file: rec.file, pass: rec.pass } });
       const r = attachNow(c, b.name, pd.dir, getVideogen(it.id), b.base, rel);
       return r.error ? c.send(r.status, { error: r.error }) : r;
