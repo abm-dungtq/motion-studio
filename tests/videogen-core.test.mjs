@@ -2,7 +2,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { ffmpegBin } from "../lib/anime/keying.mjs";
 import { normalizeSpec, pickSeconds } from "../lib/videogen/spec.mjs";
@@ -78,6 +78,13 @@ test("ledger: intents, count, file mode, items", () => {
 });
 
 test("videogenSettings reads studio.json and falls back", () => {
-  assert.deepEqual(videogenSettings({ videogen: { daily_clips: 3, glabs_url: "http://127.0.0.1:9/" } }), { glabs_url: "http://127.0.0.1:9", daily_clips: 3 });
-  assert.equal(videogenSettings(null).daily_clips, 40);
+  const v = videogenSettings({ videogen: { daily_clips: 3, daily_images: 5, gflow_bin: "~/bin/gflow", profile: "p1", model: "omni-flash", image_model: "nano-pro" } });
+  assert.deepEqual(v, { gflow_bin: join(homedir(), "bin/gflow"), profile: "p1", model: "omni-flash", image_model: "nano-pro", daily_clips: 3, daily_images: 5 });
+  const d = videogenSettings(null);
+  assert.equal(d.daily_clips, 20); assert.equal(d.daily_images, 30);
+  assert.equal(d.model, "veo-lite"); assert.equal(d.image_model, "nano2"); assert.equal(d.profile, null);
+  assert.match(d.gflow_bin, /\/\.local\/bin\/gflow$/);
+  const bad = videogenSettings({ videogen: { gflow_bin: "gflow", profile: "../x", model: "imagen4", daily_clips: 9999, daily_images: -1 } });
+  assert.equal(bad.gflow_bin, d.gflow_bin); assert.equal(bad.profile, null); assert.equal(bad.model, "veo-lite");
+  assert.equal(bad.daily_clips, 20); assert.equal(bad.daily_images, 30);
 });
