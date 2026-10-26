@@ -1,14 +1,14 @@
 // tests/fake-glabs.mjs — a G-Labs Studio webhook stand-in on 127.0.0.1:<random> for the videogen
 // tests. set() merges behaviour: submit ("accept" | "reject:<code>" | "hang" | "hang-after-create"
 // | "500"), statuses (steps of GET status, the last one repeats; "gone" answers 404) and file (an
-// mp4 served at /api/files/clip-<id>.mp4).
+// mp4 served at /api/files/clip-<id>.mp4), tasks ("hang" never answers GET /api/tasks; tasksCalls counts them).
 import { createServer } from "node:http";
 import { createReadStream } from "node:fs";
 import { randomBytes } from "node:crypto";
 
 export async function fakeGlabs({ key = "k".repeat(43) } = {}) {
   const cfg = { submit: "accept", statuses: ["completed"], file: null };
-  const fake = { url: null, key, posts: [], stops: [], tasks: new Map(), statusCalls: 0, set: (o) => Object.assign(cfg, o), close: null };
+  const fake = { url: null, key, posts: [], stops: [], tasks: new Map(), statusCalls: 0, tasksCalls: 0, set: (o) => Object.assign(cfg, o), close: null };
   const send = (res, code, body) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
   const create = (body) => {
     const id = randomBytes(4).toString("hex");
@@ -50,6 +50,7 @@ export async function fakeGlabs({ key = "k".repeat(43) } = {}) {
       if (typeof step === "object" && step.failed) return send(res, 200, { ...base, status: "failed", ...step.failed });
       return send(res, 200, { ...base, status: step });
     }
+    if (req.method === "GET" && p === "/api/tasks" && (fake.tasksCalls++, cfg.tasks === "hang")) return;
     if (req.method === "GET" && p === "/api/tasks") return send(res, 200, { tasks: [...fake.tasks].map(([task_id, t]) => ({ task_id, type: "video", status: "running", prompt: t.prompt.slice(0, 50), created_at: t.created_at })) });
     const sp = /^\/api\/stop\/([^/]+)$/.exec(p);
     if (req.method === "POST" && sp) { fake.stops.push(sp[1]); return send(res, 200, { stopped: [sp[1]], skipped: [], count: 1 }); }

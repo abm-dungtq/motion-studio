@@ -197,6 +197,8 @@ export const ROUTES = [
       const pd = c.withManifest(b.name);
       if (pd.error) return c.send(pd.status, { error: pd.error });
       if (!Number.isInteger(b.base)) throw fail(400, "cần base (số phiên bản vừa đọc)");
+      // The runner writes the same day file; no ledger write from here while it runs.
+      if (runningVideogen()) throw fail(409, BUSY);
       const it = itemOf(pd.dir, b.id);
       // A clip cancelled after its download is paid for and on disk: it attaches like a collected one.
       const ok = it.state === "collected" || (it.state === "cancelled" && it.charge === "charged");
@@ -212,8 +214,10 @@ export const ROUTES = [
       const pd = c.withManifest(b.name);
       if (pd.error) return c.send(pd.status, { error: pd.error });
       if (!Number.isInteger(b.base)) throw fail(400, "cần base (số phiên bản vừa đọc)");
+      if (runningVideogen()) throw fail(409, BUSY);
       const it = itemOf(pd.dir, b.id);
-      if (!["indeterminate", "failed", "cancelled"].includes(it.state)) throw fail(409, "chỉ nhập file cho lần tạo chưa rõ kết quả, lỗi hoặc đã huỷ");
+      // An intent with no job running lost its runner (killed while sending): an unknown result.
+      if (!["indeterminate", "failed", "cancelled", "intent"].includes(it.state)) throw fail(409, "chỉ nhập file cho lần tạo chưa rõ kết quả, lỗi hoặc đã huỷ");
       if (typeof b.path !== "string" || !isAbsolute(b.path) || !b.path.toLowerCase().endsWith(".mp4")) throw fail(400, "path: đường dẫn tuyệt đối tới file .mp4");
       let st;
       try { st = statSync(b.path); } catch { st = null; }

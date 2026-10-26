@@ -222,3 +222,22 @@ test("a clip cancelled after its download attaches like a collected one", async 
   const m = JSON.parse(readFileSync(join(ep, "project.json"), "utf8"));
   assert.ok(m.shots[0].assets.includes(rel));
 });
+
+test("attach and import wait while a clip is being made; a lost intent can be imported", async () => {
+  reset({ statuses: ["running"] });
+  const lost = await itemFor("route 12: mất runner", { state: "intent" });
+  const r = await shot("route 12b: đang chạy");
+  assert.equal(r.status, 200, r.text);
+  await until(() => fake.statusCalls >= 1, "task polled");
+  const src = join(tmp, "imported.mp4");
+  copyFileSync(join(tmp, "clip.mp4"), src);
+  const busy = await http("POST", "/api/videogen/import", { name: "ep", id: lost.id, base: await version(), path: src });
+  assert.equal(busy.status, 409, busy.text);
+  const c = await http("POST", "/api/videogen/cancel", { name: "ep" });
+  assert.equal(c.status, 200, c.text);
+  await waitJob(r.json.job.id);
+  const ok = await http("POST", "/api/videogen/import", { name: "ep", id: lost.id, base: await version(), path: src });
+  assert.equal(ok.status, 200, ok.text);
+  assert.equal(getVideogen(lost.id).state, "attached");
+  reset();
+});

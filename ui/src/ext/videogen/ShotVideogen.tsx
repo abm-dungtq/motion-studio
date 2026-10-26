@@ -147,7 +147,7 @@ function VgForm({ name, shot, m }: { name: string; shot: Manifest["shots"][numbe
                 {state === "indeterminate" && <div className="text-warn">Có thể đã tốn credit. Kiểm tra trong G-Labs trước khi tạo lại.</div>}
                 <div className="flex flex-wrap gap-2">
                   {(state === "submitted" || state === "running") && idle && <Button aria-label={`Theo dõi tiếp: ${it.prompt_head}`} onClick={() => void act(vgResume(name, it.id))}>Theo dõi tiếp</Button>}
-                  {(state === "collected" || (state === "cancelled" && it.charge === "charged" && it.files.length > 0)) && <Button aria-label={`Gắn vào shot: ${it.prompt_head}`} onClick={() => void act(vgAttach(name, it.id, m.version))}>Gắn vào shot</Button>}
+                  {(state === "collected" || (state === "cancelled" && it.charge === "charged" && it.files.length > 0)) && idle && <Button aria-label={`Gắn vào shot: ${it.prompt_head}`} onClick={() => void act(vgAttach(name, it.id, m.version))}>Gắn vào shot</Button>}
                   {(state === "indeterminate" || state === "failed" || state === "cancelled") && !(state === "cancelled" && it.files.length > 0) && idle && <Button aria-label={`Nhập file đã tải: ${it.prompt_head}`} onClick={() => importFile(it)}>Nhập file đã tải</Button>}
                 </div>
               </li>

@@ -34,7 +34,7 @@ after(async () => {
 });
 
 const quiet = () => {};
-function reset(o = {}) { fake.posts.length = 0; fake.stops.length = 0; fake.set({ submit: "accept", statuses: ["completed"], ...o }); }
+function reset(o = {}) { fake.posts.length = 0; fake.stops.length = 0; fake.set({ submit: "accept", statuses: ["completed"], tasks: "answer", ...o }); }
 const arg = (prompt, extra = {}, specIn = {}) => {
   const spec = normalizeSpec(proj, { shot: "s1", prompt, seconds: 6, ...specIn });
   return { action: "new", dir: proj, spec, digest: `d-${prompt}`, base_url: fake.url, cap: 50, poll_ms: 20, deadline_ms: 3000, ...extra };
@@ -182,4 +182,32 @@ test("SIGTERM from Studio shutting down leaves the task to resume", async () => 
   assert.equal(fake.stops.length, 0);
   assert.ok(lines.some((l) => l.startsWith("RESULT ") && l.includes('"resumable":true')), lines.join("\n"));
   assert.ok(["running", "submitted"].includes(getVideogen(id).state));
+});
+
+// Spawns the runner with `a`; returns { child, lines, done }.
+function spawnArg(a) {
+  const child = spawn(process.execPath, [RUN, "run", JSON.stringify(a)], { env: { ...process.env } });
+  const lines = [];
+  let buf = "";
+  child.stdout.on("data", (d) => { buf += d; const parts = buf.split("\n"); buf = parts.pop(); lines.push(...parts); });
+  return { child, lines, done: new Promise((r) => child.on("exit", (code) => r(code))) };
+}
+
+test("a cancel while an unanswered POST is being matched is an unknown result, not free", async () => {
+  reset({ submit: "500", tasks: "hang" });
+  fake.tasksCalls = 0;
+  const { child, lines, done } = spawnArg(arg("ca 14: huỷ khi đang khớp", { deadline_ms: 10000 }));
+  const t0 = Date.now();
+  while (!(fake.posts.length === 1 && fake.tasksCalls >= 1 && lines.some((l) => l.startsWith("INTENT ")))) {
+    if (Date.now() - t0 > 8000) throw new Error(`runner did not reach the match: ${lines.join("\n")}`);
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  const id = lines.find((l) => l.startsWith("INTENT ")).slice(7);
+  requestVideogenCancel(id);
+  child.kill("SIGTERM");
+  await done;
+  const it = getVideogen(id);
+  assert.equal(it.state, "indeterminate", JSON.stringify(it));
+  assert.notEqual(it.charge, "none");
+  reset();
 });
