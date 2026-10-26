@@ -38,6 +38,9 @@ const RESULT = "RESULT ";
 const LOCK_WAIT_MS = 300;
 const IMAGE_GAP_MS = 30e3;
 const PROFILE_TTL_MS = 60e3;
+// A clip matched in the catalog right after a stop may still be in the making: a failed download
+// unlocks making it again only after this long.
+const RECOVER_GRACE_MS = 10 * 60e3;
 const IMPORT_EXT = { video: [".mp4"], image: [".png", ".jpg", ".jpeg"] };
 const fail = (status, msg, extra = {}) => Object.assign(new Error(msg), { status, ...extra });
 const live = (j) => j.kind === VIDEOGEN_KIND && (j.status === "running" || j.status === "cancelling");
@@ -120,11 +123,12 @@ function startRun(c, name, dir, arg) {
       meta: { step: "videogen", action: arg.action, shot: arg.spec?.shot ?? null, id: arg.id ?? null },
       onExit: (job) => {
         const r = resultOf(job);
+        const byUser = Boolean(r?.id) && videogenCancelRequested(r.id);
+        if (r?.id) clearVideogenCancel(r.id);
         if (r?.ok) { attachDone(c, name, dir, r); return; }
         // The user stopped a clip after the prompt was typed: look in the catalog now (free). Only
         // on the user's cancel: when Studio stops, a new job here would outlive the server.
-        if (r?.reconcile && r.id && videogenCancelRequested(r.id)) {
-          clearVideogenCancel(r.id);
+        if (r?.reconcile && byUser) {
           try { startRun(c, name, dir, { action: "reconcile", id: r.id, dir, bin: arg.bin, profile: arg.profile }); } catch { /* busy: the user can press Đối chiếu */ }
         }
       },
@@ -187,7 +191,8 @@ async function startGen(c, kind) {
   const last = videogenItems(pd.dir).find((x) => x.digest === digest);
   if (last) {
     const made = last.state === "made";
-    if (made && kindOf(last) === "video" && !(last.recover_failed > 0)) {
+    const gaveUp = last.recover_failed > 0 && Date.now() - Date.parse(last.created) > RECOVER_GRACE_MS;
+    if (made && kindOf(last) === "video" && !gaveUp) {
       return c.send(409, { error: "Flow đã tạo clip của đúng yêu cầu này. Bấm Tải về từ Flow (miễn phí) thay vì tạo lại.", code: "RECOVERABLE", id: last.id });
     }
     if ((made || ["indeterminate", "intent", "running"].includes(last.state)) && b.again !== last.id) {
@@ -233,11 +238,11 @@ export const ROUTES = [
     method: "POST", path: "/api/videogen/auth",
     async handler() {
       if (runningVideogen()) throw fail(409, BUSY);
+      const { bin, profile } = await ready(videogenSettings());
+      // No await between this check and the flag.
+      if (runningVideogen()) throw fail(409, BUSY);
       authBusy = true;
-      try {
-        const { bin, profile } = await ready(videogenSettings());
-        return await authStatus(bin, profile, { timeoutMs: 30e3 });
-      } finally { authBusy = false; }
+      try { return await authStatus(bin, profile, { timeoutMs: 30e3 }); } finally { authBusy = false; }
     },
   },
   { method: "POST", path: "/api/videogen/shot", handler: (c) => startGen(c, "video") },

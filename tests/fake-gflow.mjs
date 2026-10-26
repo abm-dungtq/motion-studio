@@ -126,6 +126,8 @@ function generate(kind) {
     if (m[2]) armed();
     if (m[2] === "sent") sent();
     if (m[3]) catalogRow(kind, mediaId, "pending");
+    // gflow's lock error names the profile directory (profile_lease.py).
+    if (m[1] === "11") return fail(11, { class: "ProfileLockedError", detail: "profile /Users/x/Library/Application Support/gflow-cli/profiles/p1 is locked (held)" });
     return fail(Number(m[1]));
   }
   switch (scenario) {

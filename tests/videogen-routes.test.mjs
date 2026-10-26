@@ -195,7 +195,10 @@ test("a clip Flow made is downloaded, not made again; after a failed download ag
   const r = await shot("route: đã tạo", { again: it.id });
   assert.equal(r.status, 409, r.text);
   assert.equal(r.json.code, "RECOVERABLE");
+  // A failed download within 10 minutes: Flow may still be making it.
   updateVideogen(it.id, { recover_failed: 1 });
+  assert.equal((await shot("route: đã tạo", { again: it.id })).json.code, "RECOVERABLE");
+  updateVideogen(it.id, { created: new Date(Date.now() - 20 * 60e3).toISOString() });
   const d = await shot("route: đã tạo");
   assert.equal(d.json.code, "DUPLICATE");
   scenario("ok");

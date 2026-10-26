@@ -63,6 +63,8 @@ Mỗi lúc chỉ có một lượt gflow trên toàn Studio, vì gflow giữ m�
 
 Studio dừng gflow bằng SIGINT, để gflow tự đóng trình duyệt. Sau vài giây, nếu gflow hay trình duyệt còn sống, Studio giết cả cây tiến trình.
 
+Khi gflow đã thoát mà trình duyệt nó mở vẫn còn sống, Studio giết trình duyệt ngay, để profile không bị khoá cho lượt sau.
+
 Tắt Studio giữa lúc đang tạo cũng dừng gflow như trên. Lần đó thành "chưa rõ" và Studio không tự đối chiếu; mở lại rồi bấm "Đối chiếu".
 
 ## Khi kết quả "chưa rõ"
@@ -80,7 +82,7 @@ Studio không bao giờ tự gửi lại. Với một lần chưa rõ hoặc đ�
 
 "Đúng yêu cầu ấy" nghĩa là trùng shot, prompt, kiểu, model, khung, độ dài, chất lượng và nội dung ảnh tham chiếu. Studio chỉ xét lần mới nhất của yêu cầu đó trong 7 ngày:
 
-- Lần đó là clip đã tạo trên Flow: Studio không cho tạo lại mà đề nghị tải về (miễn phí). Chỉ khi một lần tải về đã hỏng thì mới tạo lại được, sau khi xác nhận.
+- Lần đó là clip đã tạo trên Flow: Studio không cho tạo lại mà đề nghị tải về (miễn phí). Chỉ khi một lần tải về đã hỏng và lần tạo đã quá 10 phút (Flow có thể còn đang tạo) thì mới tạo lại được, sau khi xác nhận.
 - Lần đó chưa rõ, hoặc là ảnh đã tạo trên Flow: tạo lại sau khi xác nhận lần hai.
 - Lần đó đã có file: tạo lại không hỏi thêm, và tốn credit thêm lần nữa (mỗi lần ra một biến thể).
 

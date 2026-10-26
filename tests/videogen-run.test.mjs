@@ -190,10 +190,31 @@ test("a gflow that ignores SIGINT is killed with its browser; the runner still s
   assert.ok(await waitDead(s.chrome));
 });
 
+test("a browser gflow leaves alive after SIGINT is killed before the runner exits", async () => {
+  const s = await stopped("sigint-leave-chrome", arg("ca 16: mưa"));
+  assert.ok(s.result, s.out);
+  assert.ok(await waitDead(s.self));
+  assert.ok(await waitDead(s.chrome, 1500), "browser alive after the runner exited");
+});
+
+test("an untested gflow: a stop before the prompt is seen typed is still unknown", async () => {
+  process.env.FAKE_GFLOW_VERSION = "0.91.0";
+  try {
+    const s = await stopped("hang-before-typed", arg("ca 17: gió"));
+    assert.ok(s.result, s.out);
+    const it = getVideogen(s.result.id);
+    assert.equal(it.state, "indeterminate");
+    assert.equal(it.charge, "indeterminate");
+  } finally { delete process.env.FAKE_GFLOW_VERSION; }
+});
+
 test("no email, signed URL or profile path in ledger, receipts or job output", async () => {
+  const locked = await go("exit:11", arg("ca 18: khoá"));
+  assert.equal(getVideogen(locked.id).charge, "none");
+  assert.ok(!getVideogen(locked.id).error.includes("/Users/"), getVideogen(locked.id).error);
   const s = await stopped("hang-after-sent", arg("ca 15: sóng"));
   const texts = [s.out, ...readdirSync(ledgerDir()).filter((f) => f.endsWith(".json")).map((f) => readFileSync(join(ledgerDir(), f), "utf8"))];
   const rdir = join(proj, ".opus", "receipts");
   for (const d of readdirSync(rdir)) for (const f of readdirSync(join(rdir, d))) texts.push(readFileSync(join(rdir, d, f), "utf8"));
-  for (const t of texts) for (const bad of ["Signature=", "fife_url", "x@y.z", "profile_dir"]) assert.ok(!t.includes(bad), bad);
+  for (const t of texts) for (const bad of ["Signature=", "fife_url", "x@y.z", "profile_dir", "gflow-cli/profiles"]) assert.ok(!t.includes(bad), bad);
 });

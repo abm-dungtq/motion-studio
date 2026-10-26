@@ -152,6 +152,13 @@ test("parseResult: indented JSON, no signed URL, garbage", () => {
   assert.equal(parseResult("log line\n" + JSON.stringify({ status: "fail", error: { class: "X", exit_code: 3, detail: "a@b.co bad" } }, null, 2)).error.detail, "[email] bad");
 });
 
+test("scrub drops absolute local paths but keeps URLs and relative paths", () => {
+  assert.equal(scrub("profile /Users/x/Library/Application Support/gflow-cli/profiles/p1 is locked (held)"), "profile [đường dẫn] is locked (held)");
+  assert.equal(scrub("Chrome reports the profile dir /private/var/f/p1 is already in use"), "Chrome reports the profile dir [đường dẫn] is already in use");
+  assert.equal(scrub("đã có assets/gen/video/a.mp4"), "đã có assets/gen/video/a.mp4");
+  assert.equal(scrub("https://labs.google/fx/tools/flow/project/abc?x=1"), "https://labs.google/fx/tools/flow/project/abc");
+});
+
 test("scrub drops query strings and emails", () => {
   assert.equal(scrub("see https://x.test/a?Signature=abc&b=1 now x@y.z"), "see https://x.test/a now [email]");
 });
