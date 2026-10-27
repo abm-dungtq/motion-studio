@@ -1,4 +1,4 @@
-import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { answerConfirm, mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -110,24 +110,25 @@ describe("Gallery", () => {
   it("apply to the project: Huỷ sends nothing", async () => {
     setup();
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Áp cho dự án" })[0]).toBeEnabled());
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const native = vi.spyOn(window, "confirm");
     await userEvent.click(screen.getAllByRole("button", { name: "Áp cho dự án" })[1]);
-    expect(confirm).toHaveBeenCalledWith('Áp "Tranh khắc gỗ" cho cả dự án: nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)?');
+    expect(await answerConfirm(false)).toBe('Áp "Tranh khắc gỗ" cho cả dự án: nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)?');
     expect(lemoApply).not.toHaveBeenCalled();
+    expect(native).not.toHaveBeenCalled();
   });
 
   it("apply a canvas layer: 409 exists asks to replace, then says it was applied", async () => {
     setup();
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Áp cho dự án" })[0]).toBeEnabled());
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(lemoApply)
       .mockResolvedValueOnce({ status: 409, error: "đã có lớp", data: { code: "exists" } })
       .mockResolvedValueOnce({ status: 200, data: { runner: "mcp" } });
     await userEvent.click(screen.getAllByRole("button", { name: "Áp cho dự án" })[0]);
+    const asked = [await answerConfirm(true), await answerConfirm(true)];
     await waitFor(() => expect(lemoApply).toHaveBeenCalledTimes(2));
     expect(vi.mocked(lemoApply).mock.calls[0][0]).toEqual({ name: NAME, slug: "watercolor", source: "library", mode: "layer", shot: null });
     expect(vi.mocked(lemoApply).mock.calls[1][0]).toMatchObject({ slug: "watercolor", mode: "layer", replace: true });
-    expect(confirm.mock.calls.map((c) => c[0])).toEqual([
+    expect(asked).toEqual([
       'Áp "Thuỷ màu" cho cả dự án: thêm lớp canvas (sửa index.html, ghi lemo_style vào BRIEF.md)?',
       "Dự án đã có một lớp canvas. Thay lớp cũ bằng phong cách này? (scene đã viết được giữ)",
     ]);

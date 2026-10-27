@@ -4,9 +4,9 @@
 // fetch from a route table, and resets the store, the query cache and the registry between tests.
 import "@testing-library/jest-dom/vitest";
 import type { ReactElement } from "react";
-import { cleanup, render, type RenderResult } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within, type RenderResult } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, vi } from "vitest";
+import { afterEach, expect, vi } from "vitest";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { queryClient } from "@/api/client.ts";
@@ -48,6 +48,15 @@ export function mockFetch(routes: Routes = {}) {
   });
   vi.stubGlobal("fetch", fn);
   return fn;
+}
+
+// Answers the in-page confirm of shell/confirm.tsx ("Đồng ý" or "Huỷ"); returns its question.
+export async function answerConfirm(ok: boolean): Promise<string> {
+  const d = await screen.findByRole("dialog");
+  const text = document.getElementById(d.getAttribute("aria-describedby") ?? "")?.textContent ?? "";
+  fireEvent.click(within(d).getByRole("button", { name: ok ? "Đồng ý" : "Huỷ" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  return text;
 }
 
 export function renderUi(ui: ReactElement): RenderResult {

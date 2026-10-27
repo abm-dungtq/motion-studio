@@ -10,6 +10,7 @@ import { Button, Input, Textarea } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { SELECT } from "./Gallery.tsx";
 import { reloadStyles, useAllStyles, useLemo } from "./store.ts";
+import { tabConfirm } from "./confirm.tsx";
 
 const fileUrl = (name: string, rel: string) => `/p/${encodeURIComponent(name)}/${rel.split("/").map(encodeURIComponent).join("/")}`;
 
@@ -37,7 +38,7 @@ export function MyStyle() {
   const s = draft?.style;
   const keep = async () => {
     if (!s) return;
-    if (!window.confirm(`Giữ "${s.en || s.slug}" vào ${d.my_dir}/${s.slug}/? Thư mục đã có thì không ghi đè.`)) return;
+    if (!(await tabConfirm.ask(`Giữ "${s.en || s.slug}" vào ${d.my_dir}/${s.slug}/? Thư mục đã có thì không ghi đè.`))) return;
     const r = await lemoKeep({ name });
     if (r.status === 200) say(`Đã giữ phong cách ở ${r.data?.dir}${r.data?.frame === "styleframe.png" ? " (chưa có ffmpeg nên khung giữ dạng PNG)" : ""}`);
     else say(r.error ?? `Lỗi ${r.status}`, true);
