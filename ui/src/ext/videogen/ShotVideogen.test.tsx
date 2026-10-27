@@ -32,6 +32,14 @@ function serve(get: Record<string, unknown>, post: Record<string, [number, unkno
   return posts;
 }
 const open = () => renderUi(<ShotVideogen pick={{ kind: "shot", id: "s1" }} m={M} />);
+// Answers the in-page confirm; returns the question it asked.
+const agree = async (): Promise<string> => {
+  const d = await screen.findByRole("dialog");
+  const text = d.textContent ?? "";
+  fireEvent.click(screen.getByRole("button", { name: "Đồng ý" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  return text;
+};
 const create = async () => {
   fireEvent.change(screen.getByRole("textbox", { name: "Mô tả chuyển động" }), { target: { value: "sóng vỗ" } });
   const b = screen.getByRole("button", { name: "Tạo clip AI" });
@@ -99,13 +107,23 @@ describe("shot inspector AI clip section", () => {
     expect((screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).value).toBe("8");
   });
 
-  it("sends one request after the confirm, with the shown version", async () => {
+  it("Huỷ in the confirm sends nothing", async () => {
     const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     open();
     await create();
+    await screen.findByRole("dialog");
+    fireEvent.click(screen.getByRole("button", { name: "Huỷ" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(posts).toHaveLength(0);
+  });
+
+  it("sends one request after the confirm, with the shown version", async () => {
+    const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
+    open();
+    await create();
+    expect(posts).toHaveLength(0);
+    await agree();
     await waitFor(() => expect(posts).toHaveLength(1));
-    expect(confirm).toHaveBeenCalledTimes(1);
     expect(posts[0]).toMatchObject({ path: "/api/videogen/shot", body: { name: "ep", shot: "s1", base: 7, prompt: "sóng vỗ", seconds: 6, model: "veo-lite", mode: "t2v" } });
     expect(posts[0].body).not.toHaveProperty("again");
     expect(posts[0].body).not.toHaveProperty("resolution");
@@ -113,19 +131,20 @@ describe("shot inspector AI clip section", () => {
 
   it("an unknown earlier result needs a second confirm before sending again", async () => {
     const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } }, { "/api/videogen/shot": [[409, { code: "DUPLICATE", id: "vg-old", error: "x" }], [200, { job: { id: "j2" } }]] });
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     open();
     await create();
+    await agree();
+    expect(await agree()).toMatch(/có thể tốn credit lần hai/);
     await waitFor(() => expect(posts).toHaveLength(2));
-    expect(confirm).toHaveBeenCalledTimes(2);
     expect(posts[1].body).toMatchObject({ again: "vg-old" });
   });
 
   it("a clip Flow already made is downloaded, never made again", async () => {
     const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } }, { "/api/videogen/shot": [[409, { code: "RECOVERABLE", id: "vg-made", error: "x" }]] });
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     open();
     await create();
+    await agree();
+    expect(await agree()).toMatch(/Tải về \(miễn phí\)/);
     await waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[1]).toEqual({ path: "/api/videogen/recover", body: { name: "ep", id: "vg-made" } });
     expect(posts.some((p) => "again" in p.body)).toBe(false);
@@ -133,7 +152,6 @@ describe("shot inspector AI clip section", () => {
 
   it("switches between image and video; an image goes to /image with its model and frame", async () => {
     const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     open();
     expect(screen.queryByRole("textbox", { name: "Mô tả ảnh" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Ảnh" }));
@@ -144,6 +162,7 @@ describe("shot inspector AI clip section", () => {
     const b = screen.getByRole("button", { name: "Tạo ảnh AI" });
     await waitFor(() => expect(b).toBeEnabled());
     fireEvent.click(b);
+    expect(await agree()).toMatch(/Tạo một ảnh nano2 1:1/);
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toMatchObject({ path: "/api/videogen/image", body: { prompt: "biển", mode: "t2i", model: "nano2", aspect: "1:1", refs: [] } });
     fireEvent.click(screen.getByRole("button", { name: "Video" }));
@@ -154,11 +173,10 @@ describe("shot inspector AI clip section", () => {
 
   it("after the submit the running item offers Ngừng chờ, with what it still costs", async () => {
     const posts = serve({ "/api/videogen/status": { ...UP, job: { id: "j1", name: "ep" } }, "/api/videogen/items": { items: [item({ id: "r", state: "running", phase: "sent", files: [] })] } });
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     open();
     fireEvent.click(await screen.findByRole("button", { name: "Ngừng chờ lượt AI đang tạo" }));
+    expect(await agree()).toMatch(/vẫn tính credit/);
     await waitFor(() => expect(posts).toHaveLength(1));
-    expect(confirm.mock.calls[0][0]).toMatch(/vẫn tính credit/);
     expect(posts[0]).toEqual({ path: "/api/videogen/cancel", body: { name: "ep" } });
   });
 

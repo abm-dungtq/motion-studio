@@ -9,6 +9,7 @@ import { queryClient, say, type SendResult } from "@/api/client.ts";
 import type { Manifest } from "@/api/types.ts";
 import type { InspectorSectionProps } from "@/ext/registry.ts";
 import { Button, Textarea } from "@/shell/controls.tsx";
+import { makeConfirm } from "@/shell/confirm.tsx";
 import { useStudio } from "@/store/studio.ts";
 import {
   DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL, hhmm, IMAGE_ASPECTS, IMAGE_MODELS, kindOf, pickSeconds, SECONDS, stateLabel, VIDEO_MODELS,
@@ -50,14 +51,17 @@ function blocked(st: VgStatus | undefined, kind: VgKind): string | null {
   return null;
 }
 
+// Its own in-page confirm: window.confirm() is never shown in some hosts and answers "cancel".
+const { ask, ConfirmHost } = makeConfirm();
+
 // The 409 answers of a send: a second confirm for an unknown earlier result, a free download for
 // a clip Flow made.
 async function sendWithGuards(first: SendResult, again: (id: string) => Promise<SendResult>, recover: (id: string) => Promise<SendResult>) {
   if (first.code === "DUPLICATE") {
     const made = first.made ? " Flow có thể đã tạo; tạo lại có thể trả credit lần nữa." : "";
-    if (window.confirm(`Lần trước của đúng yêu cầu này chưa rõ kết quả và có thể đã tốn credit.${made} Vẫn tạo lại (có thể tốn credit lần hai)?`)) fail(await again(String(first.id)));
+    if (await ask(`Lần trước của đúng yêu cầu này chưa rõ kết quả và có thể đã tốn credit.${made} Vẫn tạo lại (có thể tốn credit lần hai)?`)) fail(await again(String(first.id)));
   } else if (first.code === "RECOVERABLE") {
-    if (window.confirm("Flow đã tạo clip của đúng yêu cầu này. Tải về (miễn phí)?")) fail(await recover(String(first.id)));
+    if (await ask("Flow đã tạo clip của đúng yêu cầu này. Tải về (miễn phí)?")) fail(await recover(String(first.id)));
   } else fail(first);
 }
 
@@ -98,6 +102,7 @@ function VgPanel({ name, shot, m }: { name: string; shot: Shot; m: Manifest }) {
       <div hidden={kind !== "image"}><ImageForm name={name} shot={shot} m={m} st={st} images={images} /></div>
       <div hidden={kind !== "video"}><VideoForm name={name} shot={shot} m={m} st={st} images={images} /></div>
       {busyHere && <Running name={name} item={running} />}
+      <ConfirmHost />
       {mine.length > 0 && <Items name={name} m={m} items={mine} busyHere={busyHere} idle={!st?.job} />}
     </section>
   );
@@ -130,7 +135,7 @@ function ImageForm({ name, shot, m, st, images }: FormProps) {
   const why = blocked(st, "image") ?? (!prompt.trim() ? "Nhập mô tả ảnh" : chosen.some((x) => !x) ? "Chọn ảnh mẫu" : null);
   const create = async () => {
     if (!st) return;
-    if (!window.confirm(`Tạo một ảnh ${model} ${aspect} qua Flow? Tài liệu gflow ghi ảnh nano miễn phí theo thực nghiệm nhưng có quota ngày. Hôm nay: ${st.images_today}/${st.image_cap} ảnh.`)) return;
+    if (!(await ask(`Tạo một ảnh ${model} ${aspect} qua Flow? Tài liệu gflow ghi ảnh nano miễn phí theo thực nghiệm nhưng có quota ngày. Hôm nay: ${st.images_today}/${st.image_cap} ảnh.`))) return;
     setSending(true);
     try {
       const body = { name, shot: shot.id, base: m.version, prompt, mode, model, aspect, refs: chosen };
@@ -168,7 +173,7 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
   const why = blocked(st, "video") ?? (!prompt.trim() ? "Nhập mô tả chuyển động" : chosen.some((x) => !x) ? "Chọn đủ ảnh cho kiểu này" : null);
   const create = async () => {
     if (!st) return;
-    if (!window.confirm(`Tạo clip ${seconds}s bằng ${model}${omni ? ` ${resolution}` : ""} qua Flow? Lượt này tốn credit Flow. Hôm nay: ${st.today}/${st.cap} clip.`)) return;
+    if (!(await ask(`Tạo clip ${seconds}s bằng ${model}${omni ? ` ${resolution}` : ""} qua Flow? Lượt này tốn credit Flow. Hôm nay: ${st.today}/${st.cap} clip.`))) return;
     setSending(true);
     try {
       // gflow stops (exit 11) on --resolution for any model but omni-flash: send it for omni only.
@@ -199,15 +204,15 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
 // The run in progress: after the submit, stopping only stops waiting; Flow still makes it.
 function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   const image = item ? kindOf(item) === "image" : false;
-  const stop = (text: string) => { if (window.confirm(text)) void vgCancel(name).then((r) => { fail(r); void refresh(); }); };
+  const stop = async (text: string) => { if (await ask(text)) void vgCancel(name).then((r) => { fail(r); void refresh(); }); };
   return (
     <div className="flex items-center gap-2 text-sm">
       <span>Đang tạo {image ? "ảnh" : "clip"} AI…</span>
       {item?.phase === "sent"
-        ? <Button aria-label="Ngừng chờ lượt AI đang tạo" onClick={() => stop(image
+        ? <Button aria-label="Ngừng chờ lượt AI đang tạo" onClick={() => void stop(image
           ? "Ngừng chờ? Flow vẫn tạo và vẫn tính quota. Ảnh không tải lại được; mở Flow và Nhập file."
           : "Ngừng chờ? Flow vẫn tạo và vẫn tính credit. Tải về miễn phí sau bằng Tải về từ Flow.")}>Ngừng chờ</Button>
-        : <Button aria-label="Huỷ lượt AI đang tạo" onClick={() => stop(item?.phase === "typed"
+        : <Button aria-label="Huỷ lượt AI đang tạo" onClick={() => void stop(item?.phase === "typed"
           ? "Huỷ? Prompt đã điền; nếu Flow kịp nhận lệnh thì vẫn tính credit."
           : "Huỷ lượt đang tạo? Chưa gửi tới Flow nên không tốn credit.")}>Huỷ</Button>}
     </div>
