@@ -250,6 +250,7 @@ test("cancel after the submit: the catalog is checked by itself and finds the cl
   assert.equal(c.status, 200, c.text);
   await waitJob(r.json.job.id);
   const id = (await items()).find((x) => x.prompt_head === "route: ngừng chờ").id;
+  assert.match(getVideogen(id).error, /^ngừng chờ/);
   let rec;
   await until(async () => (rec = (await jobs()).find((j) => j.meta?.action === "reconcile" && j.meta?.id === id)), "reconcile job");
   await waitJob(rec.id);
@@ -272,6 +273,7 @@ test("Studio stopping during a run starts no reconcile; the item waits for one",
   const it = (await items()).find((x) => x.prompt_head === "route: studio tắt");
   assert.equal(it.state, "indeterminate", JSON.stringify(it));
   assert.equal(it.reconcile, true);
+  assert.match(it.error, /^Studio tắt/, "a Studio stop is not worded as the user's Ngừng chờ");
   updateVideogen(it.id, { state: "failed", charge: "none" });
 });
 

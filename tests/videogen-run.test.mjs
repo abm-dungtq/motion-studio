@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ffmpegBin } from "../lib/anime/keying.mjs";
-import { flowProjectOf, getVideogen, ledgerDir, updateVideogen, videogenCount, videogenWafUntil, today } from "../lib/ledger.mjs";
+import { flowProjectOf, getVideogen, ledgerDir, requestVideogenCancel, updateVideogen, videogenCount, videogenWafUntil, today } from "../lib/ledger.mjs";
 import { normalizeSpec } from "../lib/videogen/spec.mjs";
 import { runVideogen } from "../lib/videogen/run.mjs";
 
@@ -46,7 +46,9 @@ const waitDead = async (pid, ms = 6000) => { const t = Date.now(); while (alive(
 const parts = () => readdirSync(join(proj, "assets", "gen", "video")).filter((f) => f.startsWith(".part-"));
 
 // The runner as a job process, stopped with SIGTERM once the fake hangs. Returns its output.
-async function stopped(scenario, a) {
+// byUser: the cancel route's marker is written first, as on Huỷ / Ngừng chờ; without it the stop is
+// Studio stopping.
+async function stopped(scenario, a, { byUser = false } = {}) {
   rmSync(join(fdir, "child.pid"), { force: true });
   const child = spawn(process.execPath, [RUN, "run", JSON.stringify(a)], { env: { ...process.env, FAKE_GFLOW: scenario }, stdio: ["ignore", "pipe", "pipe"] });
   let out = "";
@@ -57,6 +59,7 @@ async function stopped(scenario, a) {
   await new Promise((r) => setTimeout(r, 300));
   const self = Number(readFileSync(join(fdir, "self.pid"), "utf8"));
   const chrome = Number(readFileSync(join(fdir, "child.pid"), "utf8"));
+  if (byUser) requestVideogenCancel(out.match(/INTENT (\S+)/)[1]);
   child.kill("SIGTERM");
   const code = await new Promise((r) => child.on("close", r));
   const line = out.split("\n").reverse().find((l) => l.startsWith("RESULT "));
@@ -184,6 +187,17 @@ test("pre-submit failures are free; WAF blocks; exit 11 after the submit is matc
   assert.ok(calls().slice(before).some((c) => c.argv[0] === "data" && c.argv[1] === "list"));
 });
 
+test("Studio stopping, not the user, is named in the item's error", async () => {
+  const typed = await stopped("hang-after-typed", arg("ca 13: sương"));
+  assert.match(getVideogen(typed.result.id).error, /^Studio tắt sau khi điền prompt/);
+  const sent = await stopped("hang-after-sent-norow", arg("ca 14: tuyết"));
+  assert.match(getVideogen(sent.result.id).error, /^Studio tắt khi Flow đang tạo/);
+  const early = await stopped("hang-before-typed", arg("ca 15: nắng"));
+  assert.deepEqual([getVideogen(early.result.id).state, getVideogen(early.result.id).error], ["cancelled", "Studio tắt trước khi gửi"]);
+  const mine = await stopped("hang-after-typed", arg("ca 16: mưa"), { byUser: true });
+  assert.match(getVideogen(mine.result.id).error, /^huỷ sau khi điền prompt/);
+});
+
 test("stop before the prompt is typed: free cancel, nothing left alive", async () => {
   const s = await stopped("hang-before-typed", arg("ca 9: gió"));
   assert.equal(s.result?.cancelled, true, s.out);
@@ -202,9 +216,9 @@ test("stop after the prompt is typed: unknown, to reconcile", async () => {
 });
 
 test("stop after the submit: reconcile finds the clip, or not", async () => {
-  const s = await stopped("hang-after-sent", arg("ca 11: sao"));
+  const s = await stopped("hang-after-sent", arg("ca 11: sao"), { byUser: true });
   assert.equal(getVideogen(s.result.id).phase, "sent");
-  assert.match(getVideogen(s.result.id).error, /ngừng chờ/);
+  assert.match(getVideogen(s.result.id).error, /^ngừng chờ/);
   assert.ok(await waitDead(s.chrome));
   const r = await runVideogen({ action: "reconcile", id: s.result.id, dir: proj, bin: FAKE, profile: "p1" }, { log: quiet });
   assert.equal(r.state, "made");
