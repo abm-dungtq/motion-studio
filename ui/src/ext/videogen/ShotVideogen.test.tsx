@@ -1,5 +1,5 @@
 import { renderUi, resetAll } from "@/shell/test-utils.tsx";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Manifest } from "@/api/types.ts";
@@ -180,6 +180,16 @@ describe("shot inspector AI clip section", () => {
     expect(posts[0]).toEqual({ path: "/api/videogen/cancel", body: { name: "ep" } });
   });
 
+  it("Huỷ words its question from the item as it is now, not from the last poll", async () => {
+    const run = item({ id: "r", state: "running", phase: "spawned", files: [] });
+    serve({ "/api/videogen/status": { ...UP, job: { id: "j1", name: "ep" } }, "/api/videogen/items": { items: [run] } });
+    open();
+    const b = await screen.findByRole("button", { name: "Huỷ lượt AI đang tạo" });
+    run.phase = "typed"; // typed after the last poll
+    fireEvent.click(b);
+    expect(await agree()).toMatch(/Prompt đã điền/);
+  });
+
   it("lists this shot's clips with what can be done with each", async () => {
     serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [
       item({ id: "a", state: "collected" }),
@@ -214,6 +224,24 @@ describe("shot inspector AI clip section", () => {
     expect(screen.queryByRole("button", { name: "Dùng file tạm: mây" })).toBeNull();
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toEqual({ path: "/api/videogen/import", body: { name: "ep", id: "p", base: M.version, part: true } });
+  });
+
+  it("Nhập file đã tải asks for the path in the page (no window.prompt); Huỷ sends nothing", async () => {
+    const native = vi.spyOn(window, "prompt");
+    const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [item({ id: "q", state: "indeterminate", files: [], prompt_head: "mây" })] } });
+    open();
+    const b = await screen.findByRole("button", { name: "Nhập file đã tải: mây" });
+    fireEvent.click(b);
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Huỷ" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(b);
+    const d = await screen.findByRole("dialog");
+    expect(d.textContent).toMatch(/file mp4 đã tải từ Flow/);
+    fireEvent.change(within(d).getByRole("textbox"), { target: { value: "  /Users/u/Downloads/flow.mp4 " } });
+    fireEvent.click(within(d).getByRole("button", { name: "Đồng ý" }));
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toEqual({ path: "/api/videogen/import", body: { name: "ep", id: "q", base: M.version, path: "/Users/u/Downloads/flow.mp4" } });
+    expect(native).not.toHaveBeenCalled();
   });
 });
 

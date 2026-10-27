@@ -51,8 +51,9 @@ function blocked(st: VgStatus | undefined, kind: VgKind): string | null {
   return null;
 }
 
-// Its own in-page confirm: window.confirm() is never shown in some hosts and answers "cancel".
-const { ask, ConfirmHost } = makeConfirm();
+// Its own in-page confirm and path question: some hosts never show window.confirm() (it answers
+// "cancel") and refuse window.prompt().
+const { ask, askText, ConfirmHost } = makeConfirm();
 
 // The 409 answers of a send: a second confirm for an unknown earlier result, a free download for
 // a clip Flow made.
@@ -202,29 +203,39 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
 }
 
 // The run in progress: after the submit, stopping only stops waiting; Flow still makes it.
+function stopText(image: boolean, phase: VgItem["phase"] | undefined): string {
+  if (phase === "sent") return image
+    ? "Ngừng chờ? Flow vẫn tạo và vẫn tính quota. Ảnh không tải lại được; mở Flow và Nhập file."
+    : "Ngừng chờ? Flow vẫn tạo và vẫn tính credit. Tải về miễn phí sau bằng Tải về từ Flow.";
+  return phase === "typed"
+    ? "Huỷ? Prompt đã điền; nếu Flow kịp nhận lệnh thì vẫn tính credit."
+    : "Huỷ lượt đang tạo? Chưa gửi tới Flow nên không tốn credit.";
+}
 function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   const image = item ? kindOf(item) === "image" : false;
-  const stop = async (text: string) => { if (await ask(text)) void vgCancel(name).then((r) => { fail(r); void refresh(); }); };
+  // The list is polled every 2 s and the prompt may have been typed since: the question is
+  // worded from the item as it is now, so "không tốn credit" is never said after the typing.
+  const stop = async () => {
+    let phase = item?.phase;
+    if (item) { try { phase = (await vgItems(name)).items.find((x) => x.id === item.id)?.phase ?? phase; } catch { /* keep the polled phase */ } }
+    if (await ask(stopText(image, phase))) void vgCancel(name).then((r) => { fail(r); void refresh(); });
+  };
   return (
     <div className="flex items-center gap-2 text-sm">
       <span>Đang tạo {image ? "ảnh" : "clip"} AI…</span>
       {item?.phase === "sent"
-        ? <Button aria-label="Ngừng chờ lượt AI đang tạo" onClick={() => void stop(image
-          ? "Ngừng chờ? Flow vẫn tạo và vẫn tính quota. Ảnh không tải lại được; mở Flow và Nhập file."
-          : "Ngừng chờ? Flow vẫn tạo và vẫn tính credit. Tải về miễn phí sau bằng Tải về từ Flow.")}>Ngừng chờ</Button>
-        : <Button aria-label="Huỷ lượt AI đang tạo" onClick={() => void stop(item?.phase === "typed"
-          ? "Huỷ? Prompt đã điền; nếu Flow kịp nhận lệnh thì vẫn tính credit."
-          : "Huỷ lượt đang tạo? Chưa gửi tới Flow nên không tốn credit.")}>Huỷ</Button>}
+        ? <Button aria-label="Ngừng chờ lượt AI đang tạo" onClick={() => void stop()}>Ngừng chờ</Button>
+        : <Button aria-label="Huỷ lượt AI đang tạo" onClick={() => void stop()}>Huỷ</Button>}
     </div>
   );
 }
 
 function Items({ name, m, items, busyHere, idle }: { name: string; m: Manifest; items: VgItem[]; busyHere: boolean; idle: boolean }) {
   const act = async (p: Promise<SendResult>) => { fail(await p); void refresh(); };
-  const importFile = (it: VgItem) => {
+  const importFile = async (it: VgItem) => {
     const image = kindOf(it) === "image";
-    const path = window.prompt(image ? "Đường dẫn file ảnh (png, jpg, webp) đã lưu từ Flow:" : "Đường dẫn file mp4 đã tải từ Flow:");
-    if (path) void act(vgImport(name, it.id, m.version, path.trim()));
+    const path = await askText(image ? "Đường dẫn file ảnh (png, jpg, webp) đã lưu từ Flow:" : "Đường dẫn file mp4 đã tải từ Flow:");
+    if (path?.trim()) void act(vgImport(name, it.id, m.version, path.trim()));
   };
   return (
     <ul aria-label="Các lần tạo AI" className="m-0 flex list-none flex-col gap-2 p-0">
@@ -250,7 +261,7 @@ function Items({ name, m, items, busyHere, idle }: { name: string; m: Manifest; 
                 {canRecover && <Button aria-label={`Tải về từ Flow: ${it.prompt_head}`} onClick={() => void act(vgRecover(name, it.id))}>Tải về từ Flow</Button>}
                 {canReconcile && <Button aria-label={`Đối chiếu: ${it.prompt_head}`} onClick={() => void act(vgReconcile(name, it.id))}>Đối chiếu</Button>}
                 {canImport && it.part && <Button aria-label={`Dùng file tạm: ${it.prompt_head}`} onClick={() => void act(vgUsePart(name, it.id, m.version))}>Dùng file tạm</Button>}
-                {canImport && <Button aria-label={`Nhập file đã tải: ${it.prompt_head}`} onClick={() => importFile(it)}>Nhập file đã tải</Button>}
+                {canImport && <Button aria-label={`Nhập file đã tải: ${it.prompt_head}`} onClick={() => void importFile(it)}>Nhập file đã tải</Button>}
               </div>
             )}
           </li>
