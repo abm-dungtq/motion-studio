@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ffmpegBin } from "../lib/anime/keying.mjs";
-import { flowProjectOf, getVideogen, ledgerDir, videogenCount, videogenWafUntil, today } from "../lib/ledger.mjs";
+import { flowProjectOf, getVideogen, ledgerDir, updateVideogen, videogenCount, videogenWafUntil, today } from "../lib/ledger.mjs";
 import { normalizeSpec } from "../lib/videogen/spec.mjs";
 import { runVideogen } from "../lib/videogen/run.mjs";
 
@@ -146,12 +146,14 @@ test("exit 6: made with the id from the error, no part file; recover downloads i
   assert.equal(bad.ok, false);
   assert.equal(getVideogen(r.id).state, "made");
   assert.equal(getVideogen(r.id).recover_failed, 1);
+  updateVideogen(r.id, { note: "Flow đã nhận lệnh; bấm Tải về từ Flow" });
   process.env.FAKE_GFLOW = "ok";
   const ok = await runVideogen({ action: "recover", id: r.id, dir: proj, bin: FAKE, profile: "p1" }, { log: quiet });
   assert.equal(ok.ok, true, ok.error);
   assert.equal(ok.rel, `assets/gen/video/s1-${r.id}.mp4`);
   assert.ok(existsSync(join(proj, ok.rel)));
   assert.equal(getVideogen(r.id).state, "collected");
+  assert.equal(getVideogen(r.id).note, null, "the made-state hint is gone once the clip is here");
 });
 
 test("exit 9 after the submit: matched in the catalog or left unknown", async () => {

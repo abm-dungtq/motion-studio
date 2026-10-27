@@ -356,7 +356,7 @@ export const ROUTES = [
       }
       const rec = await writeReceipt(pd.dir, { op: "videogen-import", actor: "human", tool: { name: "gflow" }, inputs: { source: b.part === true ? "file tạm của gflow" : basename(src) }, params: { id: it.id, kind }, outputs: [dest] });
       if (b.part === true) for (const f of partFiles(pd.dir, kind, it.id)) rmSync(f, { force: true });
-      updateVideogen(it.id, { state: "collected", files: [rel], imported: true, receipt: { file: rec.file, pass: rec.pass } });
+      updateVideogen(it.id, { state: "collected", files: [rel], imported: true, receipt: { file: rec.file, pass: rec.pass }, note: null });
       const r = attachNow(c, b.name, pd.dir, getVideogen(it.id), b.base, rel);
       return r.error ? c.send(r.status, { error: r.error }) : r;
     },
