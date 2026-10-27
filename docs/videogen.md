@@ -65,7 +65,7 @@ Studio dừng gflow bằng SIGINT, để gflow tự đóng trình duyệt. Sau v
 
 Khi gflow đã thoát mà trình duyệt nó mở vẫn còn sống, Studio giết trình duyệt ngay, để profile không bị khoá cho lượt sau.
 
-Tắt Studio giữa lúc đang tạo cũng dừng gflow như trên. Lần đó thành "chưa rõ" và Studio không tự đối chiếu; mở lại rồi bấm "Đối chiếu".
+Tắt Studio giữa lúc đang tạo cũng dừng gflow như trên. Lần đó thành "chưa rõ", lỗi ghi "Studio tắt…" để phân biệt với Huỷ hay Ngừng chờ của bạn, và Studio không tự đối chiếu; mở lại rồi bấm "Đối chiếu".
 
 ## Khi kết quả "chưa rõ"
 
@@ -145,7 +145,7 @@ Mã lỗi của các route tạo:
 - Chưa có nối dài clip, nâng độ phân giải, nhân vật hay `components`.
 - Trần ngày chỉ đếm lượt gửi từ Studio, không đếm lượt tạo trên Flow hay script khác.
 - Shot dài hơn độ dài clip chỉ được phủ phần đầu; nên tách shot.
-- Chưa chạy thật với tài khoản: mọi kiểm thử dùng một `gflow` giả (`tests/fake-gflow.mjs`) mô phỏng log, mã thoát và JSON của bản 0.90.
+- Bộ kiểm thử dùng một `gflow` giả (`tests/fake-gflow.mjs`) mô phỏng log, mã thoát và JSON của bản 0.90. Đã chạy thật một lần với gflow 0.90.0 (27/10/2026): ảnh nano2, một lượt huỷ, clip veo-lite 4 s từ ảnh đầu rồi Tải về từ Flow. Clip veo-lite về 1280x720 dù dự án 1920x1080; Studio không phóng to.
 
 ## Nguồn
 
