@@ -119,7 +119,7 @@ Chuyển cảnh nằm sẵn trong hình của các shot nó vắt qua, nên gi�
 
 ## Thư viện mẫu
 
-Tab Thư viện mẫu có bốn mục: video mẫu, cảnh mẫu, phong cách và prompt mẫu. Tìm được bằng tiếng Việt có dấu hay không dấu, hoặc bằng tiếng Anh. Chưa mở dự án vẫn xem và chép prompt được; khi đã mở dự án, nút "Dùng cho dự án" gửi mẫu kèm phần giải thích cho đạo diễn.
+Tab Thư viện mẫu có bốn mục: video mẫu, cảnh mẫu, phong cách và prompt mẫu. Tìm được bằng tiếng Việt có dấu hay không dấu, hoặc bằng tiếng Anh. Chưa mở dự án vẫn xem và chép prompt được; khi đã mở dự án, nút "Dùng cho dự án" gửi mẫu kèm phần giải thích cho đạo diễn. Mục prompt mẫu mở đầu bằng hai khung của Studio: khung prompt sáu phần, và khung đạo diễn [Lemo-Opuscar](https://lemomo-ai.github.io/lemo-opuscar/) (treatment, khung tĩnh, lưới nhạc, vòng duyệt) để dùng cùng một phong cách ở tab Phong cách, hợp với chế độ Mẫu nhanh của nút Dự án mới.
 
 Ảnh bìa không nằm trong repo. Tải một lần (khoảng 25 MB) về `~/.cache/motion-studio/library/thumbs`:
 

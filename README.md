@@ -119,7 +119,7 @@ Transitions are baked into the shots they span, so keeping shot order and length
 
 ## Reference library
 
-The Library tab has four sections, searchable in Vietnamese with or without diacritics, or in English: sample videos, scene techniques, styles and prompt templates. You can browse and copy prompts without opening a project; inside a project, "Dùng cho dự án" (Use for this project) sends the sample to the director with its notes.
+The Library tab has four sections, searchable in Vietnamese with or without diacritics, or in English: sample videos, scene techniques, styles and prompt templates. You can browse and copy prompts without opening a project; inside a project, "Dùng cho dự án" (Use for this project) sends the sample to the director with its notes. The prompt templates open with Studio's own two: a six-part prompt frame, and the [Lemo-Opuscar](https://lemomo-ai.github.io/lemo-opuscar/) directing frame (treatment, style frames, music grid, review loop) to pair with a style from the Styles tab, a good fit for the "Mẫu nhanh" (quick template) mode of New project.
 
 Cover images are not in the repository. Download them once (about 25 MB) to `~/.cache/motion-studio/library/thumbs`:
 
