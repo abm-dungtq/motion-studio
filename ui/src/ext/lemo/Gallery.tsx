@@ -11,6 +11,7 @@ import { Fail, Loading } from "@/shell/states.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { DEBOUNCE_MS, fetchLibrary, safeUrl, useGalleryStyles, useLemo, type LemoCredit, type LemoStyles } from "./store.ts";
 import { StyleCard } from "./StyleCard.tsx";
+import { tabConfirm } from "./confirm.tsx";
 
 export const SELECT = "h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50";
 
@@ -150,6 +151,7 @@ export function Gallery() {
     <div className="flex flex-col gap-2.5" data-testid="lemo-gallery">
       {body}
       <GuideDialog />
+      <tabConfirm.ConfirmHost />
     </div>
   );
 }

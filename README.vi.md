@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-339933.svg)
 ![Runs locally](https://img.shields.io/badge/runs-127.0.0.1%20only-555.svg)
-![Tests](https://img.shields.io/badge/tests-777%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-850%20passing-brightgreen.svg)
 
 ![Motion Studio: đạo diễn hỏi bạn chọn hướng, timeline hiện shot, lồng tiếng, nhạc và SFX](plans/261023-1018-react-ui-rewrite/screens/1440-director.jpg)
 
@@ -163,7 +163,7 @@ Thêm tính năng bằng cách thêm file, không sửa `server.mjs` hay khung g
 - `lib/quality/*.mjs`: bài kiểm chạy trên mọi file Studio tạo ra; kết quả nằm trong `<dự án>/.opus/receipts/`.
 - `lib/agents/cli/*.mjs`: agent CLI trên máy (claude, codex, codex-pool, agy, gemini, cursor-agent, opencode) để viết chữ, đọc ảnh và sinh ảnh.
 
-Ví dụ chạy được: [docs/extensions.md](docs/extensions.md). Agent và thứ tự thử: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Biên nhận và ngưỡng kiểm chất lượng: [docs/receipts.md](docs/receipts.md).
+Ví dụ chạy được: [docs/extensions.md](docs/extensions.md). Agent và thứ tự thử: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Biên nhận và ngưỡng kiểm chất lượng: [docs/receipts.md](docs/receipts.md). Ảnh và clip AI cho shot qua gflow-cli (Google Flow): [docs/videogen.md](docs/videogen.md).
 
 </details>
 

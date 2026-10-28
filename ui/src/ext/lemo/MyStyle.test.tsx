@@ -1,4 +1,4 @@
-import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { answerConfirm, mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +8,7 @@ import { useStudio } from "@/store/studio.ts";
 import { MANIFEST, NAME, PROJECTS, stylesRoute } from "./fixtures.ts";
 import { MyStyle } from "./MyStyle.tsx";
 import { useLemo } from "./store.ts";
+import { tabConfirm } from "./confirm.tsx";
 
 vi.mock("@/api/client.ts", async (orig) => ({ ...(await orig<typeof import("@/api/client.ts")>()), say: vi.fn() }));
 // The write functions are mocked: "Giữ phong cách" never reaches a server, so nothing is copied
@@ -26,7 +27,8 @@ const DRAFT = {
 function setup(over: Parameters<typeof stylesRoute>[0] = {}, name: string | null = NAME) {
   mockFetch({ "/api/projects": PROJECTS, "/api/project": MANIFEST, "/api/lemo/styles": stylesRoute({ my_dir: MY_DIR, ...over }) });
   useStudio.setState({ name });
-  renderUi(<MyStyle />);
+  // The tab's confirm host is mounted by Gallery, which the "Phong cách" tab always shows with this section.
+  renderUi(<><MyStyle /><tabConfirm.ConfirmHost /></>);
 }
 
 beforeEach(() => {
@@ -62,10 +64,9 @@ describe("MyStyle", () => {
     expect(screen.getByTestId("lemo-changes").textContent).toBe(DRAFT.changes);
     expect(screen.getByTestId("lemo-changes").children).toHaveLength(0);
     expect(screen.getByText("Tạo bản nháp khác")).toBeInTheDocument();
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(lemoKeep).mockResolvedValue({ status: 200, data: { ok: true, dir: `${MY_DIR}/my-ink`, frame: "styleframe.jpg" } });
     await userEvent.click(screen.getByRole("button", { name: "Giữ phong cách" }));
-    expect(confirm).toHaveBeenCalledWith(`Giữ "My Ink" vào ${MY_DIR}/my-ink/? Thư mục đã có thì không ghi đè.`);
+    expect(await answerConfirm(true)).toBe(`Giữ "My Ink" vào ${MY_DIR}/my-ink/? Thư mục đã có thì không ghi đè.`);
     expect(lemoKeep).toHaveBeenCalledTimes(1);
     expect(lemoKeep).toHaveBeenCalledWith({ name: NAME });
     await waitFor(() => expect(say).toHaveBeenCalledWith(`Đã giữ phong cách ở ${MY_DIR}/my-ink`));

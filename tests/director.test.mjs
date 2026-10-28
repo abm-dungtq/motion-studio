@@ -7,7 +7,7 @@ import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { createServer } from "../server.mjs";
 import { loadProvider } from "../lib/provider.mjs";
-import { buildPrompt } from "../director.mjs";
+import { buildPrompt, childEnv, claudeArgs } from "../director.mjs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
 const P = await loadProvider();
@@ -161,6 +161,22 @@ test("deny rules: the plugin is not editable and no `..` follows scripts/", () =
   assert.deepEqual(DENIED_TOOLS.slice(0, 2), ["WebFetch", "WebSearch"]);
   assert.ok(DENIED_TOOLS.includes(`Edit(/${ov}/**)`) && DENIED_TOOLS.includes(`Write(/${ov}/**)`), "absolute path rules start with //");
   assert.ok(DENIED_TOOLS.includes(`Bash(node ${ov}/scripts/*../*)`));
+});
+
+test("the director cannot run gflow: denied in argv, and its env points gflow at an empty home", () => {
+  const argv = claudeArgs(P, "x", null);
+  const i = argv.indexOf("--disallowedTools");
+  assert.ok(i > 0 && argv.slice(i).includes("Bash(*gflow*)"));
+  const saved = { p: process.env.GFLOW_CLI_PROFILE, j: process.env.GFLOW_CLI_PROJECT };
+  Object.assign(process.env, { GFLOW_CLI_PROFILE: "p1", GFLOW_CLI_PROJECT: "proj" });
+  try {
+    const env = childEnv(P, { id: "r-1" });
+    assert.match(env.GFLOW_CLI_HOME, /gflow-empty$/);
+    assert.equal(env.GFLOW_CLI_PROFILE, undefined);
+    assert.equal(env.GFLOW_CLI_PROJECT, undefined);
+  } finally {
+    for (const [k, v] of [["GFLOW_CLI_PROFILE", saved.p], ["GFLOW_CLI_PROJECT", saved.j]]) if (v === undefined) delete process.env[k]; else process.env[k] = v;
+  }
 });
 
 test("the gates are the user's: DEMO.md, BRIEF.md and make-pitch choose are denied; studio_ask is allowed", () => {

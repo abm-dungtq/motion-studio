@@ -24,7 +24,7 @@
 // turns this off.
 import { mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { readState, runnerSetting } from "./lib/config.mjs";
+import { readState, runnerSetting, stateFile } from "./lib/config.mjs";
 import { loadTools } from "./lib/tools.mjs";
 import { seriesFor } from "./lib/series.mjs";
 import { SERVER_NAME, serverArgs, toolsForProfile } from "./mcp/studio-mcp.mjs";
@@ -126,10 +126,14 @@ export function buildPrompt(p, dir, req) {
   ].filter((x) => x !== "").join("\n");
 }
 
+// Denied to every director: AI images and clips cost Flow credits and go only through Studio's
+// videogen routes, after the user's confirm (docs/videogen.md).
+export const STUDIO_DENIED = ["Bash(*gflow*)"];
+
 // mcp: studioMcp() of this request, or null. extraDenied: more denied tools (voiceDenied).
 export function claudeArgs(p, prompt, sid, mcp = null, extraDenied = []) {
   return ["-p", prompt, "--output-format", "stream-json", "--verbose", "--permission-mode", "acceptEdits",
-    "--allowedTools", ...p.director.allowedTools, ...(mcp?.tools ?? []), "--disallowedTools", ...p.director.deniedTools, ...extraDenied,
+    "--allowedTools", ...p.director.allowedTools, ...(mcp?.tools ?? []), "--disallowedTools", ...p.director.deniedTools, ...STUDIO_DENIED, ...extraDenied,
     ...(mcp ? ["--mcp-config", mcp.file] : []),
     ...(sid ? ["--resume", sid] : [])];
 }
@@ -156,10 +160,19 @@ export function reader(p, dir, state, studio = []) {
   };
 }
 
-const childEnv = (p, req) => {
+// The director's env. gflow, if the director reached it anyway, sees an empty home: no profile,
+// so it stops before opening a browser.
+export const gflowEmptyHome = (source = process.env) => join(dirname(stateFile(source)), "gflow-empty");
+export const childEnv = (p, req) => {
   const env = p.director.childEnv(req, process.env);
   delete env.CLAUDECODE;
   delete env.CLAUDE_CODE_ENTRYPOINT;
+  delete env.GFLOW_CLI_PROFILE;
+  delete env.GFLOW_CLI_PROJECT;
+  const home = gflowEmptyHome();
+  mkdirSync(home, { recursive: true, mode: 0o700 });
+  env.GFLOW_CLI_HOME = home;
+  env.GFLOW_CLI_UPDATE_CHECK = "0";
   return env;
 };
 

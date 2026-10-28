@@ -7,6 +7,7 @@ import { Button } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { SELECT } from "./Gallery.tsx";
 import { applyStyle, modeText, useAllStyles, useLemo } from "./store.ts";
+import { shotConfirm } from "./confirm.tsx";
 
 export function ShotStyle({ pick, m }: InspectorSectionProps) {
   const name = useStudio((s) => s.name);
@@ -29,7 +30,7 @@ export function ShotStyle({ pick, m }: InspectorSectionProps) {
   const apply = () => {
     const [source, slug] = (sel.current?.value ?? "").split(":");
     const style = rows.find((r) => r.slug === slug && r.source === source);
-    if (style) void applyStyle({ name, hasManifest: Boolean(m), style, mode: style.layer ? "layer" : "grammar", shot });
+    if (style) void applyStyle({ name, hasManifest: Boolean(m), style, mode: style.layer ? "layer" : "grammar", shot, ask: shotConfirm.ask });
   };
 
   return (
@@ -47,6 +48,7 @@ export function ShotStyle({ pick, m }: InspectorSectionProps) {
           </div>
         ) : <p className="m-0 mt-2 text-sm text-muted-foreground">Chưa có phong cách nào: mở tab Phong cách và tải thư viện.</p>}
       </details>
+      <shotConfirm.ConfirmHost />
     </div>
   );
 }

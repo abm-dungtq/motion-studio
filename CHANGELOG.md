@@ -1,5 +1,9 @@
 # Changelog
 
+## Chưa phát hành
+
+- Ảnh và clip AI cho shot qua gflow-cli (Google Flow): Studio chạy `gflow` cho một ảnh (nano) hoặc một clip (Veo, Omni Flash), theo dõi log để biết lệnh đã gửi chưa, đối chiếu danh mục gflow khi kết quả chưa rõ, tải lại clip đã tạo mà không tốn credit. Sổ ghi ngoài dự án, mỗi yêu cầu chỉ chạy một lần, trần ảnh và clip mỗi ngày riêng, chặn 45 phút khi Flow báo gửi quá nhiều, gắn vào shot có Undo. Mục "AI (Google Flow)" trong inspector của shot (Ảnh | Video), dòng gflow trong chip agent, route `/api/videogen/*`, biên nhận `videogen`, `videogen-recover`, `videogen-import`, khoá `videogen` trong `studio.json`. Đạo diễn bị chặn chạy gflow. Xem `docs/videogen.md`.
+
 ## v2.0.0 (2026-10-25): giao diện React, series, bàn chất liệu, xuất NLE
 
 - Giao nộp tập của series vào thư mục `delivery_dir` (`{N}` là `episode:` của `BRIEF.md`), không bao giờ ghi đè (khác sha thì thêm `-2`, `-3`): tiêu đề và mô tả có mốc chương, kiểm bằng check-platform và lint viet-pro; phụ đề SRT từ words.json cùng `CAPTIONS.md` qua cổng viet-pro delivery; bản youtube, facebook, tiktok từ video final; thumbnail 3 ảnh sau thẻ đồng ý Codex rồi người dùng chọn một. Tải thư mục giao nộp lên Drive bằng gws sau thẻ đồng ý `drive` (kiểm tài khoản trước, so kích thước sau, `dry_run` dùng `--dry-run` của gws). Route `/api/delivery*`, tool `deliver_text`, `deliver_captions`, `deliver_export`, `deliver_thumbnail`, `delivery_status`, `drive_upload`; biên nhận `deliver-*`, `drive-upload`. Bảng "Giao nộp" trong hộp thoại Xuất bản. Biến `MOTION_STUDIO_GWS`. Xem `docs/series.md`.

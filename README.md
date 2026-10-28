@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-339933.svg)
 ![Runs locally](https://img.shields.io/badge/runs-127.0.0.1%20only-555.svg)
-![Tests](https://img.shields.io/badge/tests-777%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-850%20passing-brightgreen.svg)
 
 ![Motion Studio: the director asks you to pick a direction while the timeline shows shots, voice, music and SFX](plans/261023-1018-react-ui-rewrite/screens/1440-director.jpg)
 
@@ -163,7 +163,7 @@ Add a feature by adding a file, without touching `server.mjs` or the shell in `u
 - `lib/quality/*.mjs`: checks that run on every file Studio produces; results land in `<project>/.opus/receipts/`.
 - `lib/agents/cli/*.mjs`: local agent CLIs (claude, codex, codex-pool, agy, gemini, cursor-agent, opencode) for writing, reading images and generating images.
 
-Working examples: [docs/extensions.md](docs/extensions.md). Agents and fallback order: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Receipts and quality thresholds: [docs/receipts.md](docs/receipts.md).
+Working examples: [docs/extensions.md](docs/extensions.md). Agents and fallback order: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Receipts and quality thresholds: [docs/receipts.md](docs/receipts.md). AI images and clips per shot through gflow-cli (Google Flow): [docs/videogen.md](docs/videogen.md).
 
 </details>
 

@@ -5,6 +5,7 @@
 import { Button } from "@/shell/controls.tsx";
 import { cn } from "@/lib/utils";
 import { applyStyle, modeText, safeUrl, showGuide, useLemo, type LemoProject, type LemoStyle } from "./store.ts";
+import { tabConfirm } from "./confirm.tsx";
 
 // Short warnings a card shows before its apply button.
 export function cautions(style: LemoStyle, project: LemoProject | null | undefined): string[] {
@@ -46,7 +47,7 @@ export function StyleCard({ style, project, name, hasManifest }: { style: LemoSt
           variant="primary"
           disabled={!hasManifest || busy}
           title={hasManifest ? "" : "Mở một dự án có project.json trước"}
-          onClick={() => { void applyStyle({ name, hasManifest, style, mode }); }}
+          onClick={() => { void applyStyle({ name, hasManifest, style, mode, ask: tabConfirm.ask }); }}
         >
           Áp cho dự án
         </Button>

@@ -1,4 +1,4 @@
-import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { answerConfirm, mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -54,11 +54,10 @@ describe("ShotStyle", () => {
     expect(await screen.findByText("Dự án chưa áp phong cách code nào.")).toBeInTheDocument();
     await userEvent.click(screen.getByText("Áp phong cách cho shot này"));
     await userEvent.selectOptions(screen.getByLabelText("Phong cách cho shot này"), "library:news-desk");
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(lemoApply).mockResolvedValue({ status: 200, data: { runner: "mcp" } });
     await waitFor(() => expect(screen.getByRole("button", { name: "Áp" })).toBeEnabled());
     await userEvent.click(screen.getByRole("button", { name: "Áp" }));
-    expect(confirm).toHaveBeenCalledWith('Áp "Bàn tin tức" cho shot s2: nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)?');
+    expect(await answerConfirm(true)).toBe('Áp "Bàn tin tức" cho shot s2: nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)?');
     expect(lemoApply).toHaveBeenCalledWith({ name: NAME, slug: "news-desk", source: "library", mode: "grammar", shot: "s2" });
   });
 

@@ -136,18 +136,19 @@ export async function fetchLibrary(): Promise<void> {
 
 // POST /api/lemo/apply, with the follow-ups the answer asks for: replace an existing layer, or
 // ask the director to insert the markers first (lemo-gallery.js:52-73).
-export async function applyStyle({ name, hasManifest, style, mode, shot = null }: { name: string | null; hasManifest: boolean; style: LemoStyle; mode: StyleMode; shot?: string | null }): Promise<void> {
+// ask: the in-page confirm of the caller (lemo/confirm.tsx).
+export async function applyStyle({ name, hasManifest, style, mode, shot = null, ask }: { name: string | null; hasManifest: boolean; style: LemoStyle; mode: StyleMode; shot?: string | null; ask: (text: string) => Promise<boolean> }): Promise<void> {
   if (!name || !hasManifest) { say("Mở một dự án trước", true); return; }
   const where = shot ? `shot ${shot}` : "cả dự án";
   const how = mode === "layer" ? "thêm lớp canvas (sửa index.html, ghi lemo_style vào BRIEF.md)" : "nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)";
-  if (!window.confirm(`Áp "${style.ten}" cho ${where}: ${how}?`)) return;
+  if (!(await ask(`Áp "${style.ten}" cho ${where}: ${how}?`))) return;
   const body = { name, slug: style.slug, source: style.source, mode, shot };
   useLemo.setState({ busy: true });
   try {
     let r = await lemoApply(body);
-    if (r.data?.code === "exists" && window.confirm("Dự án đã có một lớp canvas. Thay lớp cũ bằng phong cách này? (scene đã viết được giữ)")) r = await lemoApply({ ...body, replace: true });
+    if (r.data?.code === "exists" && await ask("Dự án đã có một lớp canvas. Thay lớp cũ bằng phong cách này? (scene đã viết được giữ)")) r = await lemoApply({ ...body, replace: true });
     else if (r.data?.code === "markers") {
-      if (window.confirm("index.html thiếu bốn dấu của lớp canvas. Nhờ đạo diễn chèn dấu? Xong thì bấm áp lại.")) {
+      if (await ask("index.html thiếu bốn dấu của lớp canvas. Nhờ đạo diễn chèn dấu? Xong thì bấm áp lại.")) {
         const m = await lemoApply({ ...body, mode: "markers" });
         say(m.status === 200 ? "Đã gửi yêu cầu chèn dấu cho đạo diễn" : (m.error ?? `Lỗi ${m.status}`), m.status !== 200);
       }

@@ -57,10 +57,10 @@ function segments(c, prefix) {
 }
 
 // Exit code of the provider's gateway → HTTP status (as server.mjs answers /api/patch).
-const gatewayStatus = (EXIT, code) => ({ [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.invalid]: 422, [EXIT.busy]: 503, [EXIT.usage]: 400 }[code] ?? 500);
+export const gatewayStatus = (EXIT, code) => ({ [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.invalid]: 422, [EXIT.busy]: 503, [EXIT.usage]: 400 }[code] ?? 500);
 
 // Queues a shot request and starts the director unless one is running or the runner is mcp.
-function askDirector(c, name, dir, { target, t, base, text }) {
+export function askDirector(c, name, dir, { target, t, base, text }) {
   const request = c.P.requests.enqueue(dir, { scope: "shot", target, t, base, text });
   const runner = runnerSetting();
   if (runner === "mcp") return { request, runner, job: null, message: "Đang chờ phiên Claude Code mở nhận việc (studio_request_next)" };
