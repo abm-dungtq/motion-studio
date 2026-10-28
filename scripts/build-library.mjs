@@ -163,6 +163,7 @@ function sourcesMd(lib) {
   return `# Nguồn của thư viện mẫu\n\n| Repo | Commit | Giấy phép |\n|---|---|---|\n${rows}\n\n`
     + "Video, ảnh và prompt thuộc về tác giả gốc; mỗi mẫu ghi tên tác giả và link bài gốc. Thư viện chỉ trích prompt kèm nguồn và không phân phối lại video. Ảnh bìa được tải về máy người dùng (`scripts/library-thumbs.mjs`), không nằm trong repo.\n\n"
     + "Phần tiếng Việt trong `library/vi/` do Motion Studio viết.\n\n"
+    + "Khung `lemo-opuscar` trong `library/vi/prompts.json` viết lại theo `DIRECTOR.md` của https://github.com/lemomo-ai/lemo-opuscar (commit 413a6bd, MIT; phim mẫu CC BY 4.0, ghi công LemoLab). Trang gốc: https://lemomo-ai.github.io/lemo-opuscar/\n\n"
     + "Dựng lại: clone từng repo vào một thư mục trống với tên `owner_repo`, checkout đúng commit, rồi chạy `node scripts/build-library.mjs --src <thư mục>`.\n";
 }
 

@@ -75,7 +75,7 @@ function fixture() {
     ],
     styles: [{ id: "pixel", en: "Pixel art", recipe: "Style: pixel art.", vi: { name: "Pixel", what: "Điểm ảnh to" }, examples: ["2"] }],
     techniques: [{ id: "chu-dong", name: "Chữ động", what: "Chữ chạy theo nhịp", tags: ["kinetic-type"], examples: ["2"] }],
-    prompts: [{ id: "1", title: "Prompt ra mắt", structure: "s" }, { id: "khung-prompt", title: "Khung prompt", template: "<inputs>[...]</inputs>" }],
+    prompts: [{ id: "1", title: "Prompt ra mắt", structure: "s" }, { id: "khung-prompt", title: "Khung prompt", template: "<inputs>[...]</inputs>" }, { id: "lemo-opuscar", title: "Khung Lemo-Opuscar", author: "lemomo-ai", url: "https://lemomo-ai.github.io/lemo-opuscar/", template: "<style>" }],
     toolkit: { workflow: [{ title: "Chọn mẫu", text: "t" }] },
   };
   writeFileSync(join(dir, "library.json"), JSON.stringify(lib));
@@ -117,7 +117,8 @@ test("query merges the provider's scene directions and style profiles into scene
     assert.deepEqual(styles.items.map((s) => [s.id, s.name]), [["pixel", "Pixel"], ["neon-cyberpunk", "Đêm neon"]]);
     assert.deepEqual(query({ kind: "styles", q: "cyberpunk" }, opts).items.map((s) => s.id), ["neon-cyberpunk"]);
     const prompts = query({ kind: "prompts" }, opts);
-    assert.deepEqual(prompts.items.map((p) => [p.id, p.prompt]), [["1", "Make a launch film"], ["khung-prompt", "<inputs>[...]</inputs>"]]);
+    assert.deepEqual(prompts.items.map((p) => [p.id, p.prompt]), [["1", "Make a launch film"], ["khung-prompt", "<inputs>[...]</inputs>"], ["lemo-opuscar", "<style>"]]);
+    assert.deepEqual([prompts.items[2].author, prompts.items[2].url], ["lemomo-ai", "https://lemomo-ai.github.io/lemo-opuscar/"], "a template of its own keeps its credit");
     assert.equal(prompts.toolkit.workflow[0].title, "Chọn mẫu");
     assert.equal(query({ kind: "prompts", offset: 1 }, opts).toolkit, undefined);
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -161,4 +162,16 @@ test("library-thumbs downloads missing covers once, trying the next URL when one
     assert.equal(await fetchThumbs([], { log: () => {}, fetchFn, file: join(dir, "none.json"), dir: out }), 1);
     assert.equal(existsSync(join(out, ".1.part")), false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("library.json lists the Lemo-Opuscar template among Studio's own, with its source", () => {
+  const { items } = query({ kind: "prompts", q: "lemo opuscar" });
+  const t = items.find((p) => p.id === "lemo-opuscar");
+  assert.ok(t, "lemo-opuscar is in the Prompt mẫu section");
+  assert.match(t.prompt, /^<style>/);
+  assert.equal(t.url, "https://lemomo-ai.github.io/lemo-opuscar/");
+  assert.equal(t.credit.repo, "lemomo-ai/lemo-opuscar");
+  assert.match(t.credit.license, /MIT/);
+  const own = query({ kind: "prompts", limit: 100 }).items.filter((p) => !/^\d+$/.test(p.id)).map((p) => p.id);
+  assert.deepEqual(own, ["khung-prompt", "lemo-opuscar"], "Studio's own templates come first");
 });

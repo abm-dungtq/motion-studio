@@ -66,6 +66,10 @@ Khung phong cách là `styleframe.jpg` nếu có; không thì `styleframe.png`, 
 
 Studio chép vào một thư mục tạm cạnh đích rồi đổi tên, nên không bao giờ ghi vào một thư mục đã có. Phong cách riêng hiện ở đầu tab, mục **Của bạn**, và áp theo ngữ pháp. Studio không tự xoá thứ gì trong `~/lemo-my-styles/`.
 
+## Khung đạo diễn trong Thư viện mẫu
+
+Mục **Prompt mẫu** của tab Thư viện mẫu có khung `lemo-opuscar`, viết lại bằng tiếng Việt theo `DIRECTOR.md` của lemo-opuscar (commit `413a6bd`): đọc `STYLE.md`, hỏi một lần, chọn tác phẩm tham chiếu, viết `TREATMENT.md` trước khi xem phim mẫu, ba khung tĩnh, khoá lưới nhạc, một vòng sửa, và luật bốn trong sáu điểm phải khác phim mẫu. Khung nằm ở `library/vi/prompts.json`, có `author`, `url` và `credit` (repo, commit, giấy phép). Dùng nó cùng một phong cách ở tab này, nhất là khi tạo dự án ở chế độ Mẫu nhanh.
+
 ## Cho đạo diễn và client MCP
 
 Hai tool chỉ đọc nằm trong [`lib/tools/lemo.mjs`](../lib/tools/lemo.mjs):
