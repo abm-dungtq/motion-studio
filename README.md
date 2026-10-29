@@ -163,7 +163,7 @@ Add a feature by adding a file, without touching `server.mjs` or the shell in `u
 - `lib/quality/*.mjs`: checks that run on every file Studio produces; results land in `<project>/.opus/receipts/`.
 - `lib/agents/cli/*.mjs`: local agent CLIs (claude, codex, codex-pool, agy, gemini, cursor-agent, opencode) for writing, reading images and generating images.
 
-Working examples: [docs/extensions.md](docs/extensions.md). Agents and fallback order: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Receipts and quality thresholds: [docs/receipts.md](docs/receipts.md). AI images and clips per shot through gflow-cli (Google Flow): [docs/videogen.md](docs/videogen.md).
+Working examples: [docs/extensions.md](docs/extensions.md). Agents and fallback order: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Receipts and quality thresholds: [docs/receipts.md](docs/receipts.md). AI images and clips per shot through gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
 
 </details>
 

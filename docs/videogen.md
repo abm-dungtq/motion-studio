@@ -1,11 +1,12 @@
-# Ảnh và clip AI cho shot qua gflow-cli
+# Ảnh và clip AI cho shot qua gflow-studio
 
-Studio tạo một ảnh hoặc một clip AI cho một shot bằng [gflow-cli](https://github.com/ffroliva/gflow-cli) (lệnh `gflow`). gflow điều khiển Google Flow bằng trình duyệt, dùng tài khoản Google đã đăng nhập sẵn trong gflow. Studio chạy `gflow` như một tiến trình con, chờ nó xong rồi xử lý file. Ảnh vào `assets/gen/image/`, clip vào `assets/gen/video/`. Sau đó file được gắn vào shot thành một phiên bản mới, Undo được. Với clip, đạo diễn nhận thêm một yêu cầu đặt clip vào timeline, tắt tiếng.
+Studio tạo một ảnh hoặc một clip AI cho một shot bằng [gflow-studio](https://github.com/abm-dungtq/gflow-studio), bản gflow-cli của abm-dungtq (lệnh `gflow`). gflow điều khiển Google Flow bằng trình duyệt, dùng tài khoản Google đã đăng nhập sẵn trong gflow. Studio chạy `gflow` như một tiến trình con, chờ nó xong rồi xử lý file. Ảnh vào `assets/gen/image/`, clip vào `assets/gen/video/`. Sau đó file được gắn vào shot thành một phiên bản mới, Undo được. Với clip, đạo diễn nhận thêm một yêu cầu đặt clip vào timeline, tắt tiếng.
 
 Mỗi clip tốn credit Flow. Theo tài liệu gflow, ảnh nano miễn phí theo thực nghiệm nhưng có quota ngày. Studio chỉ gửi khi bạn bấm nút và xác nhận. Prompt và ảnh tham chiếu rời khỏi máy và đi lên Google Flow.
 
 ## Cần gì
 
+- Cài gflow từ gflow-studio: `uv tool install "git+https://github.com/abm-dungtq/gflow-studio.git@main"`, rồi `uvx --from "git+https://github.com/abm-dungtq/gflow-studio.git@main" playwright install chromium`.
 - `gflow` bản 0.90 hoặc 0.91 (chạy thật với 0.90.0; 0.91.0 mới đối chiếu changelog và mã thoát), mặc định ở `~/.local/bin/gflow`. Bản khác vẫn chạy, nhưng chip agent ghi "chưa kiểm với Studio". Khi đó Studio không tin mã thoát mà luôn đối chiếu danh mục trước khi kết luận.
 - Đã chạy `gflow auth login` một lần cho profile sẽ dùng.
 - Một profile gflow: đặt `videogen.profile`, hoặc để trống thì Studio dùng profile mặc định của gflow.
@@ -149,4 +150,4 @@ Mã lỗi của các route tạo:
 
 ## Nguồn
 
-[ffroliva/gflow-cli](https://github.com/ffroliva/gflow-cli): USAGE.md (mã thoát, biến môi trường) và mã nguồn bản 0.90, 0.91.
+[abm-dungtq/gflow-studio](https://github.com/abm-dungtq/gflow-studio), bản fork của [ffroliva/gflow-cli](https://github.com/ffroliva/gflow-cli): USAGE.md (mã thoát, biến môi trường) và mã nguồn bản 0.90, 0.91.
