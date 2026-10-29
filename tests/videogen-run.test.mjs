@@ -248,7 +248,7 @@ test("a browser gflow leaves alive after SIGINT is killed before the runner exit
 });
 
 test("an untested gflow: a stop before the prompt is seen typed is still unknown", async () => {
-  process.env.FAKE_GFLOW_VERSION = "0.91.0";
+  process.env.FAKE_GFLOW_VERSION = "0.89.1";
   try {
     const s = await stopped("hang-before-typed", arg("ca 17: gió"));
     assert.ok(s.result, s.out);

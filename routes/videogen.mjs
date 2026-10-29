@@ -29,7 +29,7 @@ import {
   videogenCancelRequested, videogenCount, videogenItems, videogenWafUntil,
 } from "../lib/ledger.mjs";
 import { normalizeSpec, specDigest } from "../lib/videogen/spec.mjs";
-import { GFLOW_TESTED, authStatus, defaultProfile, gflowVersion, partFiles } from "../lib/videogen/gflow.mjs";
+import { authStatus, defaultProfile, gflowTested, gflowVersion, partFiles } from "../lib/videogen/gflow.mjs";
 import { attachAsset } from "../lib/attach.mjs";
 import { writeReceipt } from "../lib/receipts.mjs";
 import { askDirector, gatewayStatus } from "./fx.mjs";
@@ -249,7 +249,7 @@ export const ROUTES = [
       const { found, version } = binInfo(v.gflow_bin);
       const profile = found ? await profileOf(v) : null;
       return {
-        bin: tilde(v.gflow_bin), found, version, tested: Boolean(version?.startsWith(GFLOW_TESTED)), profile,
+        bin: tilde(v.gflow_bin), found, version, tested: Boolean(version) && gflowTested(version), profile,
         today: videogenCount(today()), cap: v.daily_clips, images_today: videogenCount(today(), { kind: "image" }), image_cap: v.daily_images,
         waf_until: videogenWafUntil(), job: jobView(runningVideogen()),
       };

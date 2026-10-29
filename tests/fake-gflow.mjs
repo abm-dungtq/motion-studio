@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // tests/fake-gflow.mjs — stands in for the gflow-cli binary (lib/videogen/gflow.mjs) in tests.
-// It mimics gflow 0.90 where Studio depends on it: stdout is ONE JSON object indented over many
+// It mimics gflow 0.90/0.91 where Studio depends on it: stdout is ONE JSON object indented over many
 // lines (json_output.emit), stderr is structlog JSON lines keyed "event", exit codes follow
 // USAGE.md § Exit codes, and a hanging run owns a "Chrome" in its own process group (Playwright
 // spawns the browser detached) that only dies on SIGINT or when Studio kills the process tree.
@@ -8,7 +8,7 @@
 //   FAKE_GFLOW           scenario of a generation command (see below), "download-fail" for download
 //   FAKE_GFLOW_DIR       state dir: catalog.jsonl, projects.jsonl, self.pid, child.pid
 //   FAKE_GFLOW_LOG       JSONL file: one line per call with argv, cwd and the GFLOW_CLI_* env
-//   FAKE_GFLOW_VERSION   version printed by --version (0.90.0)
+//   FAKE_GFLOW_VERSION   version printed by --version (0.91.0)
 //   FAKE_GFLOW_AUTH      exit code of `auth status` (0)
 //   FAKE_GFLOW_MP4       a real mp4 to copy as the generated or downloaded clip (else a few bytes)
 // Scenarios: ok | exit:N[:armed|:sent[:row]] (row: the catalog has the run) | exit6 | exit6-migrated | exit6-net |
@@ -47,7 +47,7 @@ process.stderr.write(JSON.stringify({ event: "http.get", url: "https://x.test/?S
 
 const [a, b] = argv;
 if (a === "--version") {
-  process.stdout.write(`gflow, version ${env.FAKE_GFLOW_VERSION ?? "0.90.0"}\n`);
+  process.stdout.write(`gflow, version ${env.FAKE_GFLOW_VERSION ?? "0.91.0"}\n`);
   exit(0);
 } else if (a === "auth" && b === "list") {
   out([{ name: "p1", google_account: "x@y.z", is_default: true, cookies_present: true, last_used_at: null, profile_dir: "/x/profiles/p1" }]);
