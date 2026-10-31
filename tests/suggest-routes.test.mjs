@@ -77,7 +77,7 @@ function plugin({ next = false } = {}) {
     choose: { file: scripts.choose, args: ["choose", "--project", "{project}", "--pick", "{pick}", "--accept-warnings"] },
     ...(next ? {
       pitchInit: { file: scripts.pitchInit, args: ["init", "--project", "{project}", "--topic", "{topic}", "--aspect", "{aspect}", "--directions", "{directions}"] },
-      suggestCases: { file: scripts.cases, args: ["--suggest", "--project", "{project}"], output: "CASES.md" },
+      suggestCases: { file: scripts.cases, args: ["--suggest", "--cases-only", "--project", "{project}"], output: "CASES.md" },
     } : {}),
   };
   const extra = `export const COMMANDS = ${JSON.stringify(commands)};${next ? `\nexport const OPS = ["set_workflow_mode"];` : ""}`;
@@ -487,7 +487,7 @@ describe("when the provider declares pitchInit and set_workflow_mode", () => {
     const before = lines(casesLog).length;
     const r = await post("/api/suggest", { name: "demo" });
     assert.equal(r.status, 200, JSON.stringify(r.json));
-    assert.deepEqual(JSON.parse(lines(casesLog).at(-1)), ["--suggest", "--project", dir()]);
+    assert.deepEqual(JSON.parse(lines(casesLog).at(-1)), ["--suggest", "--cases-only", "--project", dir()]);
     assert.match(r.json.cases.warning, /Jev không chạy \(no TYPESAFE_API_KEY\)/);
     assert.deepEqual(r.json.cases.items.map((c) => [c.id, c.author, c.demo, c.url]), [["y:ror-fly-880547", "Ror_Fly", "https://skillry.dev/ai-videos/opus-5-5/ror-fly-880547", "https://x.com/Ror_Fly/status/1"]]);
     assert.match(r.json.cases.items[0].why, /loại video khớp/);
@@ -513,6 +513,16 @@ describe("when the provider declares pitchInit and set_workflow_mode", () => {
     assert.equal(r.status, 200, JSON.stringify(r.json));
     assert.equal(lines(casesLog).length, before + 1);
     assert.ok(existsSync(join(dir(), "CASES.md")));
+  });
+
+  test("a failing case suggestion stops the pitch build and its reason reaches the user", async () => {
+    process.env.FAKE_CASES_FAIL = "1";
+    const before = lines(initLog).length;
+    const r = await post("/api/suggest/choose", { name: "demo", direction: "A8" });
+    assert.equal(r.status, 422);
+    assert.match(r.json.error, /Chưa gợi ý được case mẫu \(exit 1\).*boom/s);
+    assert.equal(r.json.cases_error, r.json.error);
+    assert.equal(lines(initLog).length, before, "the pitch command is not run");
   });
 
   test("choose before any pitch builds the pitch from the chosen direction and chooses it", async () => {

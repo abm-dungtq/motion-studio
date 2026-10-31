@@ -121,7 +121,10 @@ async function choose(c) {
   };
 
   if (picks === null && P.suggest.pitchInit) {
-    await ensureCases(P, dir);
+    // The pitch command refuses a new brief without the case suggestion, so its failure is the
+    // reason the user needs, not the pitch command's exit code.
+    const casesError = await ensureCases(P, dir);
+    if (casesError) return c.send(422, { error: casesError, cases_error: casesError });
     let fm = {};
     try { fm = frontmatterOf(readFileSync(join(dir, "BRIEF.md"), "utf8")); } catch { /* no brief: no topic */ }
     const rec = readRecord(dir);

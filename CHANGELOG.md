@@ -2,6 +2,7 @@
 
 ## Chưa phát hành
 
+- Bấm chọn hướng khi dự án chưa có pitch: nếu gợi ý case lỗi, Studio trả lỗi đó (422, `cases_error`) và không chạy lệnh tạo pitch, thay vì chỉ báo "Lệnh tạo pitch lỗi (exit 6)". Giao diện chờ lệnh chọn tới 5 phút, đủ cho gợi ý case, tạo pitch và chọn hướng nối nhau. Tiêu đề thẻ Gợi ý xuống dòng khi cột hẹp.
 - Thẻ Gợi ý ở tab Đạo diễn có mục **Case mẫu từ thư viện**: Studio chạy lệnh gợi ý case của provider (`COMMANDS.suggestCases`, opus-video `rerank-cases.mjs --suggest`) cùng lúc với phần xếp hạng hướng, và trước khi tạo pitch cho dự án chưa có gợi ý case. Mỗi case có link bài gốc, một dòng mô tả, lý do Jev chấm và link **Xem video demo**. Jev không chạy thì mục hiện cảnh báo đỏ; lệnh lỗi thì thẻ hiện lỗi (`cases_error`). Người dùng nhắn đạo diễn "theo case 2" để nhận prompt chuyển thể, lý do và link demo. Xem `docs/suggest.md`.
 - Ảnh và clip AI cho shot qua gflow-studio (bản gflow-cli của abm-dungtq, Google Flow): Studio chạy `gflow` cho một ảnh (nano) hoặc một clip (Veo, Omni Flash), theo dõi log để biết lệnh đã gửi chưa, đối chiếu danh mục gflow khi kết quả chưa rõ, tải lại clip đã tạo mà không tốn credit. Sổ ghi ngoài dự án, mỗi yêu cầu chỉ chạy một lần, trần ảnh và clip mỗi ngày riêng, chặn 45 phút khi Flow báo gửi quá nhiều, gắn vào shot có Undo. Mục "AI (Google Flow)" trong inspector của shot (Ảnh | Video), dòng gflow trong chip agent, route `/api/videogen/*`, biên nhận `videogen`, `videogen-recover`, `videogen-import`, khoá `videogen` trong `studio.json`. Đạo diễn bị chặn chạy gflow. Xem `docs/videogen.md`.
 
