@@ -256,14 +256,14 @@ function Card({ name }: { name: string }) {
 
   return (
     <section data-role="suggest-card" aria-label={TITLE} className="flex flex-col gap-2 rounded-md border border-border bg-panel p-3">
-      <div className="flex items-center gap-2">
-        <strong className="text-sm">{TITLE}</strong>
+      <div className="flex flex-wrap items-center gap-2" data-role="suggest-header">
+        <strong className="text-sm whitespace-nowrap">{TITLE}</strong>
         {record ? (
-          <span data-role="suggest-source" className="rounded-sm bg-panel-2 px-1.5 py-0.5 text-xs text-muted-foreground">
+          <span data-role="suggest-source" className="min-w-0 rounded-sm bg-panel-2 px-1.5 py-0.5 text-xs text-muted-foreground">
             {sourceChip(record)}
           </span>
         ) : null}
-        <Button className="ml-auto" data-role="suggest-run" disabled={running || !resp} onClick={() => { void run(); }}>{record ? "Gợi ý lại" : "Gợi ý"}</Button>
+        <Button className="ml-auto shrink-0 whitespace-nowrap" data-role="suggest-run" disabled={running || !resp} onClick={() => { void run(); }}>{record ? "Gợi ý lại" : "Gợi ý"}</Button>
       </div>
       {suggest.error ? <p role="alert" className="m-0 text-sm text-muted-foreground">{`Chưa đọc được gợi ý: ${suggest.error.message}`}</p> : null}
       {runErr ? <p role="alert" data-role="suggest-run-err" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-sm font-semibold text-primary-foreground">{runErr}</p> : null}
