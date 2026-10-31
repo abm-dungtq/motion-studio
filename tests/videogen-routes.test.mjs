@@ -106,7 +106,7 @@ test("status: binary, version, profile and counts, no email", async () => {
   const r = await http("GET", "/api/videogen/status");
   assert.equal(r.status, 200, r.text);
   assert.equal(r.json.found, true);
-  assert.equal(r.json.version, "0.91.0");
+  assert.equal(r.json.version, "0.92.1");
   assert.equal(r.json.tested, true);
   assert.equal(r.json.profile, "p1");
   assert.equal(r.json.today, 0); assert.equal(r.json.cap, 50);
