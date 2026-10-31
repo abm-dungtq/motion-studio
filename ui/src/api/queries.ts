@@ -413,8 +413,11 @@ export const lemoKeep = (b: NameBody) => write(`/api/lemo/keep`, b, [keys.lemoSt
 // `/api/suggest` — routes/suggest.mjs (rank now; refresh skips the cache)
 // (the case suggestion of the same POST ranks the whole case library: allow it up to 2 minutes)
 export const suggestRun = (b: NameBody) => write(`/api/suggest`, b, [keys.suggest(b.name)], { timeout: 120000 }) as Promise<WriteResult<SuggestResponse>>;
+// Covers the server's longest path, a click with no pitch yet: case suggestion (90 s,
+// lib/cases-suggest.mjs) + pitch init (120 s, routes/suggest.mjs) + choose (60 s, gates.mjs), plus margin.
+const CHOOSE_TIMEOUT_MS = 300000;
 // `/api/suggest/choose` — routes/suggest.mjs (choose through the provider, or queue a pitch request)
-export const suggestChoose = (b: NameBody) => write(`/api/suggest/choose`, b, [keys.suggest(b.name), keys.projectText(b.name), ...edits(b.name), ...queue(b.name)], { timeout: 150000 }) as Promise<WriteResult<SuggestChooseResult>>;
+export const suggestChoose = (b: NameBody) => write(`/api/suggest/choose`, b, [keys.suggest(b.name), keys.projectText(b.name), ...edits(b.name), ...queue(b.name)], { timeout: CHOOSE_TIMEOUT_MS }) as Promise<WriteResult<SuggestChooseResult>>;
 // `/api/anime/chars` — public/anime-chars.js:18, :26, :33 ({ name, char } | { name, remove } | { name, generate })
 export const animeChars = (b: NameBody) => write(`/api/anime/chars`, b, [keys.anime("chars", b.name), keys.anime("board", b.name)]);
 // `/api/anime/variant` — public/anime-board.js:62

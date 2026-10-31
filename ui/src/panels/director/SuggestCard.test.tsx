@@ -1,5 +1,5 @@
 import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
-import { act, fireEvent, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/api/queries.ts", async (orig) => ({ ...(await orig<typeof import("@/api/queries.ts")>()), suggestChoose: vi.fn(), suggestRun: vi.fn() }));
@@ -164,5 +164,14 @@ describe("SuggestCard", () => {
       { n: 1, id: "y:a", author: "a", category: "motion", summary: "A", why: "", url: "https://x.com/a" },
     ] } }));
     expect(screen.getByRole("alert")).toHaveTextContent("Jev không chạy (HTTP 401)");
+  });
+
+  it("says when the cases were ranked for an older brief, and only then", () => {
+    const cases = { warning: null, notes: [], case_search: "jev", text: "", items: [{ n: 1, id: "y:a", author: "a", category: "motion", summary: "A", why: "", url: "https://x.com/a" }] };
+    show(resp({ cases, cases_stale: true }));
+    expect(card().querySelector('[data-role="suggest-cases-stale"]')).toHaveTextContent("Brief đã đổi sau lần gợi ý case này");
+    cleanup();
+    show(resp({ cases, cases_stale: false }));
+    expect(card().querySelector('[data-role="suggest-cases-stale"]')).toBeNull();
   });
 });

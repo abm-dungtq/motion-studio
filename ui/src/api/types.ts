@@ -130,7 +130,7 @@ export interface SuggestCases { warning: string | null; notes: string[]; items: 
 export interface SuggestResponse {
   record: SuggestRecord | null; columns: ("jev" | "det")[] | null; picks: SuggestPick[] | null; source: SuggestRecord["source"]; source_setting: string | null;
   modes: { id: string; label: string }[]; can_save_mode: boolean; can_init_pitch: boolean;
-  cases?: SuggestCases | null; can_suggest_cases?: boolean; cases_error?: string;
+  cases?: SuggestCases | null; can_suggest_cases?: boolean; cases_stale?: boolean; cases_error?: string;
 }
 // POST /api/suggest/choose (routes/suggest.mjs): one of three outcomes.
 export interface SuggestMode { saved: boolean; reason: string | null }
