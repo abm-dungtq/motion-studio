@@ -7,7 +7,7 @@ Mỗi clip tốn credit Flow. Theo tài liệu gflow, ảnh nano miễn phí the
 ## Cần gì
 
 - Cài gflow từ gflow-studio: `uv tool install "git+https://github.com/abm-dungtq/gflow-studio.git@main"`, rồi `uvx --from "git+https://github.com/abm-dungtq/gflow-studio.git@main" playwright install chromium`.
-- `gflow` bản 0.90 hoặc 0.91 (chạy thật với 0.90.0; 0.91.0 mới đối chiếu changelog và mã thoát), mặc định ở `~/.local/bin/gflow`. Bản khác vẫn chạy, nhưng chip agent ghi "chưa kiểm với Studio". Khi đó Studio không tin mã thoát mà luôn đối chiếu danh mục trước khi kết luận.
+- `gflow` bản 0.90 đến 0.92 (chạy thật với 0.90.0; 0.91.0 và 0.92.1 mới đối chiếu changelog, mã thoát và sự kiện log), mặc định ở `~/.local/bin/gflow`. Bản khác vẫn chạy, nhưng chip agent ghi "chưa kiểm với Studio". Khi đó Studio không tin mã thoát mà luôn đối chiếu danh mục trước khi kết luận.
 - Đã chạy `gflow auth login` một lần cho profile sẽ dùng.
 - Một profile gflow: đặt `videogen.profile`, hoặc để trống thì Studio dùng profile mặc định của gflow.
 
@@ -146,8 +146,8 @@ Mã lỗi của các route tạo:
 - Chưa có nối dài clip, nâng độ phân giải, nhân vật hay `components`.
 - Trần ngày chỉ đếm lượt gửi từ Studio, không đếm lượt tạo trên Flow hay script khác.
 - Shot dài hơn độ dài clip chỉ được phủ phần đầu; nên tách shot.
-- Bộ kiểm thử dùng một `gflow` giả (`tests/fake-gflow.mjs`) mô phỏng log, mã thoát và JSON của bản 0.90 và 0.91 (0.91 không đổi mã thoát, sự kiện hay JSON mà Studio đọc). Đã chạy thật một lần với gflow 0.90.0 (27/10/2026): ảnh nano2, một lượt huỷ, clip veo-lite 4 s từ ảnh đầu rồi Tải về từ Flow. Clip veo-lite về 1280x720 dù dự án 1920x1080; Studio không phóng to.
+- Bộ kiểm thử dùng một `gflow` giả (`tests/fake-gflow.mjs`) mô phỏng log, mã thoát và JSON của bản 0.90 đến 0.92 (0.91 và 0.92 không đổi mã thoát, sự kiện hay JSON mà Studio đọc; `--cast`, `--profiles`, `--redo` của gflow-studio chỉ có trên `gflow run` và `video batch`, Studio không gọi hai lệnh này). Đã chạy thật một lần với gflow 0.90.0 (27/10/2026): ảnh nano2, một lượt huỷ, clip veo-lite 4 s từ ảnh đầu rồi Tải về từ Flow. Clip veo-lite về 1280x720 dù dự án 1920x1080; Studio không phóng to.
 
 ## Nguồn
 
-[abm-dungtq/gflow-studio](https://github.com/abm-dungtq/gflow-studio), bản fork của [ffroliva/gflow-cli](https://github.com/ffroliva/gflow-cli): USAGE.md (mã thoát, biến môi trường) và mã nguồn bản 0.90, 0.91.
+[abm-dungtq/gflow-studio](https://github.com/abm-dungtq/gflow-studio), bản fork của [ffroliva/gflow-cli](https://github.com/ffroliva/gflow-cli): USAGE.md (mã thoát, biến môi trường) và mã nguồn bản 0.90, 0.91, 0.92.1.

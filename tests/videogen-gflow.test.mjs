@@ -187,7 +187,7 @@ test("abort: a run that ignores SIGINT is killed with its whole tree", async () 
 });
 
 test("free calls: version, default profile without email, project, catalog", async () => {
-  assert.equal(gflowVersion(FAKE), "0.91.0");
+  assert.equal(gflowVersion(FAKE), "0.92.1");
   const p = await defaultProfile(FAKE);
   assert.equal(p, "p1");
   const dir = mkdtempSync(join(tmp, "f-"));
@@ -247,9 +247,11 @@ test("abort: a browser left alive after gflow exits on SIGINT is killed too", as
   assert.ok(await waitDead(chrome, 1500), "browser alive");
 });
 
-test("gflow 0.90 and 0.91 are trusted; another release is reconciled before any verdict", () => {
+test("gflow 0.90 to 0.92 are trusted; another release is reconciled before any verdict", () => {
   assert.equal(gflowTested("0.90.0"), true);
   assert.equal(gflowTested("0.91.0"), true);
+  assert.equal(gflowTested("0.92.1"), true);
+  assert.equal(gflowTested("0.93.0"), false);
   assert.equal(gflowTested("0.89.1"), false);
   assert.equal(gflowTested("0.910.0"), false);
   assert.equal(gflowTested(null), false);
