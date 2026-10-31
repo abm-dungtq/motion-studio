@@ -85,10 +85,11 @@ function chooseNotice(d: SuggestChooseResult): Notice {
   return { kind: "ok", text: "Dự án chưa có pitch. Đã nhờ đạo diễn tạo pitch trước. Khi pitch xong, bạn bấm chọn lại trên thẻ này.", extra, picks: null };
 }
 
-function Cases({ cases }: { cases: SuggestCases }) {
+function Cases({ cases, stale }: { cases: SuggestCases; stale: boolean }) {
   return (
     <div className="flex flex-col gap-1.5" data-role="suggest-cases">
       <b className="text-xs font-medium text-muted-foreground">Case mẫu từ thư viện</b>
+      {stale ? <p role="status" data-role="suggest-cases-stale" className="m-0 text-xs font-semibold">Brief đã đổi sau lần gợi ý case này. Bấm Gợi ý lại để xếp hạng case theo brief mới.</p> : null}
       {cases.warning ? <p role="alert" data-role="suggest-cases-warning" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-xs font-semibold text-primary-foreground">{cases.warning}</p> : null}
       {cases.notes.map((n) => <p key={n} className="m-0 text-xs text-muted-foreground">{n}</p>)}
       {cases.items.length ? cases.items.map((c) => (
@@ -268,7 +269,7 @@ function Card({ name }: { name: string }) {
       {suggest.error ? <p role="alert" className="m-0 text-sm text-muted-foreground">{`Chưa đọc được gợi ý: ${suggest.error.message}`}</p> : null}
       {runErr ? <p role="alert" data-role="suggest-run-err" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-sm font-semibold text-primary-foreground">{runErr}</p> : null}
       {record?.error ? <p role="status" className="m-0 text-xs text-muted-foreground">{record.error.message}</p> : null}
-      {resp?.cases ? <Cases cases={resp.cases} /> : null}
+      {resp?.cases ? <Cases cases={resp.cases} stale={Boolean(resp.cases_stale)} /> : null}
       {resp && !record ? <p className="m-0 text-sm text-muted-foreground">{`Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, style và quy trình${resp.can_suggest_cases && !resp.cases ? ", và tìm case mẫu trong thư viện" : ""} cho dự án này.`}</p> : null}
       {resp && record ? <Choices key={`${record.hash}:${record.at}`} name={name} resp={resp} record={record} /> : null}
     </section>

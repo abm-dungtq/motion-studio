@@ -3,7 +3,7 @@
 //        the provider's modes and whether it can save a mode or build a pitch
 //   POST /api/suggest { name, refresh? }    ranks (or reuses the cached record), 409 without BRIEF.md;
 //        with the provider's case command, also suggests reference cases (CASES.md) when the project
-//        has none yet or refresh is set: `cases` in the answer, `cases_error` when the command failed
+//        has none yet, its brief changed since (`cases_stale` in GET) or refresh is set: `cases` in the answer, `cases_error` when the command failed
 //   The case suggestion runs too before the pitch is built from a click (the provider's pitch
 //   command refuses a new brief whose user has not seen the cases).
 //   POST /api/suggest/choose { name, direction, style?, mode? }   the user's click, one of three outcomes:
@@ -56,13 +56,19 @@ function view(P, dir) {
     can_init_pitch: Boolean(P.suggest?.pitchInit),
     cases: readCases(dir, P),
     can_suggest_cases: Boolean(P.suggest?.cases),
+    cases_stale: casesStale(P, dir),
   };
 }
 
-// Runs the case suggestion when the provider has it and the project has none (or refresh).
-// Returns an error text for the card, or null.
+// The provider says the case file was ranked for another brief; false when it cannot tell.
+function casesStale(P, dir) {
+  try { return Boolean(P.suggest?.casesStale?.(dir)); } catch { return false; }
+}
+
+// Runs the case suggestion when the provider has it and the project has none, the brief changed
+// since, or refresh is set. Returns an error text for the card, or null.
 async function ensureCases(P, dir, refresh = false) {
-  if (!P.suggest?.cases || (!refresh && readCases(dir, P))) return null;
+  if (!P.suggest?.cases || (!refresh && readCases(dir, P) && !casesStale(P, dir))) return null;
   const r = await runCases(dir, P);
   console.log(`${new Date().toISOString()} suggest-cases ${dir} ${r.ok ? "ok" : `exit ${r.code}`}`);
   return r.ok ? null : `Chưa gợi ý được case mẫu (exit ${r.code ?? "?"}): ${r.stderr || "không có thông báo lỗi"}`;

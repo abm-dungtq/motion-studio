@@ -80,7 +80,7 @@ function plugin({ next = false } = {}) {
       suggestCases: { file: scripts.cases, args: ["--suggest", "--cases-only", "--project", "{project}"], output: "CASES.md" },
     } : {}),
   };
-  const extra = `export const COMMANDS = ${JSON.stringify(commands)};${next ? `\nexport const OPS = ["set_workflow_mode"];` : ""}`;
+  const extra = `export const COMMANDS = ${JSON.stringify(commands)};${next ? `\nexport const OPS = ["set_workflow_mode"];\nexport const casesStale = () => process.env.FAKE_CASES_STALE === "1";` : ""}`;
   const d = fakePlugin({ schema: A.NEED.schema, api: 4, extra });
   mkdirSync(join(d, "data"));
   cpSync(DIRECTIONS, join(d, "data", "directions.json"));
@@ -176,6 +176,7 @@ function reset() {
   rmSync(join(dir(), "pitch"), { recursive: true, force: true });
   rmSync(join(dir(), "CASES.md"), { force: true });
   delete process.env.FAKE_CASES_FAIL;
+  delete process.env.FAKE_CASES_STALE;
   rmSync(join(dir(), ".opus", "suggest"), { recursive: true, force: true });
   writeFileSync(join(dir(), "BRIEF.md"), BRIEF);
   delete process.env.TYPESAFE_API_KEY;
@@ -496,6 +497,17 @@ describe("when the provider declares pitchInit and set_workflow_mode", () => {
     assert.equal(lines(casesLog).length, before + 1, "a project with CASES.md is not ranked again");
     await post("/api/suggest", { name: "demo", refresh: true });
     assert.equal(lines(casesLog).length, before + 2, "refresh ranks again");
+  });
+
+  test("cases ranked for an older brief are flagged and ranked again on the next Gợi ý", async () => {
+    const before = lines(casesLog).length;
+    assert.equal((await post("/api/suggest", { name: "demo" })).status, 200);
+    assert.equal((await http(s.port, "GET", "/api/suggest?name=demo")).json.cases_stale, false);
+    process.env.FAKE_CASES_STALE = "1";
+    assert.equal((await http(s.port, "GET", "/api/suggest?name=demo")).json.cases_stale, true);
+    assert.equal(lines(casesLog).length, before + 1, "GET never ranks");
+    await post("/api/suggest", { name: "demo" });
+    assert.equal(lines(casesLog).length, before + 2, "a stale file is ranked again without refresh");
   });
 
   test("a failing case command is reported in cases_error, the direction ranking still answers", async () => {

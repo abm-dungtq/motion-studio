@@ -50,7 +50,7 @@ Với hướng có trong pitch, `BRIEF.md` nhận `direction:` và `style_profil
 
 Khi provider có lệnh gợi ý case (`COMMANDS.suggestCases` của plugin), thẻ hiện thêm mục **Case mẫu từ thư viện**: 2–3 video làm bằng Opus 5.5 hợp với brief, mỗi case có link bài gốc, một dòng mô tả, lý do và link **Xem video demo** (trang demo trong thư viện mẫu) khi case có trang demo khác bài gốc. Jev xếp hạng cả thư viện theo brief (đọc `BRIEF.case-query.json` nếu có, không thì `BRIEF.md`), mất khoảng 2–3 giây.
 
-- Bấm **Gợi ý** chạy lệnh này cùng lúc với phần xếp hạng hướng, khi dự án chưa có `CASES.md`. **Gợi ý lại** chạy lại cả hai.
+- Bấm **Gợi ý** chạy lệnh này cùng lúc với phần xếp hạng hướng, khi dự án chưa có `CASES.md` hoặc brief đã đổi kể từ lần xếp hạng case trước (provider báo qua `suggest.casesStale(dir)`; GET trả `cases_stale` và thẻ ghi "Brief đã đổi…"). **Gợi ý lại** chạy lại cả hai.
 - Bấm chọn hướng trên dự án chưa có pitch cũng chạy lệnh này trước, vì lệnh tạo pitch của provider từ chối brief mới (`brief_version: 3`) khi người dùng chưa thấy gợi ý case.
 - Jev không chạy (thiếu khoá, khoá sai, hết giờ) thì mục này hiện dòng cảnh báo màu đỏ và danh sách chỉ xếp theo từ khoá. Lệnh lỗi hẳn thì thẻ hiện lỗi kèm vài dòng cuối của stderr.
 - Lệnh Studio chạy chỉ ghi `<dự án>/CASES.md` (cờ của provider), không ghi `BRIEF.md`; `CASES.md` đủ để lệnh tạo pitch nhận là người dùng đã thấy case. Studio chỉ chạy lệnh và đọc file.
