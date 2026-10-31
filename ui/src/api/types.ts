@@ -123,9 +123,14 @@ export interface SuggestRecord {
 // the provider can do. columns is the card's left-to-right column order (lib/suggest.mjs
 // columnsOf), the same order the pick log records; null without a record.
 export interface SuggestPick { n: number; id: string; style_profile: string | null; dir: string | null }
+// The provider's case suggestion (<project>/CASES.md, read by lib/cases-suggest.mjs): reference
+// cases from its library ranked for the brief. warning is set when Jev did not rank them.
+export interface SuggestCase { n: number; id: string; author: string; category: string; summary: string; why: string; demo?: string; url: string }
+export interface SuggestCases { warning: string | null; notes: string[]; items: SuggestCase[]; case_search: string | null; text: string }
 export interface SuggestResponse {
   record: SuggestRecord | null; columns: ("jev" | "det")[] | null; picks: SuggestPick[] | null; source: SuggestRecord["source"]; source_setting: string | null;
   modes: { id: string; label: string }[]; can_save_mode: boolean; can_init_pitch: boolean;
+  cases?: SuggestCases | null; can_suggest_cases?: boolean; cases_error?: string;
 }
 // POST /api/suggest/choose (routes/suggest.mjs): one of three outcomes.
 export interface SuggestMode { saved: boolean; reason: string | null }

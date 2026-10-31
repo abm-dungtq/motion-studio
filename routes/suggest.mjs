@@ -1,7 +1,11 @@
 // routes/suggest.mjs — the suggestion card of the Director tab (lib/suggest.mjs does the ranking).
 //   GET  /api/suggest?name=                 the stored record, the pitch rows, the source in use,
 //        the provider's modes and whether it can save a mode or build a pitch
-//   POST /api/suggest { name, refresh? }    ranks (or reuses the cached record), 409 without BRIEF.md
+//   POST /api/suggest { name, refresh? }    ranks (or reuses the cached record), 409 without BRIEF.md;
+//        with the provider's case command, also suggests reference cases (CASES.md) when the project
+//        has none yet or refresh is set: `cases` in the answer, `cases_error` when the command failed
+//   The case suggestion runs too before the pitch is built from a click (the provider's pitch
+//   command refuses a new brief whose user has not seen the cases).
 //   POST /api/suggest/choose { name, direction, style?, mode? }   the user's click, one of three outcomes:
 //        chosen        the direction is a row of pitch/PICK.json: the provider's choose command runs
 //                      with --pick and the style arguments; a waiting direction card is answered
@@ -9,7 +13,8 @@
 //        not_in_pitch  the pitch has no such direction: its rows come back for the card
 //        queued        no pitch yet: a director request carries the user's preference (or, when the
 //                      provider declares pitchInit, the pitch is built from it and the outcome is chosen)
-// BRIEF.md is only written by the provider's choose command, never here. The operating mode is
+// BRIEF.md is only written by the provider's choose command, never here (the case suggestion command
+// writes only its output file). The operating mode is
 // written through the gateway with actor "human" when the provider has the op; otherwise it goes in
 // the request text and mode.saved is false. The mode is written only once the outcome is known
 // (chosen or queued), never for not_in_pitch or a failed command. Every 200 of choose, whatever the
@@ -22,6 +27,7 @@ import { runFile } from "../create.mjs";
 import { suggestSetting } from "../lib/config.mjs";
 import { answerCard, writeDirection } from "../gates.mjs";
 import { queueRequest, startIdle } from "../director.mjs";
+import { readCases, runCases } from "../lib/cases-suggest.mjs";
 
 const DIRECTION = /^[A-Z][0-9]{1,2}$/;
 const STYLE = /^[a-z0-9][a-z0-9-]{1,60}$/;
@@ -48,7 +54,18 @@ function view(P, dir) {
     modes: Object.entries(P.suggest?.modes ?? {}).map(([id, m]) => ({ id, label: m.label })),
     can_save_mode: Boolean(P.suggest?.canSetWorkflowMode),
     can_init_pitch: Boolean(P.suggest?.pitchInit),
+    cases: readCases(dir, P),
+    can_suggest_cases: Boolean(P.suggest?.cases),
   };
+}
+
+// Runs the case suggestion when the provider has it and the project has none (or refresh).
+// Returns an error text for the card, or null.
+async function ensureCases(P, dir, refresh = false) {
+  if (!P.suggest?.cases || (!refresh && readCases(dir, P))) return null;
+  const r = await runCases(dir, P);
+  console.log(`${new Date().toISOString()} suggest-cases ${dir} ${r.ok ? "ok" : `exit ${r.code}`}`);
+  return r.ok ? null : `Chưa gợi ý được case mẫu (exit ${r.code ?? "?"}): ${r.stderr || "không có thông báo lỗi"}`;
 }
 
 const NOT_SAVED = { saved: false, reason: null };
@@ -104,6 +121,7 @@ async function choose(c) {
   };
 
   if (picks === null && P.suggest.pitchInit) {
+    await ensureCases(P, dir);
     let fm = {};
     try { fm = frontmatterOf(readFileSync(join(dir, "BRIEF.md"), "utf8")); } catch { /* no brief: no topic */ }
     const rec = readRecord(dir);
@@ -168,9 +186,12 @@ export const ROUTES = [
       const b = c.body ?? {};
       const dir = dirOf(c, b.name);
       if (!existsSync(join(dir, "BRIEF.md"))) throw err(409, "Dự án chưa có BRIEF.md nên chưa gợi ý được.");
-      const rec = await suggestCached({ dir, project: b.name, P: c.P, refresh: b.refresh === true, source: effectiveSource(suggestSetting()) });
+      const [rec, casesError] = await Promise.all([
+        suggestCached({ dir, project: b.name, P: c.P, refresh: b.refresh === true, source: effectiveSource(suggestSetting()) }),
+        ensureCases(c.P, dir, b.refresh === true),
+      ]);
       console.log(`${new Date().toISOString()} suggest ${b.name} ${rec.source} ${rec.shown} ${rec.error?.code ?? "ok"} ${rec.ms}ms ${rec.questions}q`);
-      return view(c.P, dir);
+      return { ...view(c.P, dir), ...(casesError ? { cases_error: casesError } : {}) };
     },
   },
   {

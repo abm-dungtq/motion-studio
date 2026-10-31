@@ -135,10 +135,34 @@ describe("SuggestCard", () => {
   });
 
   it("no record shows the empty sentence and a Gợi ý button", async () => {
-    run.mockResolvedValue({ status: 200, data: {} });
+    run.mockResolvedValue({ status: 200, data: resp({ record: null }) });
     show(resp({ record: null }));
     expect(card()).toHaveTextContent("Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, style và quy trình cho dự án này.");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Gợi ý" })); });
     expect(run).toHaveBeenCalledWith({ name: NAME, refresh: false });
+  });
+  it("shows the library cases with the reason, the demo video and how to pick one", () => {
+    show(resp({ cases: { warning: null, notes: ["Các case chỉ để tham khảo."], case_search: "jev", text: "", items: [
+      { n: 1, id: "y:ror-fly-880547", author: "Ror_Fly", category: "explainer", summary: "Recipe motion graphic", why: "loại video khớp (4/4)", demo: "https://skillry.dev/ai-videos/opus-5-5/ror-fly-880547", url: "https://x.com/Ror_Fly/status/1" },
+      { n: 2, id: "c:12", author: "bo", category: "motion", summary: "Logo sting", why: "", url: "https://x.com/bo/status/2" },
+      { n: 3, id: "y:post-only", author: "cy", category: "explainer", summary: "Collage", why: "", demo: "https://x.com/cy/status/3", url: "https://x.com/cy/status/3" },
+    ] } }));
+    const items = [...card().querySelectorAll('[data-role="suggest-case"]')];
+    expect(items.map((e) => e.getAttribute("data-id"))).toEqual(["y:ror-fly-880547", "c:12", "y:post-only"]);
+    expect(screen.getByRole("link", { name: "y:ror-fly-880547" })).toHaveAttribute("href", "https://x.com/Ror_Fly/status/1");
+    const demos = card().querySelectorAll('[data-role="suggest-case-demo"]');
+    expect(demos).toHaveLength(1); // none for c:12 (no demo) or y:post-only (the demo is the post itself)
+    expect(demos[0]).toHaveAttribute("href", "https://skillry.dev/ai-videos/opus-5-5/ror-fly-880547");
+    expect(demos[0]).toHaveAttribute("target", "_blank");
+    expect(items[0]).toHaveTextContent("Vì sao: loại video khớp (4/4)");
+    expect(card()).toHaveTextContent("theo case 2");
+    expect(card().querySelector('[data-role="suggest-cases-warning"]')).toBeNull();
+  });
+
+  it("puts a Jev failure at the top of the cases as an alert", () => {
+    show(resp({ cases: { warning: "Jev không chạy (HTTP 401): danh sách dưới đây chỉ xếp theo từ khoá.", notes: [], case_search: "find-cases (HTTP 401)", text: "", items: [
+      { n: 1, id: "y:a", author: "a", category: "motion", summary: "A", why: "", url: "https://x.com/a" },
+    ] } }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Jev không chạy (HTTP 401)");
   });
 });

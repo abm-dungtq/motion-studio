@@ -411,7 +411,8 @@ export const lemoDraft = (b: NameBody) => write(`/api/lemo/draft`, b, [keys.lemo
 // `/api/lemo/keep` — public/lemo-mystyle.js:34
 export const lemoKeep = (b: NameBody) => write(`/api/lemo/keep`, b, [keys.lemoStyles()]);
 // `/api/suggest` — routes/suggest.mjs (rank now; refresh skips the cache)
-export const suggestRun = (b: NameBody) => write(`/api/suggest`, b, [keys.suggest(b.name)], { timeout: 30000 });
+// (the case suggestion of the same POST ranks the whole case library: allow it up to 2 minutes)
+export const suggestRun = (b: NameBody) => write(`/api/suggest`, b, [keys.suggest(b.name)], { timeout: 120000 }) as Promise<WriteResult<SuggestResponse>>;
 // `/api/suggest/choose` — routes/suggest.mjs (choose through the provider, or queue a pitch request)
 export const suggestChoose = (b: NameBody) => write(`/api/suggest/choose`, b, [keys.suggest(b.name), keys.projectText(b.name), ...edits(b.name), ...queue(b.name)], { timeout: 150000 }) as Promise<WriteResult<SuggestChooseResult>>;
 // `/api/anime/chars` — public/anime-chars.js:18, :26, :33 ({ name, char } | { name, remove } | { name, generate })
