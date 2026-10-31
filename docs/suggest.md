@@ -46,9 +46,21 @@ Studio đọc khoá Jev từ biến môi trường `TYPESAFE_API_KEY`. Không c�
 
 Với hướng có trong pitch, `BRIEF.md` nhận `direction:` và `style_profile:`. Nếu BRIEF có `lemo_style`, lệnh `choose` của provider giữ style của lớp canvas đó.
 
-## Hai tính năng của provider, phát hiện tự động
+## Case mẫu từ thư viện
 
-Studio tự dò hai tính năng mới của provider và đổi hành vi theo đó, không cần sửa Studio:
+Khi provider có lệnh gợi ý case (`COMMANDS.suggestCases` của plugin), thẻ hiện thêm mục **Case mẫu từ thư viện**: 2–3 video làm bằng Opus 5.5 hợp với brief, mỗi case có link bài gốc, một dòng mô tả, lý do và link **Xem video demo** (trang demo trong thư viện mẫu) khi case có. Jev xếp hạng cả thư viện theo brief (đọc `BRIEF.case-query.json` nếu có, không thì `BRIEF.md`), mất khoảng 2–3 giây.
+
+- Bấm **Gợi ý** chạy lệnh này cùng lúc với phần xếp hạng hướng, khi dự án chưa có `CASES.md`. **Gợi ý lại** chạy lại cả hai.
+- Bấm chọn hướng trên dự án chưa có pitch cũng chạy lệnh này trước, vì lệnh tạo pitch của provider từ chối brief mới (`brief_version: 3`) khi người dùng chưa thấy gợi ý case.
+- Jev không chạy (thiếu khoá, khoá sai, hết giờ) thì mục này hiện dòng cảnh báo màu đỏ và danh sách chỉ xếp theo từ khoá. Lệnh lỗi hẳn thì thẻ hiện lỗi kèm vài dòng cuối của stderr.
+- Provider ghi kết quả vào `<dự án>/CASES.md` và `case_search:`, `case_refs:` vào `BRIEF.md`. Studio chỉ chạy lệnh và đọc file.
+- Muốn làm theo một case, người dùng nhắn đạo diễn (ví dụ "theo case 2"). Đạo diễn dùng skill case của provider: viết prompt của case chuyển thể cho video này, giải thích vì sao dùng prompt đó và gửi lại link video demo trong biên nhận. Thẻ không có nút chọn case.
+
+## Ba tính năng của provider, phát hiện tự động
+
+Studio tự dò ba tính năng mới của provider và đổi hành vi theo đó, không cần sửa Studio:
+
+- **`suggestCases`** (lệnh gợi ý case, mục trên). Khi chưa có, thẻ không có mục case.
 
 - **`pitchInit`** (lệnh tạo pitch với hướng cho trước). Khi có, nút chọn trên dự án chưa có pitch sẽ tạo pitch với hướng bạn chọn đứng đầu, rồi chạy `choose` hàng 1. Kết cục khi đó là `chosen`, kèm `initialized: true`. Khi chưa có, kết cục vẫn là `queued`.
 - **Op `set_workflow_mode`** của cổng lệnh. Khi có, chế độ vận hành được ghi vào trường `workflow_mode` của `project.json` qua cổng lệnh, với actor `human`. Khi chưa có, chế độ chỉ đi trong lời yêu cầu gửi đạo diễn, và thẻ nói rõ "chưa lưu vào project.json".

@@ -7,11 +7,13 @@
 // briefs and the log records the order the user saw. Only the user chooses:
 // "Chọn và tạo pitch" posts /api/suggest/choose, and BRIEF.md is written by the provider's choose
 // command, never by this card. What the provider can do (save the mode, build a pitch) is read from
-// the answers, so a newer provider changes the sentences without a change here.
+// the answers, so a newer provider changes the sentences without a change here. When the provider
+// suggests reference cases (CASES.md), they sit above the directions with a link and a reason each;
+// a "Jev không chạy" warning in that file is shown in red, never hidden.
 import { useEffect, useRef, useState } from "react";
 import { queryClient } from "@/api/client.ts";
 import * as Q from "@/api/queries.ts";
-import type { SuggestChooseResult, SuggestItem, SuggestPick, SuggestRecord, SuggestResponse, SuggestSide } from "@/api/types.ts";
+import type { SuggestCases, SuggestChooseResult, SuggestItem, SuggestPick, SuggestRecord, SuggestResponse, SuggestSide } from "@/api/types.ts";
 import { Button } from "@/shell/controls.tsx";
 import { cn } from "@/lib/utils";
 import { useStudio } from "@/store/studio.ts";
@@ -81,6 +83,28 @@ function chooseNotice(d: SuggestChooseResult): Notice {
     return { kind: "ok", text: "Pitch hiện có không gồm hướng này. Chọn một trong các hướng đã có trong pitch bên dưới.", extra, picks: d.picks ?? [] };
   }
   return { kind: "ok", text: "Dự án chưa có pitch. Đã nhờ đạo diễn tạo pitch trước. Khi pitch xong, bạn bấm chọn lại trên thẻ này.", extra, picks: null };
+}
+
+function Cases({ cases }: { cases: SuggestCases }) {
+  return (
+    <div className="flex flex-col gap-1.5" data-role="suggest-cases">
+      <b className="text-xs font-medium text-muted-foreground">Case mẫu từ thư viện</b>
+      {cases.warning ? <p role="alert" data-role="suggest-cases-warning" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-xs font-semibold text-primary-foreground">{cases.warning}</p> : null}
+      {cases.notes.map((n) => <p key={n} className="m-0 text-xs text-muted-foreground">{n}</p>)}
+      {cases.items.length ? cases.items.map((c) => (
+        <div key={c.id} data-role="suggest-case" data-id={c.id} className="flex flex-col gap-0.5 rounded-md border border-border bg-panel p-2 text-sm">
+          <span className="font-semibold">
+            {c.url ? <a href={c.url} target="_blank" rel="noreferrer noopener" className="underline">{c.id}</a> : c.id}
+            <span className="text-xs font-normal text-muted-foreground">{` · @${c.author} · ${c.category}`}</span>
+          </span>
+          <span className="text-xs whitespace-normal">{c.summary}</span>
+          {c.why ? <span className="text-xs whitespace-normal text-muted-foreground">{`Vì sao: ${c.why}`}</span> : null}
+          {c.demo ? <a href={c.demo} target="_blank" rel="noreferrer noopener" data-role="suggest-case-demo" className="text-xs underline">Xem video demo</a> : null}
+        </div>
+      )) : <pre className="m-0 text-xs whitespace-pre-wrap">{cases.text}</pre>}
+      {cases.items.length ? <p className="m-0 text-xs text-muted-foreground">Muốn làm theo một case? Nhắn đạo diễn, ví dụ "theo case 2": đạo diễn viết prompt chuyển thể cho video này, giải thích vì sao và gửi lại link video demo.</p> : null}
+    </div>
+  );
 }
 
 // The card's choices for one stored record; keyed by the record, so a new ranking starts afresh.
@@ -222,6 +246,7 @@ function Card({ name }: { name: string }) {
     try {
       const r = await Q.suggestRun({ name, refresh: Boolean(record) });
       if (r.status !== 200) setRunErr(`Chưa gợi ý được: ${r.error ?? `HTTP ${r.status}`}`);
+      else if (r.data?.cases_error) setRunErr(r.data.cases_error);
     } catch (e) {
       setRunErr(`Chưa gợi ý được: ${(e as Error).message}`);
     } finally {
@@ -243,7 +268,8 @@ function Card({ name }: { name: string }) {
       {suggest.error ? <p role="alert" className="m-0 text-sm text-muted-foreground">{`Chưa đọc được gợi ý: ${suggest.error.message}`}</p> : null}
       {runErr ? <p role="alert" data-role="suggest-run-err" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-sm font-semibold text-primary-foreground">{runErr}</p> : null}
       {record?.error ? <p role="status" className="m-0 text-xs text-muted-foreground">{record.error.message}</p> : null}
-      {resp && !record ? <p className="m-0 text-sm text-muted-foreground">Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, style và quy trình cho dự án này.</p> : null}
+      {resp?.cases ? <Cases cases={resp.cases} /> : null}
+      {resp && !record ? <p className="m-0 text-sm text-muted-foreground">{`Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, style và quy trình${resp.can_suggest_cases && !resp.cases ? ", và tìm case mẫu trong thư viện" : ""} cho dự án này.`}</p> : null}
       {resp && record ? <Choices key={`${record.hash}:${record.at}`} name={name} resp={resp} record={record} /> : null}
     </section>
   );

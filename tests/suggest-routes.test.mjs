@@ -17,10 +17,10 @@ const DIRECTIONS = fileURLToPath(new URL("./fixtures/suggest/directions.json", i
 const ID_OF = new Map(JSON.parse(readFileSync(DIRECTIONS, "utf8")).directions.map((d) => [d.ten_vi, d.id]));
 const TOKEN = "s".repeat(64);
 const KEY = "test-key";
-const ENV = ["HOME", "OPUS_VIDEO_HOME", "MOTION_STUDIO_STATE", "TYPESAFE_API_KEY", "FAKE_CHOOSE_LOG", "FAKE_REQUESTS", "FAKE_INIT_LOG", "FAKE_PATCH_LOG"];
+const ENV = ["HOME", "OPUS_VIDEO_HOME", "MOTION_STUDIO_STATE", "TYPESAFE_API_KEY", "FAKE_CHOOSE_LOG", "FAKE_REQUESTS", "FAKE_INIT_LOG", "FAKE_PATCH_LOG", "FAKE_CASES_LOG", "FAKE_CASES_FAIL"];
 const BRIEF = ["---", "topic: dòng tiền cho chủ doanh nghiệp nhỏ", "aspect: 16:9", "category: explainer", "energy: vua", "---", "", "# Brief", ""].join("\n");
 const realFetch = globalThis.fetch;
-let tmp, root, saved, reqLog, chooseLog, initLog, patchLog, scripts;
+let tmp, root, saved, reqLog, chooseLog, initLog, patchLog, casesLog, scripts;
 const bodies = [];
 
 // The provider's commands, faked as scripts run with node: directions pick gives A6, A8, A3;
@@ -48,6 +48,15 @@ function writeScripts() {
       `const n = a[a.indexOf("--pick") + 1];`,
       `writeFileSync(f, readFileSync(f, "utf8").replace(/^---\\n/, "---\\ndirection: pick-" + n + "\\n"));`,
     ].join("\n")),
+    // The provider's case suggestion: logs its argv and writes CASES.md in the provider's format,
+    // or exits 1 when FAKE_CASES_FAIL is set.
+    cases: f("fake-cases.mjs", [
+      `import { appendFileSync, writeFileSync } from "node:fs";`,
+      `const a = process.argv.slice(2);`,
+      `appendFileSync(process.env.FAKE_CASES_LOG, JSON.stringify(a) + "\\n");`,
+      `if (process.env.FAKE_CASES_FAIL) { console.error("rerank-cases: boom"); process.exit(1); }`,
+      `writeFileSync(a[a.indexOf("--project") + 1] + "/CASES.md", ${JSON.stringify(["## Gợi ý case từ thư viện mẫu Opus 5.5", "", "> ⚠ Jev không chạy (no TYPESAFE_API_KEY): danh sách dưới đây chỉ xếp theo từ khoá.", "", "1. **y:ror-fly-880547** · @Ror_Fly · explainer: Recipe motion graphic", "   Vì sao: loại video khớp (3.05/4).", "   Video demo: https://skillry.dev/ai-videos/opus-5-5/ror-fly-880547", "   https://x.com/Ror_Fly/status/1", "", "case_search: find-cases (no TYPESAFE_API_KEY)", ""].join("\n"))});`,
+    ].join("\n")),
     pitchInit: f("fake-pitch-init.mjs", [
       `import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";`,
       `const a = process.argv.slice(2);`,
@@ -66,7 +75,10 @@ function plugin({ next = false } = {}) {
   const commands = {
     directions: scripts.directions, styles: scripts.styles,
     choose: { file: scripts.choose, args: ["choose", "--project", "{project}", "--pick", "{pick}", "--accept-warnings"] },
-    ...(next ? { pitchInit: { file: scripts.pitchInit, args: ["init", "--project", "{project}", "--topic", "{topic}", "--aspect", "{aspect}", "--directions", "{directions}"] } } : {}),
+    ...(next ? {
+      pitchInit: { file: scripts.pitchInit, args: ["init", "--project", "{project}", "--topic", "{topic}", "--aspect", "{aspect}", "--directions", "{directions}"] },
+      suggestCases: { file: scripts.cases, args: ["--suggest", "--project", "{project}"], output: "CASES.md" },
+    } : {}),
   };
   const extra = `export const COMMANDS = ${JSON.stringify(commands)};${next ? `\nexport const OPS = ["set_workflow_mode"];` : ""}`;
   const d = fakePlugin({ schema: A.NEED.schema, api: 4, extra });
@@ -141,10 +153,11 @@ before(() => {
   reqLog = join(tmp, "requests.jsonl");
   chooseLog = join(tmp, "choose.log");
   initLog = join(tmp, "init.log");
+  casesLog = join(tmp, "cases.log");
   patchLog = join(tmp, "patch.log");
   scripts = writeScripts();
   writeFileSync(join(tmp, "studio.json"), JSON.stringify({ director: { runner: "mcp" }, suggest: { source: "observe" } }));
-  Object.assign(process.env, { MOTION_STUDIO_STATE: join(tmp, "studio.json"), FAKE_CHOOSE_LOG: chooseLog, FAKE_INIT_LOG: initLog, FAKE_PATCH_LOG: patchLog });
+  Object.assign(process.env, { MOTION_STUDIO_STATE: join(tmp, "studio.json"), FAKE_CHOOSE_LOG: chooseLog, FAKE_INIT_LOG: initLog, FAKE_PATCH_LOG: patchLog, FAKE_CASES_LOG: casesLog });
   root = join(tmp, "root");
   mkdirSync(root);
   cpSync(MANIFEST, dir(), { recursive: true });
@@ -161,6 +174,8 @@ after(() => {
 
 function reset() {
   rmSync(join(dir(), "pitch"), { recursive: true, force: true });
+  rmSync(join(dir(), "CASES.md"), { force: true });
+  delete process.env.FAKE_CASES_FAIL;
   rmSync(join(dir(), ".opus", "suggest"), { recursive: true, force: true });
   writeFileSync(join(dir(), "BRIEF.md"), BRIEF);
   delete process.env.TYPESAFE_API_KEY;
@@ -464,6 +479,40 @@ describe("when the provider declares pitchInit and set_workflow_mode", () => {
     const r = await http(s.port, "GET", "/api/suggest?name=demo");
     assert.equal(r.json.can_save_mode, true);
     assert.equal(r.json.can_init_pitch, true);
+    assert.equal(r.json.can_suggest_cases, true);
+    assert.equal(r.json.cases, null);
+  });
+
+  test("POST /api/suggest runs the case suggestion once and returns the parsed cases, the Jev warning kept", async () => {
+    const before = lines(casesLog).length;
+    const r = await post("/api/suggest", { name: "demo" });
+    assert.equal(r.status, 200, JSON.stringify(r.json));
+    assert.deepEqual(JSON.parse(lines(casesLog).at(-1)), ["--suggest", "--project", dir()]);
+    assert.match(r.json.cases.warning, /Jev không chạy \(no TYPESAFE_API_KEY\)/);
+    assert.deepEqual(r.json.cases.items.map((c) => [c.id, c.author, c.demo, c.url]), [["y:ror-fly-880547", "Ror_Fly", "https://skillry.dev/ai-videos/opus-5-5/ror-fly-880547", "https://x.com/Ror_Fly/status/1"]]);
+    assert.match(r.json.cases.items[0].why, /loại video khớp/);
+    assert.equal(r.json.cases.case_search, "find-cases (no TYPESAFE_API_KEY)");
+    await post("/api/suggest", { name: "demo" });
+    assert.equal(lines(casesLog).length, before + 1, "a project with CASES.md is not ranked again");
+    await post("/api/suggest", { name: "demo", refresh: true });
+    assert.equal(lines(casesLog).length, before + 2, "refresh ranks again");
+  });
+
+  test("a failing case command is reported in cases_error, the direction ranking still answers", async () => {
+    process.env.FAKE_CASES_FAIL = "1";
+    const r = await post("/api/suggest", { name: "demo" });
+    assert.equal(r.status, 200);
+    assert.ok(r.json.record, "directions still ranked");
+    assert.match(r.json.cases_error, /exit 1.*boom/s);
+    assert.equal(r.json.cases, null);
+  });
+
+  test("building the pitch from a click suggests cases first", async () => {
+    const before = lines(casesLog).length;
+    const r = await post("/api/suggest/choose", { name: "demo", direction: "A8" });
+    assert.equal(r.status, 200, JSON.stringify(r.json));
+    assert.equal(lines(casesLog).length, before + 1);
+    assert.ok(existsSync(join(dir(), "CASES.md")));
   });
 
   test("choose before any pitch builds the pitch from the chosen direction and chooses it", async () => {
