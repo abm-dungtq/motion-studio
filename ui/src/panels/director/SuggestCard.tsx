@@ -99,7 +99,7 @@ function Cases({ cases }: { cases: SuggestCases }) {
           </span>
           <span className="text-xs whitespace-normal">{c.summary}</span>
           {c.why ? <span className="text-xs whitespace-normal text-muted-foreground">{`Vì sao: ${c.why}`}</span> : null}
-          {c.demo ? <a href={c.demo} target="_blank" rel="noreferrer noopener" data-role="suggest-case-demo" className="text-xs underline">Xem video demo</a> : null}
+          {c.demo && c.demo !== c.url ? <a href={c.demo} target="_blank" rel="noreferrer noopener" data-role="suggest-case-demo" className="text-xs underline">Xem video demo</a> : null}
         </div>
       )) : <pre className="m-0 text-xs whitespace-pre-wrap">{cases.text}</pre>}
       {cases.items.length ? <p className="m-0 text-xs text-muted-foreground">Muốn làm theo một case? Nhắn đạo diễn, ví dụ "theo case 2": đạo diễn viết prompt chuyển thể cho video này, giải thích vì sao và gửi lại link video demo.</p> : null}

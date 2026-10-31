@@ -145,12 +145,13 @@ describe("SuggestCard", () => {
     show(resp({ cases: { warning: null, notes: ["Các case chỉ để tham khảo."], case_search: "jev", text: "", items: [
       { n: 1, id: "y:ror-fly-880547", author: "Ror_Fly", category: "explainer", summary: "Recipe motion graphic", why: "loại video khớp (4/4)", demo: "https://skillry.dev/ai-videos/opus-5-5/ror-fly-880547", url: "https://x.com/Ror_Fly/status/1" },
       { n: 2, id: "c:12", author: "bo", category: "motion", summary: "Logo sting", why: "", url: "https://x.com/bo/status/2" },
+      { n: 3, id: "y:post-only", author: "cy", category: "explainer", summary: "Collage", why: "", demo: "https://x.com/cy/status/3", url: "https://x.com/cy/status/3" },
     ] } }));
     const items = [...card().querySelectorAll('[data-role="suggest-case"]')];
-    expect(items.map((e) => e.getAttribute("data-id"))).toEqual(["y:ror-fly-880547", "c:12"]);
+    expect(items.map((e) => e.getAttribute("data-id"))).toEqual(["y:ror-fly-880547", "c:12", "y:post-only"]);
     expect(screen.getByRole("link", { name: "y:ror-fly-880547" })).toHaveAttribute("href", "https://x.com/Ror_Fly/status/1");
     const demos = card().querySelectorAll('[data-role="suggest-case-demo"]');
-    expect(demos).toHaveLength(1);
+    expect(demos).toHaveLength(1); // none for c:12 (no demo) or y:post-only (the demo is the post itself)
     expect(demos[0]).toHaveAttribute("href", "https://skillry.dev/ai-videos/opus-5-5/ror-fly-880547");
     expect(demos[0]).toHaveAttribute("target", "_blank");
     expect(items[0]).toHaveTextContent("Vì sao: loại video khớp (4/4)");

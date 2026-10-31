@@ -13,7 +13,8 @@
 //        not_in_pitch  the pitch has no such direction: its rows come back for the card
 //        queued        no pitch yet: a director request carries the user's preference (or, when the
 //                      provider declares pitchInit, the pitch is built from it and the outcome is chosen)
-// BRIEF.md is only written by the provider's choose command, never here. The operating mode is
+// BRIEF.md is only written by the provider's choose command, never here (the case suggestion command
+// writes only its output file). The operating mode is
 // written through the gateway with actor "human" when the provider has the op; otherwise it goes in
 // the request text and mode.saved is false. The mode is written only once the outcome is known
 // (chosen or queued), never for not_in_pitch or a failed command. Every 200 of choose, whatever the
