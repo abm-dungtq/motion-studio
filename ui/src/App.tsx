@@ -13,6 +13,7 @@ import { projectsQuery, statusQuery } from "@/api/queries.ts";
 import { createStudio, getTabs } from "@/ext/registry.ts";
 import { loadAll } from "@/ext/load.ts";
 import { AgentDialog } from "@/shell/AgentDialog.tsx";
+import { AiBanner } from "@/shell/AiBanner.tsx";
 import { Banner } from "@/shell/Banner.tsx";
 import { ErrorBoundary } from "@/shell/ErrorBoundary.tsx";
 import { ExportDialog } from "@/shell/ExportDialog.tsx";
@@ -95,6 +96,7 @@ export default function App() {
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
       <TopBar />
       <Banner />
+      <AiBanner />
       <div className="flex min-h-0 flex-1">
         <Rail />
         <ResizablePanelGroup orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} className="min-w-0 flex-1">

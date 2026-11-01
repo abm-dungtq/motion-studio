@@ -68,6 +68,26 @@ Thao tác chuột:
 - Mỗi lần sửa mốc lưu bản cũ vào `<dự án>/.opus/timing-edits/`. "Hoàn tác mốc" đặt lại bản mới nhất, chỉ khi file vẫn đúng như lúc sửa xong.
 - Peaks waveform được lưu trong IndexedDB `ms-peaks` (khoá `url|size|mtime`), ảnh khung trong `ms-thumbs` (khoá `url|mtime|t`). Lần mở sau không tải lại file media nếu chúng chưa đổi.
 
+## Hoàn tác lượt AI
+
+Trước khi đạo diễn bắt đầu một yêu cầu, Studio chép mọi file chữ của dự án vào `<dự án>/.opus/snapshots/<id yêu cầu>/`. File chữ là `.html`, `.md`, `.json`, `.css`, `.js`, `.mjs`, `.txt` và `.srt`, mỗi file tối đa 2 MB. Các thư mục `renders/`, `demo/`, `capture/`, `node_modules/`, `.hyperframes/`, `.opus/` và `.git/` được bỏ qua.
+
+- Media không được chép. Studio chỉ ghi kích thước và giờ sửa của chúng để biết file nào bị ghi đè.
+- Một yêu cầu hỏi người dùng (`studio_ask`) và các lượt tiếp theo của nó dùng chung ảnh chụp của yêu cầu đầu.
+- Với runner `cli`, ảnh chụp được lấy ngay trước khi chạy `claude`. Chạy lại vì `--resume` hỏng vẫn giữ ảnh chụp đầu.
+- Với runner `mcp`, ảnh chụp được lấy lúc xếp hàng nếu dự án đang rảnh. Nếu không rảnh, Studio lấy ảnh chụp lúc thấy yêu cầu đang chạy và ghi chú "chụp sau khi AI đã bắt đầu, có thể thiếu".
+- Lượt không đổi gì thì ảnh chụp bị xoá. Mỗi dự án giữ 10 ảnh chụp gần nhất.
+
+Khi lượt kết thúc, dải dưới thanh trên cùng hiện "AI đã sửa N file, vX → vY" kèm ba nút:
+
+- **Xem thay đổi** mở danh sách file và phần khác nhau của từng file. Chỉ xem, không sửa.
+- **Giữ** đóng dải.
+- **Hoàn tác** làm hai bước. Đầu tiên nó chép lại các file chữ và xoá file chữ mà lượt đó thêm. Sau đó nó ghi `project.json` cũ thành một version mới qua `restore` của cổng lệnh (actor `restore`, note "hoàn tác lượt AI <id>").
+  - Nếu `project.json` đã có version mới hơn sau lượt AI, Studio hỏi "Hoàn tác cả các sửa sau đó?" trước khi làm.
+  - Khi đạo diễn còn yêu cầu đang chạy, đang chờ hay đang chờ trả lời, Studio từ chối hoàn tác.
+  - Giọng hay ảnh bị ghi đè ngay tại chỗ thì không lấy lại được. Dải sau khi hoàn tác nêu tên các file đó và các câu cần lồng tiếng lại.
+  - Provider không có `restore` thì nút Hoàn tác bị ẩn.
+
 ## Route
 
 | Route | Việc |
@@ -79,5 +99,9 @@ Thao tác chuột:
 | `POST /api/timing/word` `{name, line_id, index, base_sha, start?, end?}` | Sửa một từ rồi dựng lại TIMING |
 | `POST /api/timing/undo` `{name}` | Hoàn tác lần sửa mốc gần nhất rồi dựng lại TIMING |
 | `POST /api/timing/word-sync` `{name}` | Chạy kiểm khớp lời của provider |
+| `GET /api/snapshots?name=` | Các lượt AI, mới nhất trước, và `can_restore`. Đóng ảnh chụp của các chuỗi yêu cầu đã xong trước khi trả |
+| `GET /api/snapshots/diff?name=&id=` | Chữ trước và sau của từng file lượt đó đã đổi, cùng media bị ghi đè hay mới tạo |
+| `POST /api/snapshots/keep` `{name, id}` | Giữ lượt AI, đóng dải |
+| `POST /api/snapshots/restore` `{name, id, force?}` | Hoàn tác lượt AI. 409 khi đạo diễn còn việc, 409 `code: "NEWER"` khi có sửa sau lượt đó mà chưa có `force` |
 
 Mã trạng thái của các route mốc: 400 dữ liệu sai, 404 không có từ hay file, 409 file đã đổi (`base_sha` lệch) hoặc đang có job đạo diễn hay timing chạy, 422 giá trị ngoài giới hạn (từ vượt từ kề hoặc ngắn hơn 10 ms, `beat0` ngoài `[0, beatLen)`), 423 dự án chỉ đọc.

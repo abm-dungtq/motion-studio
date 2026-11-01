@@ -138,3 +138,20 @@ export type SuggestChooseResult =
   | { outcome: "chosen"; direction: string; pick: number; style: string | null; requested_style?: string; answered?: string | null; next?: unknown; initialized?: boolean; mode: SuggestMode }
   | { outcome: "not_in_pitch"; picks: SuggestPick[]; mode: SuggestMode }
   | { outcome: "queued"; request?: unknown; runner?: unknown; job?: unknown; mode: SuggestMode };
+
+// GET /api/snapshots (routes/snapshots.mjs): one AI turn, newest first.
+export interface SnapshotSummary { from: number | null; to: number | null; changed: string[]; added: string[]; removed: string[]; overwritten: string[]; created: string[] }
+export interface Snapshot {
+  id: string;
+  at: string;
+  version: number | null;
+  state: "open" | "done" | "kept" | "restored";
+  late?: boolean;
+  files: number;
+  summary?: SnapshotSummary;
+  restored?: { at: string; version: number | null };
+}
+export interface SnapshotsResponse { snapshots: Snapshot[]; can_restore: boolean }
+export interface SnapshotFile { path: string; kind: "changed" | "added" | "removed"; before: string | null; after: string | null }
+export interface SnapshotDiff { id: string; state: Snapshot["state"]; from: number | null; files: SnapshotFile[]; overwritten: string[]; created: string[] }
+export interface RestoreResult { version: number | null; files: number; overwritten: string[]; created: string[]; lines: { id: string; text: string }[] }

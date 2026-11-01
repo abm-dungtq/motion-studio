@@ -31,6 +31,7 @@ const id = process.env.OPUS_STUDIO_REQUEST;
 setTimeout(async () => {
   if (prompt.includes("[crash]")) { console.error("boom"); process.exit(2); }
   out({ type: "assistant", message: { content: [{ type: "tool_use", name: ${JSON.stringify(PREFIX + "project_get")} }] } });
+  if (prompt.includes("[edit]")) fs.appendFileSync("index.html", "<!-- sửa bởi đạo diễn -->\\n");
   if (prompt.includes("[ask]")) {
     const { ask } = await import(${JSON.stringify(REQUESTS)});
     ask(process.cwd(), id, { kind: "approve", question: "Duyệt animatic?", artifacts: ["demo/animatic.mp4"], gate: "animatic", runner: process.env.OPUS_STUDIO_RUNNER });
@@ -64,6 +65,13 @@ after(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
+function get(path) {
+  return new Promise((res, rej) => {
+    request({ host: "127.0.0.1", port, path, headers: { host: `127.0.0.1:${port}`, "x-studio-token": TOKEN } }, (r) => {
+      let s = ""; r.on("data", (c) => (s += c)); r.on("end", () => res({ status: r.statusCode, json: JSON.parse(s || "null") }));
+    }).on("error", rej).end();
+  });
+}
 function post(path, body, token = TOKEN) {
   return new Promise((res, rej) => {
     const data = JSON.stringify(body);
@@ -90,7 +98,7 @@ test("request reaches done, the session is stored, the next run resumes it", asy
   assert.equal(a.status, 200);
   assert.equal(a.json.runner, "cli");
   const ra = await ended(a.json.request.id);
-  assert.equal(ra.status, "done");
+  assert.equal(ra.status, "done", ra.error);
   assert.equal(ra.runner, "cli");
   assert.equal(ra.receipt, "Đã đổi s2");
   assert.equal(session(), "sess-1");
@@ -120,6 +128,31 @@ test("a failed resume is retried once without it", async () => {
   assert.equal(runs.length, 2);
   assert.ok(runs[0].includes("--resume") && !runs[1].includes("--resume"));
   assert.equal(session(), "sess-1");
+});
+
+test("an AI turn is copied once, even when a failed resume relaunches it, and can be undone", async () => {
+  writeFileSync(join(dir(), ".opus", "director.json"), JSON.stringify({ session_id: "bad" }));
+  const html = readFileSync(join(dir(), "index.html"), "utf8");
+  const r = await post("/api/director", { name: "demo", scope: "project", text: "[edit] đổi tiêu đề" });
+  const id = r.json.request.id;
+  assert.equal((await ended(id)).status, "done");
+  let snaps;
+  for (let i = 0; i < 100; i++) {
+    snaps = (await get("/api/snapshots?name=demo")).json.snapshots;
+    if (snaps.find((s) => s.id === id)?.state === "done") break;
+    await new Promise((x) => setTimeout(x, 50));
+  }
+  const mine = snaps.filter((s) => s.id === id);
+  assert.equal(mine.length, 1);
+  assert.equal(mine[0].state, "done");
+  assert.deepEqual(mine[0].summary.changed, ["index.html"]);
+  const diff = (await get(`/api/snapshots/diff?name=demo&id=${id}`)).json;
+  assert.equal(diff.files[0].before, html);
+  assert.match(diff.files[0].after, /sửa bởi đạo diễn/);
+  const u = await post("/api/snapshots/restore", { name: "demo", id });
+  assert.equal(u.status, 200, JSON.stringify(u.json));
+  assert.equal(readFileSync(join(dir(), "index.html"), "utf8"), html);
+  assert.equal((await post("/api/snapshots/restore", { name: "demo", id })).status, 409);
 });
 
 test("exit without closing: final answer becomes the receipt; a crash marks it failed", async () => {
