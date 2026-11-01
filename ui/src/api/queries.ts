@@ -9,7 +9,7 @@ import { queryOptions, useQuery, type QueryKey } from "@tanstack/react-query";
 import { api, projectText, queryClient, say, send, type SendResult } from "./client.ts";
 import type {
   AgentStatus, AgentsScan, DirectorRequest, FileEntry, Gates, Job, LogEntry, Manifest, MediaEntry,
-  ProjectEntry, SoundsList, StatusResponse, SuggestChooseResult, SuggestResponse, TimelineMedia,
+  ProjectEntry, SnapshotDiff, SnapshotsResponse, SoundsList, StatusResponse, SuggestChooseResult, SuggestResponse, TimelineMedia,
 } from "./types.ts";
 import type { TimingData } from "@/core/markers.ts";
 
@@ -53,6 +53,8 @@ export const keys = {
   lemoGuide: (slug: string, source: string) => ["/api/lemo/guide", slug, source] as const,
   suggest: (name: string | null) => ["/api/suggest", name] as const,
   anime: (kind: AnimeKind, name: string | null) => ["/api/anime", kind, name] as const,
+  snapshots: (name: string | null) => ["/api/snapshots", name] as const,
+  snapshotDiff: (name: string | null, id: string) => ["/api/snapshots/diff", name, id] as const,
   animeJob: (name: string | null, id: string) => ["/api/anime/job", name, id] as const,
 };
 
@@ -122,6 +124,27 @@ export function announceRequests(prev: readonly DirectorRequest[] | undefined, l
 export function setRequests(name: string, list: DirectorRequest[]): void {
   announceRequests(queryClient.getQueryData(keys.requests(name)), list);
   queryClient.setQueryData(keys.requests(name), list);
+}
+
+// `/api/snapshots` — routes/snapshots.mjs: the AI turns that can be kept or undone. Refetched on
+// every SSE "request" event (api/events.ts), since a turn ends when its requests do.
+export const snapshotsQuery = (name: string | null) => queryOptions({
+  queryKey: keys.snapshots(name),
+  queryFn: () => api<SnapshotsResponse>(`/api/snapshots?name=${enc(name ?? "")}`),
+  staleTime: Infinity,
+});
+export function useSnapshots(name: string | null) {
+  const entry = useProjectEntry(name);
+  return useQuery({ ...snapshotsQuery(name), enabled: Boolean(name && entry?.has_manifest) });
+}
+// `/api/snapshots/diff` — the text of every file one AI turn touched, before and now.
+export const snapshotDiffQuery = (name: string | null, id: string) => queryOptions({
+  queryKey: keys.snapshotDiff(name, id),
+  queryFn: () => api<SnapshotDiff>(`/api/snapshots/diff?${params({ name, id })}`),
+  staleTime: 0,
+});
+export function useSnapshotDiff(name: string | null, id: string | null) {
+  return useQuery({ ...snapshotDiffQuery(name, id ?? ""), enabled: Boolean(name && id) });
 }
 
 // `/api/requests` — public/app.js:274
@@ -364,6 +387,9 @@ export const director = (b: NameBody) => write(`/api/director`, b, queue(b.name)
 export const directorAnswer = (b: NameBody & { id: string; value: unknown }, opts: { timeout?: number } = {}) => write(`/api/director/answer`, b, queue(b.name), opts);
 // `/api/director/cancel` — public/app.js:159
 export const directorCancel = (b: NameBody & { id: string }) => write(`/api/director/cancel`, b, queue(b.name));
+// `/api/snapshots/keep` and `/api/snapshots/restore` — routes/snapshots.mjs
+export const snapshotKeep = (b: NameBody & { id: string }) => write(`/api/snapshots/keep`, b, [keys.snapshots(b.name)]);
+export const snapshotRestore = (b: NameBody & { id: string; force?: boolean }) => write(`/api/snapshots/restore`, b, [keys.snapshots(b.name), ...edits(b.name)]);
 // `/api/jobs/cancel` — public/app.js:164
 export const jobsCancel = (b: NameBody & { id: string }) => write(`/api/jobs/cancel`, b, [keys.jobs(b.name)]);
 // `/api/export` — public/app.js:170

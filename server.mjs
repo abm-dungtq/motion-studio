@@ -43,7 +43,7 @@ import { fileURLToPath } from "node:url";
 import { loadProvider, providerStatus, SETUP_COMMAND } from "./lib/provider.mjs";
 import { compressScript, hfRuntime } from "./lib/config.mjs";
 import { events as jobEvents, startJob, cancel as cancelJob, listJobs, running, stopAll } from "./jobs.mjs";
-import { KIND as DIRECTOR, pump, runnerSetting } from "./director.mjs";
+import { KIND as DIRECTOR, pump, runnerSetting, snapshotQueued } from "./director.mjs";
 import { createProject, runFile } from "./create.mjs";
 import { browse, register, readMedia, BROWSE_ROOTS, AUDIO_EXT } from "./media.mjs";
 import { agentStatus } from "./agent.mjs";
@@ -466,6 +466,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         let r;
         try { r = P.requests.enqueue(pd.dir, { scope: b.scope, target: b.target ?? null, t: Number.isFinite(b.t) ? b.t : null, base: P.manifest.load(pd.dir).version, text: b.text }); } catch (e) { return send(res, 400, { error: e.message }); }
         const runner = runnerSetting();
+        if (runner === "mcp") snapshotQueued(P, pd.dir, r);
         if (runner === "mcp") return send(res, 200, { request: r, runner, message: "Đang chờ phiên Claude Code mở nhận việc (studio_request_next)" });
         const busy = running(b.name, DIRECTOR);
         const job = busy ? null : pump(P, b.name, pd.dir);

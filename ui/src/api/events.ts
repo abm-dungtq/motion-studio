@@ -71,7 +71,10 @@ export function useProjectEvents(name: string | null): void {
     });
     es.addEventListener("request", (e) => {
       const list = parse<DirectorRequest[]>((e as MessageEvent).data);
-      if (mine() && Array.isArray(list)) setRequests(name, list);
+      if (mine() && Array.isArray(list)) {
+        setRequests(name, list);
+        void queryClient.invalidateQueries({ queryKey: keys.snapshots(name) });
+      }
     });
     es.addEventListener("job", (e) => {
       const ev = parse<JobEvent>((e as MessageEvent).data);

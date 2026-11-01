@@ -14,6 +14,8 @@
 // anything else → failed with the last 20 log lines. A request the director left waiting_user
 // (studio_ask) is kept as is until the user answers.
 // Runner "mcp": the request stays queued for an open session (studio_request_next).
+// Before a request runs, lib/snapshots.mjs copies the project's text files (once per ask chain), so
+// Studio can undo the whole turn; for runner mcp the copy is taken when the request is queued.
 // The runner is `director.runner` in the state file (lib/config.mjs).
 // Tool lists, the plugin-specific prompt lines and the child env come from the provider
 // (lib/provider.mjs); every function here takes it as its first argument.
@@ -29,6 +31,7 @@ import { loadTools } from "./lib/tools.mjs";
 import { seriesFor } from "./lib/series.mjs";
 import { SERVER_NAME, serverArgs, toolsForProfile } from "./mcp/studio-mcp.mjs";
 import { startJob, running } from "./jobs.mjs";
+import * as snapshots from "./lib/snapshots.mjs";
 
 export { runnerSetting };
 export const KIND = "director";
@@ -176,9 +179,32 @@ export const childEnv = (p, req) => {
   return env;
 };
 
+// Copies the project for the ask chain of req before the director touches it. A failed copy
+// only loses the undo, so it is logged and the request still runs.
+export function snapshotFor(p, dir, req) {
+  try {
+    const id = snapshots.chainKey(dir, new Map((p.requests.list(dir) ?? []).map((r) => [r.id, r])), req);
+    return snapshots.take(dir, id, { version: p.manifest.load(dir)?.version ?? req.base ?? null });
+  } catch (e) { console.warn(`snapshot ${req.id}: ${e.message}`); return null; }
+}
+
+// Closes the snapshots of chains that ended (lib/snapshots.mjs sync).
+export function settleSnapshots(p, dir) {
+  try { return snapshots.sync(dir, p.requests.list(dir) ?? [], p.manifest.load(dir)?.version ?? null); }
+  catch (e) { console.warn(`snapshot: ${e.message}`); return []; }
+}
+
+// Runner mcp: a request queued while nothing else of the project is queued, running or waiting
+// is copied now, before an open session can claim it.
+export function snapshotQueued(p, dir, req) {
+  const others = (p.requests.list(dir) ?? []).filter((r) => r.id !== req.id && ["queued", "running", "waiting_user"].includes(r.status));
+  return others.length ? null : snapshotFor(p, dir, req);
+}
+
 // Runs a request already claimed for runner "cli". Returns the job.
 function launch(p, name, dir, req, { resume = true, onEnd } = {}) {
   const { list, finish } = p.requests;
+  snapshotFor(p, dir, req);
   const sid = resume ? savedSession(dir) : null;
   const state = { session: null, result: null, isError: false };
   const mcp = studioMcp(p, dir, req);
@@ -200,6 +226,7 @@ function launch(p, name, dir, req, { resume = true, onEnd } = {}) {
           else finish(dir, req.id, { ok: false, error: job.status === "cancelled" ? "Đã huỷ trong Studio" : `Đạo diễn dừng (exit ${job.code ?? job.signal}) trước khi đóng yêu cầu:\n${tail}` });
         } catch { /* closed meanwhile */ }
       }
+      settleSnapshots(p, dir);
       onEnd?.();
     },
   });
@@ -228,6 +255,8 @@ export function queueRequest(p, name, dir, { scope = "project", target = null, t
   let request;
   try { request = p.requests.enqueue(dir, { scope, target, t: null, base: p.manifest.load(dir)?.version, text }); }
   catch (e) { throw Object.assign(new Error(e.message), { status: 400 }); }
-  return { request, runner: runnerSetting(), job: startIdle(p, name, dir) };
+  const runner = runnerSetting();
+  if (runner === "mcp") snapshotQueued(p, dir, request);
+  return { request, runner, job: startIdle(p, name, dir) };
 }
 
