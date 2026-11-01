@@ -77,7 +77,7 @@ function GalleryView({ cat, shot, m }: { cat: FxCatalog; shot: Shot; m: Manifest
         {SOURCES.map((s) => {
           const on = s === source;
           return (
-            <Button key={s || "all"} data-src={s} aria-pressed={on} className={cn("h-7 px-2.5 font-medium", on && "border-primary bg-primary/15 text-primary")} onClick={() => setGallery({ source: s })}>
+            <Button key={s || "all"} data-src={s} aria-pressed={on} className={cn("h-7 px-2.5 font-medium", on && "border-primary bg-primary/15 text-primary-ink")} onClick={() => setGallery({ source: s })}>
               {s ? `${SOURCE_VI[s]} (${counts[s] ?? 0})` : "Tất cả"}
             </Button>
           );
@@ -96,11 +96,11 @@ function GalleryView({ cat, shot, m }: { cat: FxCatalog; shot: Shot; m: Manifest
               className={cn("flex flex-col items-start gap-0.5 rounded-md border border-border bg-panel px-2 py-1.5 text-left text-foreground hover:border-muted-foreground", on && "border-primary bg-primary/15")}
               onClick={() => setGallery({ picked: i.id })}
             >
-              <span className="text-sm font-semibold">{i.name}{cur ? <span className="text-primary">{" ●"}</span> : null}</span>
+              <span className="text-sm font-semibold">{i.name}{cur ? <span className="text-primary-ink">{" ●"}</span> : null}</span>
               <span className="flex flex-wrap items-center gap-1 text-[11px]">
                 <code className="text-muted-foreground">{i.id}</code>
                 {(i.sources ?? []).map((s) => (
-                  <span key={s} className={cn("rounded-full border border-border px-1.5 text-muted-foreground", s === "studio" && "border-primary text-primary")}>{SOURCE_VI[s]}</span>
+                  <span key={s} className={cn("rounded-full border border-border px-1.5 text-muted-foreground", s === "studio" && "border-primary text-primary-ink")}>{SOURCE_VI[s]}</span>
                 ))}
                 {i.soft ? <span className="rounded-full border border-border px-1.5 text-muted-foreground italic" title="Chỉ hợp hướng cho phép chuyển cảnh mềm">mềm</span> : null}
                 {cur ? <span className="rounded-full border border-border px-1.5 text-muted-foreground italic">đang dùng</span> : null}

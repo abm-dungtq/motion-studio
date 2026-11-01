@@ -25,7 +25,7 @@ describe("VersionSelect", () => {
     expect(box).toHaveTextContent("v3 · hiện tại");
     await userEvent.click(box);
     const options = await screen.findAllByRole("option");
-    expect(options.map((o) => o.textContent)).toEqual(["v3 · hiện tại", "v2 · user", "v1 · import"]);
+    expect(options.map((o) => o.textContent)).toEqual(["v3 · hiện tại", "v2 · bạn sửa", "v1 · nhập từ dự án cũ"]);
     await userEvent.click(options[1]);
     expect(say).toHaveBeenCalledWith("Danh sách chỉ để xem; quay lại bản trước bằng Hoàn tác");
     expect(screen.getByRole("combobox", { name: "Phiên bản" })).toHaveTextContent("v3 · hiện tại");

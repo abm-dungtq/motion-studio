@@ -6,18 +6,19 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { actions } from "@/api/actions.ts";
 import { projectsNew } from "@/api/queries.ts";
-import { ASPECTS, DEFAULTS, LIMITS, MODES, NAME_PATTERN, bodyOf, failureText, hintOf, type NewProjectForm } from "@/core/new-project.ts";
+import { ASPECTS, DEFAULTS, LIMITS, MODES, bodyOf, failureText, folderOf, hintOf, nameProblem, type NewProjectForm } from "@/core/new-project.ts";
 import { useStudio } from "@/store/studio.ts";
 import { Button, Input, Textarea } from "./controls.tsx";
 
 const EMPTY: NewProjectForm = { name: "", mode: DEFAULTS.mode, aspect: DEFAULTS.aspect, topic: "", duration: DEFAULTS.duration, audience: "", first_request: "" };
 
-function Field({ label, note, children }: { label: string; note?: string; children: React.ReactNode }) {
+function Field({ label, note, problem, noteId, children }: { label: string; note?: string; problem?: string | null; noteId?: string; children: React.ReactNode }) {
   return (
     <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
       <span className="font-medium">{label}</span>
       {children}
-      {note ? <small className="text-xs text-muted-foreground">{note}</small> : null}
+      {problem ? <small id={noteId} role="alert" className="text-xs text-danger">{problem}</small>
+        : note ? <small id={noteId} className="text-xs text-muted-foreground">{note}</small> : null}
     </label>
   );
 }
@@ -38,16 +39,31 @@ function Choices({ legend, name, items, value, onChange }: { legend: string; nam
   );
 }
 
+// The browser's own bubble for an empty or out-of-range field, in Vietnamese. The form is noValidate
+// so the folder name is checked first; reportValidity() in submit then shows these.
+type Checked = HTMLInputElement | HTMLTextAreaElement;
+const isChecked = (t: EventTarget): t is Checked => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement;
+function sayInvalid(t: EventTarget) {
+  if (!isChecked(t)) return;
+  const v = t.validity;
+  const min = t instanceof HTMLInputElement ? t.min : "", max = t instanceof HTMLInputElement ? t.max : "";
+  t.setCustomValidity(v.valueMissing ? "Hãy điền ô này." : v.rangeUnderflow ? `Ít nhất ${min}.` : v.rangeOverflow ? `Nhiều nhất ${max}.`
+    : v.stepMismatch || v.badInput ? "Nhập một số nguyên." : "");
+}
+function clearInvalid(t: EventTarget) { if (isChecked(t)) t.setCustomValidity(""); }
+
 export function NewProjectDialog() {
   const open = useStudio((s) => s.dialog === "new-project");
   const [f, setF] = useState<NewProjectForm>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const errId = useId();
+  const nameNoteId = useId();
 
   // Every opening starts from the defaults (new-project.js resets the form on click).
-  useEffect(() => { if (open) { setF(EMPTY); setError(null); } }, [open]);
+  useEffect(() => { if (open) { setF(EMPTY); setError(null); setNameError(null); } }, [open]);
 
   const set = <K extends keyof NewProjectForm>(k: K, v: NewProjectForm[K]) => setF((x) => ({ ...x, [k]: v }));
   const close = () => { if (!busy) useStudio.getState().openDialog(null); };
@@ -55,6 +71,9 @@ export function NewProjectDialog() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    const problem = nameProblem(f.name);
+    setNameError(problem);
+    if (problem) { nameRef.current?.focus(); return; }
     if (!e.currentTarget.reportValidity()) return;
     const body = bodyOf(f);
     setBusy(true);
@@ -89,9 +108,13 @@ export function NewProjectDialog() {
           <DialogTitle>Dự án mới</DialogTitle>
           <DialogDescription className="sr-only">Tạo thư mục dự án mới trong studio</DialogDescription>
         </DialogHeader>
-        <form onSubmit={(e) => { void submit(e); }} className="flex flex-col gap-3" aria-describedby={error ? errId : undefined}>
-          <Field label="Tên thư mục" note="chữ thường, số, gạch nối (2–49 ký tự)">
-            <Input ref={nameRef} name="name" required pattern={NAME_PATTERN} autoComplete="off" spellCheck={false} placeholder="vi-du-video-moi" value={f.name} onChange={(e) => set("name", e.target.value)} />
+        <form noValidate onSubmit={(e) => { void submit(e); }} onInvalidCapture={(e) => sayInvalid(e.target)} onInputCapture={(e) => clearInvalid(e.target)}
+          className="flex flex-col gap-3" aria-describedby={error ? errId : undefined}>
+          <Field label="Tên thư mục" noteId={nameNoteId} problem={nameError}
+            note={folderOf(f.name) && folderOf(f.name) !== f.name.trim() ? `Thư mục sẽ là: ${folderOf(f.name)}` : "chữ thường, số, gạch nối (2–49 ký tự); gõ có dấu cũng được"}>
+            <Input ref={nameRef} name="name" autoComplete="off" spellCheck={false} placeholder="vi-du-video-moi" value={f.name}
+              aria-invalid={nameError ? true : undefined} aria-describedby={nameNoteId}
+              onChange={(e) => { set("name", e.target.value); if (nameError) setNameError(nameProblem(e.target.value)); }} />
           </Field>
           <Choices legend="Chế độ" name="mode" items={MODES.map((m) => [m.id, m.label] as const)} value={f.mode} onChange={(v) => set("mode", v)} />
           <Choices legend="Tỷ lệ" name="aspect" items={ASPECTS} value={f.aspect} onChange={(v) => set("aspect", v)} />

@@ -44,7 +44,7 @@ export function Exported() {
       <h3 className="m-0 text-sm font-semibold">File đã xuất</h3>
       {isPending ? <Loading /> : error ? <Fail error={error} /> : rows.length ? rows.map((r) => (
         <div key={r.href} className="flex items-center justify-between gap-2 rounded-md border border-border bg-panel-2 px-2.5 py-1.5 text-sm">
-          <a className="truncate text-primary underline-offset-2 hover:underline" href={r.href} target="_blank" rel="noopener" title={r.title}>{r.label}</a>
+          <a className="truncate text-primary-ink underline-offset-2 hover:underline" href={r.href} target="_blank" rel="noopener" title={r.title}>{r.label}</a>
           <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{mb(r.size)}</span>
         </div>
       )) : <p className="m-0 text-sm text-muted-foreground">Chưa có bản xuất. Bấm Xuất video ở trên; file MP4 hiện ở đây khi xong.</p>}

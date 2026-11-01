@@ -37,7 +37,7 @@ export const Toolbar = memo(function Toolbar({ editable, onFit }: { editable: bo
         data-mode={mode}
         aria-pressed={mode === "roll"}
         title="Kéo mép shot: Ripple đổi độ dài và dời các shot sau, Roll dời điểm cắt giữ tổng thời lượng (R)"
-        className="aria-pressed:border-primary aria-pressed:text-primary"
+        className="aria-pressed:border-primary aria-pressed:text-primary-ink"
         onClick={toggleMode}
       >
         {mode === "roll" ? "Roll" : "Ripple"}
@@ -47,7 +47,7 @@ export const Toolbar = memo(function Toolbar({ editable, onFit }: { editable: bo
         data-testid="snap-btn"
         aria-pressed={snap}
         title="Hít vào mép shot, câu, SFX, playhead, phách, đầu từ (N)"
-        className="aria-pressed:border-primary aria-pressed:text-primary"
+        className="aria-pressed:border-primary aria-pressed:text-primary-ink"
         onClick={toggleSnap}
       >
         Hít

@@ -101,7 +101,7 @@ export function GateCard({ name, r, again }: { name: string; r: DirectorRequest;
         {first && kind === "img" ? <img className="w-full rounded-sm border border-border bg-stage" src={fileUrl(name, first)} alt={first} /> : null}
         {first ? (
           <div className="flex flex-wrap gap-2">
-            {art.map((p) => <a key={p} className="text-sm text-primary underline" href={fileUrl(name, p)} target="_blank" rel="noopener" title={p}>{p.split("/").pop()}</a>)}
+            {art.map((p) => <a key={p} className="text-sm text-primary-ink underline" href={fileUrl(name, p)} target="_blank" rel="noopener" title={p}>{p.split("/").pop()}</a>)}
           </div>
         ) : null}
         {rejecting ? <Draft draftKey={noteKey} label="Ghi chú: chưa được ở đâu" placeholder="Chỗ nào chưa được? Đạo diễn sẽ sửa theo ghi chú này." disabled={busy} /> : null}

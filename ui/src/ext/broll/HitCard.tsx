@@ -39,7 +39,7 @@ export function HitCard({ x, children }: { x: BrollHit; children?: ReactNode }) 
       <div className="grid min-w-0 gap-0.5 px-2 pt-1.5 pb-2">
         <small className="text-xs text-muted-foreground tabular-nums">{`${span(x)} · ${Number(x.duration).toFixed(1)} s${x.shot_type ? ` · ${x.shot_type}` : ""}`}</small>
         <span className="text-[13px] leading-snug">{x.caption_vi ?? (x.describe_error ? "chú thích lỗi" : "chưa có chú thích")}</span>
-        {x.tags?.length ? <small className="text-xs text-primary">{x.tags.join(" · ")}</small> : null}
+        {x.tags?.length ? <small className="text-xs text-primary-ink">{x.tags.join(" · ")}</small> : null}
         <small className="truncate text-xs text-muted-foreground">{fileOf(x.path)}</small>
         {children}
       </div>
