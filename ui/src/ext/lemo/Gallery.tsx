@@ -20,7 +20,7 @@ export function Credit({ credit }: { credit?: LemoCredit }) {
     <p className="m-0 mt-2 text-xs text-muted-foreground" data-testid="lemo-credit">
       {`${credit?.text ?? "Ảnh và phim mẫu: LemoLab, CC BY 4.0"}, `}
       {safeUrl(credit?.url) ? (
-        <a className="text-primary hover:underline" href={credit.url} target="_blank" rel="noopener noreferrer">{credit.url.replace(/^https:\/\//, "")}</a>
+        <a className="text-primary-ink hover:underline" href={credit.url} target="_blank" rel="noopener noreferrer">{credit.url.replace(/^https:\/\//, "")}</a>
       ) : "github.com/lemomo-ai/lemo-opuscar"}
       {`. Mã và tài liệu: ${credit?.code_license ?? "MIT"}.`}
     </p>

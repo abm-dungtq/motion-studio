@@ -10,6 +10,22 @@ export const MODES = [
 export const ASPECTS = [["16:9", "16:9 ngang"], ["9:16", "9:16 dọc"], ["both", "Cả hai"]] as const;
 
 export const NAME_PATTERN = "[a-z0-9][a-z0-9\\-]{1,48}";
+const NAME_RE = new RegExp(`^${NAME_PATTERN}$`);
+
+// The folder a typed name becomes: no Vietnamese marks, lower case, anything else a single dash,
+// at most 49 characters ("Video Thử 2" -> "video-thu-2"). The server still checks NAME_PATTERN.
+export function folderOf(text: string): string {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").replace(/[đĐ]/g, "d").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "").slice(0, 49).replace(/-+$/, "");
+}
+
+// Why the folder name cannot be used, in Vietnamese; null when it can.
+export function nameProblem(text: string): string | null {
+  const folder = folderOf(text);
+  if (!folder) return "Nhập tên thư mục, ví dụ video-gioi-thieu.";
+  return NAME_RE.test(folder) ? null : "Tên thư mục cần ít nhất 2 ký tự chữ hoặc số.";
+}
+
 export const LIMITS = { topic: 500, audience: 500, first_request: 4000, durationMin: 5, durationMax: 600 } as const;
 export const DEFAULTS = { mode: "tu-dau", aspect: "16:9", duration: "30" } as const;
 
@@ -21,7 +37,7 @@ export const hintOf = (mode: string): string => MODES.find((m) => m.id === mode)
 // The request body (new-project.js submit): trimmed, optional fields only when filled.
 export function bodyOf(f: NewProjectForm): NewProjectBody {
   return {
-    name: f.name.trim(), mode: f.mode || DEFAULTS.mode, aspect: f.aspect || DEFAULTS.aspect,
+    name: folderOf(f.name), mode: f.mode || DEFAULTS.mode, aspect: f.aspect || DEFAULTS.aspect,
     topic: f.topic.trim(), duration: Number(f.duration),
     ...(f.audience.trim() ? { audience: f.audience.trim() } : {}),
     ...(f.first_request.trim() ? { first_request: f.first_request.trim() } : {}),

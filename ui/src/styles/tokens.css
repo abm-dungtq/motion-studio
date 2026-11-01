@@ -9,6 +9,10 @@
   --ms-text: #e6e8ee;
   --ms-muted: #9097a3;
   --ms-accent: #3b82f6;
+  /* Filled buttons and chips: white text on it is 5.2:1 (#3b82f6 was 3.7:1). */
+  --ms-accent-fill: #2563eb;
+  /* Accent text on the dark panels: 6.4:1 or more on every panel. */
+  --ms-accent-ink: #60a5fa;
   --ms-accent-text: #ffffff;
   --ms-warn: #e5b62b;
   --ms-danger: #ef4444;
@@ -37,7 +41,7 @@
   --card-foreground: var(--ms-text);
   --popover: var(--ms-panel);
   --popover-foreground: var(--ms-text);
-  --primary: var(--ms-accent);
+  --primary: var(--ms-accent-fill);
   --primary-foreground: var(--ms-accent-text);
   --secondary: var(--ms-panel-2);
   --secondary-foreground: var(--ms-text);

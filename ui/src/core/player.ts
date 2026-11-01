@@ -146,7 +146,19 @@ export function mountPlayer(el: HTMLElement, hooks: PlayerHooks): Player {
       if (Date.now() - t0 > LOAD_TIMEOUT_MS) { hooks.onStatus({ state: "failed", message: "Không nạp được player (thiếu HyperFrames runtime?)" }); return; }
       setTimeout(wait, 100);
     };
-    me.addEventListener("load", wait);
+    me.addEventListener("load", () => { forwardKeys(me); wait(); });
+  }
+
+  // A click on the picture moves focus into the iframe, where the page's shortcut handler on window
+  // never hears a key. Replay each keydown on the page; when the page handled it, stop the iframe too.
+  function forwardKeys(me: HTMLIFrameElement) {
+    me.contentWindow?.addEventListener("keydown", (e) => {
+      const copy = new KeyboardEvent("keydown", {
+        key: e.key, code: e.code, repeat: e.repeat, bubbles: true, cancelable: true,
+        shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey, metaKey: e.metaKey,
+      });
+      if (!window.dispatchEvent(copy)) e.preventDefault();
+    });
   }
 
   // A new version may change index.html (timing markers): reload and return to the same time.

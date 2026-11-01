@@ -53,7 +53,7 @@ export function StyleCard({ style, project, name, hasManifest }: { style: LemoSt
         </Button>
         {style.guide ? <Button onClick={() => { void showGuide(style); }}>Đọc STYLE.md</Button> : null}
         {safeUrl(style.film_url) ? (
-          <a className="text-sm text-primary hover:underline" href={style.film_url} target="_blank" rel="noopener noreferrer">Xem phim mẫu ↗</a>
+          <a className="text-sm text-primary-ink hover:underline" href={style.film_url} target="_blank" rel="noopener noreferrer">Xem phim mẫu ↗</a>
         ) : null}
       </div>
     </div>

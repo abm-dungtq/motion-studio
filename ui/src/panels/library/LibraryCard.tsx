@@ -13,7 +13,7 @@ import { useLibraryStore } from "./store.ts";
 
 const CARD = "flex flex-col gap-1.5 rounded-md border border-border bg-panel-2 p-2.5 text-sm";
 const MUTED = "text-xs text-muted-foreground";
-const LINK = "text-primary underline-offset-2 hover:underline";
+const LINK = "text-primary-ink underline-offset-2 hover:underline";
 
 export function copyText(text: unknown): Promise<void> {
   return navigator.clipboard.writeText(String(text ?? "")).then(() => say("Đã chép vào bộ nhớ tạm"), () => say("Trình duyệt không cho chép", true));

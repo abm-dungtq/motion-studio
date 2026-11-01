@@ -28,6 +28,8 @@ const GATE_BADGE: Record<string, string> = {
   pass: "border-ok/50 bg-ok/10 text-ok",
   stale: "border-warn/50 bg-warn/10 text-warn",
 };
+// The badge text: the viet-pro gate of the line in the user's words; an unknown value shows as is.
+const GATE_LABEL: Record<string, string> = { pass: "đã qua viet-pro", stale: "chờ duyệt lại", unknown: "chưa kiểm viet-pro" };
 
 // What a series says about the voices of this project; null when it is in no series (404).
 interface SeriesVoices { roles: string[]; canSetSpeaker: boolean }
@@ -112,7 +114,7 @@ function LineCard({ name, line, n, editable, version, root, voices }: { name: st
     <div data-id={line.id} className="flex flex-col gap-2 rounded-md border border-border bg-panel-2 p-2.5">
       <div className="flex items-center gap-2">
         <strong className="text-sm">{`${n}. ${line.id}`}</strong>
-        <span className={cn("rounded-full border px-2 text-xs font-semibold", GATE_BADGE[gate] ?? "border-border bg-background text-muted-foreground")}>{gate}</span>
+        <span className={cn("rounded-full border px-2 text-xs font-semibold", GATE_BADGE[gate] ?? "border-border bg-background text-muted-foreground")}>{GATE_LABEL[gate] ?? gate}</span>
       </div>
       {voices ? <SpeakerPick line={line} n={n} voices={voices} editable={editable} /> : null}
       <Textarea value={draft} disabled={!editable} aria-label={`Câu ${n}`} onChange={(e) => setDraft(e.target.value)} />

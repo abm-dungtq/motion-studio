@@ -1,10 +1,15 @@
 // The version list of the top bar (public/app.js:256-267, renderVersions): newest first,
-// "v<n> · hiện tại" or "v<n> · <actor>". It is only for reading: picking another version says so
+// "v<n> · hiện tại" or "v<n> · <who made it>", the actor in the user's words. It is only for reading: picking another version says so
 // and the list stays on the current one. Disabled without a project.
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { say } from "@/api/client.ts";
 import { useLog, useProject } from "@/api/queries.ts";
 import { useStudio } from "@/store/studio.ts";
+
+const ACTOR: Record<string, string> = {
+  human: "bạn sửa", user: "bạn sửa", studio: "Studio", director: "đạo diễn AI", tool: "công cụ", import: "nhập từ dự án cũ",
+};
+const actorLabel = (a?: string): string => (a ? ACTOR[a] ?? a : "");
 
 export function VersionSelect() {
   const name = useStudio((s) => s.name);
@@ -22,7 +27,7 @@ export function VersionSelect() {
       </SelectTrigger>
       <SelectContent>
         {versions.map((e) => (
-          <SelectItem key={e.v} value={String(e.v)}>{`v${e.v} · ${e.v === m?.version ? "hiện tại" : (e.actor ?? "")}`}</SelectItem>
+          <SelectItem key={e.v} value={String(e.v)}>{`v${e.v} · ${e.v === m?.version ? "hiện tại" : actorLabel(e.actor)}`}</SelectItem>
         ))}
       </SelectContent>
     </Select>

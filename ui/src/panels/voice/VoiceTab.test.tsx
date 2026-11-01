@@ -72,7 +72,7 @@ describe("voice tab", () => {
     renderUi(<VoiceTab />);
     expect(screen.getByText("1. vo-01")).toBeInTheDocument();
     expect(screen.getByText("3. vo-03")).toBeInTheDocument();
-    expect(screen.getByText("pass")).toBeInTheDocument();
+    expect(screen.getByText("đã qua viet-pro")).toBeInTheDocument();
     expect(screen.getByLabelText("Câu 3")).toHaveValue("Kéo dài một cảnh, nét vẽ tự giãn theo.");
     expect(screen.queryByText("Nhờ duyệt và lồng tiếng lại")).toBeNull();
   });
@@ -104,7 +104,7 @@ describe("voice tab", () => {
   test("a stale line shows the reminder and asks the director for the line", async () => {
     store.m = stale();
     renderUi(<VoiceTab />);
-    expect(screen.getByText("stale")).toBeInTheDocument();
+    expect(screen.getByText("chờ duyệt lại")).toBeInTheDocument();
     expect(screen.getByText("Cần đạo diễn duyệt viet-pro rồi lồng tiếng lại")).toBeInTheDocument();
     await act(async () => { fireEvent.click(screen.getByText("Nhờ duyệt và lồng tiếng lại")); });
     expect(actions.direct).toHaveBeenCalledWith({
