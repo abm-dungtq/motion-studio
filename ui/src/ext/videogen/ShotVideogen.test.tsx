@@ -31,7 +31,9 @@ function serve(get: Record<string, unknown>, post: Record<string, [number, unkno
   }));
   return posts;
 }
-const open = () => renderUi(<ShotVideogen pick={{ kind: "shot", id: "s1" }} m={M} />);
+const openRaw = () => renderUi(<ShotVideogen pick={{ kind: "shot", id: "s1" }} m={M} />);
+// The section opens on Ảnh; most cases here are about the clip form.
+const open = () => { const r = openRaw(); fireEvent.click(screen.getByRole("button", { name: "Video" })); return r; };
 // Answers the in-page confirm; returns the question it asked.
 const agree = async (): Promise<string> => {
   const d = await screen.findByRole("dialog");
@@ -71,6 +73,7 @@ describe("shot inspector AI clip section", () => {
   it("asks for an image when the shot has none", () => {
     serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
     renderUi(<ShotVideogen pick={{ kind: "shot", id: "s1" }} m={M2([{ id: "s1", start: 0, end: 4, assets: ["footage/raw/a.mp4"] }])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Video" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Kiểu" }), { target: { value: "start" } });
     expect(screen.getByText("Shot chưa có ảnh; thêm ảnh vào shot hoặc dùng Chỉ chữ")).toBeInTheDocument();
   });
@@ -83,10 +86,13 @@ describe("shot inspector AI clip section", () => {
       return <><button onClick={() => setId("s2")}>sang s2</button><ShotVideogen pick={{ kind: "shot", id }} m={m} /></>;
     }
     renderUi(<Host />);
+    fireEvent.click(screen.getByRole("button", { name: "Video" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Kiểu" }), { target: { value: "start" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Ảnh đầu" }), { target: { value: "assets/a.png" } });
     fireEvent.change(screen.getByRole("textbox", { name: "Mô tả chuyển động" }), { target: { value: "cũ" } });
     fireEvent.click(screen.getByRole("button", { name: "sang s2" }));
+    expect(screen.getByRole("button", { name: "Ảnh" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Video" }));
     expect((screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).value).toBe("8");
     expect((screen.getByRole("combobox", { name: "Kiểu" }) as HTMLSelectElement).value).toBe("t2v");
     expect((screen.getByRole("textbox", { name: "Mô tả chuyển động" }) as HTMLTextAreaElement).value).toBe("");
@@ -148,6 +154,23 @@ describe("shot inspector AI clip section", () => {
     await waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[1]).toEqual({ path: "/api/videogen/recover", body: { name: "ep", id: "vg-made" } });
     expect(posts.some((p) => "again" in p.body)).toBe(false);
+  });
+
+  it("opens on Ảnh, not on the clip that costs credits", () => {
+    serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
+    openRaw();
+    expect(screen.getByRole("button", { name: "Ảnh" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Video" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("textbox", { name: "Mô tả ảnh" })).toBeInTheDocument();
+  });
+
+  it("names the shot on top and says what is left today", async () => {
+    serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
+    renderUi(<ShotVideogen pick={{ kind: "shot", id: "s2" }} m={M2([{ id: "s1", start: 0, end: 4 }, { id: "s2", name: "Mở đầu", start: 4, end: 8 }])} />);
+    expect(screen.getByTestId("vg-shot")).toHaveTextContent("Shot 2 · Mở đầu");
+    expect(await screen.findByText("Còn 29 ảnh hôm nay")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Video" }));
+    expect(screen.getByText("Còn 17 clip hôm nay")).toBeInTheDocument();
   });
 
   it("switches between image and video; an image goes to /image with its model and frame", async () => {

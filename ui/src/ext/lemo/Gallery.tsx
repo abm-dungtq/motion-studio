@@ -111,7 +111,7 @@ function Library({ d, name, hasManifest }: { d: LemoStyles; name: string | null;
           <ul className="m-0 pl-5 text-xs text-muted-foreground">{d.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
         </details>
       ) : null}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2.5" aria-live="polite" data-testid="lemo-grid">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-2.5" data-testid="lemo-grid">
         {sections.map((x) => [
           <div key={`h:${x.key}`} className="col-span-full mt-1.5 flex flex-col gap-0.5" data-testid={`lemo-section-${x.key}`}>
             <h3 className="m-0 text-sm font-semibold">{`${x.title} (${x.rows.length})`}</h3>

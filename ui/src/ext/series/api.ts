@@ -57,7 +57,9 @@ export const previewsQuery = (name: string | null) => queryOptions({
     }
   },
 });
-export const usePreviews = (name: string | null, enabled = true) => useQuery({ ...previewsQuery(name), enabled: Boolean(name && enabled), refetchInterval: POLL_MS });
+// A project in no series answers 404 (data null): one ask is enough, the answer will not change.
+export const previewsInterval = (data: VoicePreviews | null | undefined): number | false => (data === null ? false : POLL_MS);
+export const usePreviews = (name: string | null, enabled = true) => useQuery({ ...previewsQuery(name), enabled: Boolean(name && enabled), refetchInterval: (q) => previewsInterval(q.state.data) });
 
 export interface WriteResult<T = Record<string, unknown>> { status: number; data?: T; error?: string }
 

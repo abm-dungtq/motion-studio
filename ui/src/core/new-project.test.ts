@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bodyOf, DEFAULTS, folderOf, nameProblem } from "./new-project.ts";
+import { bodyOf, DEFAULTS, folderOf, nameProblem, nameTaken } from "./new-project.ts";
 
 describe("folderOf", () => {
   it("turns a typed Vietnamese name into a folder name", () => {
@@ -26,4 +26,14 @@ describe("nameProblem", () => {
 it("bodyOf sends the folder name", () => {
   const body = bodyOf({ name: "Video Thu", mode: DEFAULTS.mode, aspect: DEFAULTS.aspect, topic: "x", duration: "30", audience: "", first_request: "" });
   expect(body.name).toBe("video-thu");
+});
+
+describe("nameTaken", () => {
+  const projects = [{ name: "a-02" }, { name: "video-thu-2" }];
+  it("compares the folder the name becomes", () => {
+    expect(nameTaken("Video Thử 2", projects)).toBe(true);
+    expect(nameTaken("a-02", projects)).toBe(true);
+    expect(nameTaken("a-03", projects)).toBe(false);
+    expect(nameTaken("", projects)).toBe(false);
+  });
 });

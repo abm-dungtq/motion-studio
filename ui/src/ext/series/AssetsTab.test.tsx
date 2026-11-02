@@ -192,7 +192,7 @@ describe("Tài sản tab", () => {
     }
     fireEvent.click(within(dialog).getByRole("button", { name: "8×" }));
     expect(imgs[0].className).toContain("[zoom:8]");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Đóng" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(within(sheet).getByRole("img", { name: "Ảnh ngoi" }).className).toContain("[zoom:8]");
   });
@@ -205,7 +205,7 @@ describe("Tài sản tab", () => {
     let dialog = await screen.findByRole("dialog", { name: "Tờ nhân vật thu" });
     fireEvent.click(within(dialog).getByRole("checkbox", { name: "Đánh dấu dung" }));
     fireEvent.change(within(dialog).getByRole("textbox", { name: /Lý do vẽ lại/ }), { target: { value: "Bỏ ngón tay thừa." } });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Đóng" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(within(sheet).getByRole("checkbox", { name: "Đánh dấu dung" })).toBeChecked();
     expect(within(sheet).getByRole("textbox", { name: /Lý do vẽ lại/ })).toHaveValue("Bỏ ngón tay thừa.");

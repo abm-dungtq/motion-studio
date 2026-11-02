@@ -11,6 +11,8 @@
   --ms-accent: #3b82f6;
   /* Filled buttons and chips: white text on it is 5.2:1 (#3b82f6 was 3.7:1). */
   --ms-accent-fill: #2563eb;
+  /* Solid red behind white text: 6.5:1 (--ms-danger stays for red text and marks). */
+  --ms-danger-fill: #b91c1c;
   /* Accent text on the dark panels: 6.4:1 or more on every panel. */
   --ms-accent-ink: #60a5fa;
   --ms-accent-text: #ffffff;

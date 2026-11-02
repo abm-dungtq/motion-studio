@@ -90,12 +90,14 @@ function Cases({ cases, stale }: { cases: SuggestCases; stale: boolean }) {
     <div className="flex flex-col gap-1.5" data-role="suggest-cases">
       <b className="text-xs font-medium text-muted-foreground">Case mẫu từ thư viện</b>
       {stale ? <p role="status" data-role="suggest-cases-stale" className="m-0 text-xs font-semibold">Brief đã đổi sau lần gợi ý case này. Bấm Gợi ý lại để xếp hạng case theo brief mới.</p> : null}
-      {cases.warning ? <p role="alert" data-role="suggest-cases-warning" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-xs font-semibold text-primary-foreground">{cases.warning}</p> : null}
+      {cases.warning ? <p role="alert" data-role="suggest-cases-warning" className="m-0 rounded-sm bg-danger-fill px-2 py-1.5 text-xs font-semibold text-primary-foreground">{cases.warning}</p> : null}
       {cases.notes.map((n) => <p key={n} className="m-0 text-xs text-muted-foreground">{n}</p>)}
       {cases.items.length ? cases.items.map((c) => (
         <div key={c.id} data-role="suggest-case" data-id={c.id} className="flex flex-col gap-0.5 rounded-md border border-border bg-panel p-2 text-sm">
+          {/* Numbered so "theo case 2" in the note below names a card; the corpus id stays in the title. */}
           <span className="font-semibold">
-            {c.url ? <a href={c.url} target="_blank" rel="noreferrer noopener" className="underline">{c.id}</a> : c.id}
+            {`Case ${c.n}. `}
+            {c.url ? <a href={c.url} target="_blank" rel="noreferrer noopener" title={c.id} aria-label={`Bài gốc của case ${c.n}`} className="underline">Bài gốc</a> : <span title={c.id}>{c.id}</span>}
             <span className="text-xs font-normal text-muted-foreground">{` · @${c.author} · ${c.category}`}</span>
           </span>
           <span className="text-xs whitespace-normal">{c.summary}</span>
@@ -206,7 +208,7 @@ function Choices({ name, resp, record }: { name: string; resp: SuggestResponse; 
         {!resp.can_init_pitch && resp.picks === null ? <p className="m-0 text-xs text-muted-foreground">Dự án chưa có pitch, nên bấm chọn sẽ nhờ đạo diễn tạo pitch trước.</p> : null}
       </div>
 
-      {notice?.kind === "err" ? <p role="alert" data-role="suggest-err" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-sm font-semibold text-primary-foreground">{notice.text}</p> : null}
+      {notice?.kind === "err" ? <p role="alert" data-role="suggest-err" className="m-0 rounded-sm bg-danger-fill px-2 py-1.5 text-sm font-semibold text-primary-foreground">{notice.text}</p> : null}
       {notice?.kind === "ok" ? (
         <div role="status" data-role="suggest-result" className="flex flex-col gap-1.5 text-sm">
           <p className="m-0">{notice.text}</p>
@@ -267,7 +269,7 @@ function Card({ name }: { name: string }) {
         <Button className="ml-auto shrink-0 whitespace-nowrap" data-role="suggest-run" disabled={running || !resp} onClick={() => { void run(); }}>{record ? "Gợi ý lại" : "Gợi ý"}</Button>
       </div>
       {suggest.error ? <p role="alert" className="m-0 text-sm text-muted-foreground">{`Chưa đọc được gợi ý: ${suggest.error.message}`}</p> : null}
-      {runErr ? <p role="alert" data-role="suggest-run-err" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-sm font-semibold text-primary-foreground">{runErr}</p> : null}
+      {runErr ? <p role="alert" data-role="suggest-run-err" className="m-0 rounded-sm bg-danger-fill px-2 py-1.5 text-sm font-semibold text-primary-foreground">{runErr}</p> : null}
       {record?.error ? <p role="status" className="m-0 text-xs text-muted-foreground">{record.error.message}</p> : null}
       {resp?.cases ? <Cases cases={resp.cases} stale={Boolean(resp.cases_stale)} /> : null}
       {resp && !record ? <p className="m-0 text-sm text-muted-foreground">{`Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, style và quy trình${resp.can_suggest_cases && !resp.cases ? ", và tìm case mẫu trong thư viện" : ""} cho dự án này.`}</p> : null}

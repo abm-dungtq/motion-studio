@@ -112,3 +112,61 @@ describe("timeline keys", () => {
     expect(split).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("keys of a focused control stay with the control", () => {
+  const mount = (html: string) => {
+    const host = document.createElement("div");
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const el = host.firstElementChild as HTMLElement;
+    el.focus();
+    return { el, done: () => host.remove() };
+  };
+  const press = (el: Element, init: KeyboardEventInit) => {
+    const e = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, ...init });
+    el.dispatchEvent(e);
+    return e;
+  };
+
+  it("Space on a button presses the button, not play", () => {
+    const { el, done } = mount("<button>Giữ</button>");
+    const e = press(el, { key: " ", code: "Space" });
+    expect(tr.toggle).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+    done();
+  });
+
+  it("Delete on a button deletes nothing", () => {
+    const del = vi.spyOn(actions, "deletePicked").mockResolvedValue();
+    const { el, done } = mount("<button>Xoá</button>");
+    const e = press(el, { key: "Delete" });
+    expect(del).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+    done();
+  });
+
+  it("arrows on a slider move the slider, not the playhead", () => {
+    const { el, done } = mount('<div role="slider" tabindex="0" aria-valuenow="1"></div>');
+    const e = press(el, { key: "ArrowLeft" });
+    expect(tr.step).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+    press(el, { key: "Home" });
+    expect(tr.seek).not.toHaveBeenCalled();
+    done();
+  });
+
+  it("arrows after a toolbar button still step frames", () => {
+    const { el, done } = mount("<button>Hít</button>");
+    press(el, { key: "ArrowRight" });
+    expect(tr.step).toHaveBeenLastCalledWith(1 / 30);
+    done();
+  });
+
+  it("Cmd+Z on a button still undoes", () => {
+    const undo = vi.spyOn(actions, "undo").mockResolvedValue();
+    const { el, done } = mount("<button>Giữ</button>");
+    press(el, { key: "z", code: "KeyZ", metaKey: true });
+    expect(undo).toHaveBeenCalledTimes(1);
+    done();
+  });
+});

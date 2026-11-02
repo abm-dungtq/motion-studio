@@ -144,7 +144,7 @@ export function GateCard({ name, r, again }: { name: string; r: DirectorRequest;
       <small className="text-xs text-muted-foreground">{again ? "Trả lời lại câu hỏi đã hết hạn" : "Đạo diễn cần bạn trả lời"}</small>
       <strong className="text-sm">{question}</strong>
       {body}
-      {err ? <p role="alert" data-role="gate-err" className="m-0 rounded-sm bg-danger px-2 py-1.5 text-sm font-semibold text-primary-foreground">{err}</p> : null}
+      {err ? <p role="alert" data-role="gate-err" className="m-0 rounded-sm bg-danger-fill px-2 py-1.5 text-sm font-semibold text-primary-foreground">{err}</p> : null}
     </div>
   );
 }
