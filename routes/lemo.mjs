@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url";
 import { getJob, running, startJob } from "../jobs.mjs";
 import { queueRequest } from "../director.mjs";
 import { setFrontmatter } from "../create.mjs";
-import { PIN, cacheHome, readyDir } from "../lib/lemo/fetch.mjs";
+import { PIN, cacheHome, pinFor, readyDir } from "../lib/lemo/fetch.mjs";
 import { findStyle, groupsOf, layerSlugs, libraryStyles, merge, myStyles, myStylesDir, profileGuide, profileStyles, search, SLUG, TYPES } from "../lib/lemo/catalog.mjs";
 import { DRAFT, imageKind, keepStyle, pickFrame } from "../lib/lemo/my-styles.mjs";
 import { draftStyle, grammarProject, grammarShot, insertMarkers, layerScene, profileProject, profileShot } from "../lib/lemo/requests.mjs";
@@ -70,8 +70,9 @@ function saveLemo(dir, j) {
 }
 
 // Own styles, the provider's style profiles, then the library with its canvas-layer styles marked.
-async function catalog(P) {
-  const lib = libraryStyles();
+// P may be null to skip the provider's profiles and layers; pin is still the provider's commit.
+async function catalog(P, pin = pinFor(P)) {
+  const lib = libraryStyles(cacheHome(), { pin });
   const mine = myStyles();
   const profiles = profileStyles(P?.library?.stylesDir);
   const layers = P ? await layerSlugs(P) : { available: false, styles: {} };
@@ -229,7 +230,7 @@ function frame(c) {
   if (!slug) return c.send(403, "không được phép");
   let base, cands;
   if (mine) { base = myStylesDir(); cands = ["styleframe.jpg", "styleframe.png", "test.jpg"].map((f) => join(base, slug, f)); } else {
-    const lib = readyDir(cacheHome(), PIN);
+    const lib = readyDir(cacheHome(), pinFor(c.P));
     if (!lib) return c.send(404, "chưa tải thư viện");
     base = join(lib, "docs", "frames"); cands = [join(base, `${slug}.jpg`)];
   }
@@ -255,7 +256,7 @@ export const ROUTES = [
       let project = null;
       if (name) { const pd = c.projectDir(name); if (!pd.error) project = projectState(pd.dir); }
       return {
-        fetched: lib.fetched, sha: PIN.sha, total: rows.length, groups: groupsOf(rows), rows: search(rows, q, group, type),
+        fetched: lib.fetched, sha: pinFor(c.P).sha, total: rows.length, groups: groupsOf(rows), rows: search(rows, q, group, type),
         profiles: profiles.rows.length, warnings: [...lib.warnings, ...mine.warnings, ...profiles.warnings], layer_available: layers.available, my_dir: mine.dir,
         fetch_job: lastFetch ? getJob(lastFetch) : null, project, credit: CREDIT,
       };
@@ -272,7 +273,7 @@ export const ROUTES = [
         if (text == null) return c.send(404, { error: `không có style profile ${slug}` });
         return { slug, source: "profile", path: null, text: text.slice(0, GUIDE_MAX) };
       }
-      const { rows } = await catalog(null);
+      const { rows } = await catalog(null, pinFor(c.P));
       const s = findStyle(rows, slug, ["mine", "library"].includes(c.q("source")) ? c.q("source") : null);
       if (!s?.guide) return c.send(404, { error: `không có STYLE.md của ${slug}` });
       const text = smallText(s.guide, GUIDE_MAX);
@@ -291,9 +292,10 @@ export const ROUTES = [
   {
     method: "POST", path: "/api/lemo/fetch", provider: false,
     handler(c) {
-      if (readyDir(cacheHome(), PIN)) return { ok: true, fetched: true };
+      const pin = pinFor(c.P);
+      if (readyDir(cacheHome(), pin)) return { ok: true, fetched: true };
       try {
-        const job = startJob({ name: LEMO_OWNER, kind: "lemo-fetch", cmd: process.execPath, args: [FETCH], cwd: process.cwd(), meta: { step: "lemo-fetch", sha: PIN.sha } });
+        const job = startJob({ name: LEMO_OWNER, kind: "lemo-fetch", cmd: process.execPath, args: [FETCH, "--sha", pin.sha], cwd: process.cwd(), meta: { step: "lemo-fetch", sha: pin.sha } });
         lastFetch = job.id;
         return { ok: true, fetched: false, job };
       } catch (e) { return c.send(e.code === "BUSY" ? 409 : 500, { error: e.code === "BUSY" ? "đang tải thư viện" : e.message }); }
@@ -307,13 +309,13 @@ export const ROUTES = [
       const pd = c.withManifest(b.name);
       if (pd.error) return c.send(pd.status, { error: pd.error });
       try {
-        const lib = readyDir(cacheHome(), PIN);
+        const lib = readyDir(cacheHome(), pinFor(c.P));
         const myGuide = lib && join(lib, "MY-STYLES.md");
         if (!myGuide || !existsSync(myGuide)) throw err(409, "tải thư viện phong cách trước", { code: "not_fetched" });
         let base = null;
         if (b.base != null && b.base !== "") {
           if (typeof b.base !== "string" || !SLUG.test(b.base)) throw err(400, "base không hợp lệ");
-          const { rows } = await catalog(null);
+          const { rows } = await catalog(null, pinFor(c.P));
           base = findStyle(rows, b.base, ["mine", "library"].includes(b.source) ? b.source : null);
           if (!base?.guide) throw err(404, `không có phong cách ${b.base}`);
         }
@@ -331,7 +333,7 @@ export const ROUTES = [
       if (busy.has(b.name)) return c.send(409, { error: "dự án đang áp một phong cách, chờ xong đã", code: "busy" });
       busy.add(b.name);
       try {
-        const lib = libraryStyles();
+        const lib = libraryStyles(cacheHome(), { pin: pinFor(c.P) });
         const librarySlugs = [...new Set([...PIN.slugs, ...lib.rows.map((r) => r.slug)])];
         const r = keepStyle({ projectDir: pd.dir, myDir: myStylesDir(), librarySlugs });
         return { ok: true, slug: r.slug, dir: r.dir, files: r.files, bytes: r.bytes, frame: r.frame, warnings: r.warnings };

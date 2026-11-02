@@ -104,7 +104,7 @@ test("query pages videos with filters, accent-free search and thumbnails on disk
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test("query merges the provider's scene directions and style profiles into scenes and styles", () => {
+test("query merges the provider's scene directions into scenes; styles stay the library's own", () => {
   const { dir, opts } = fixture();
   try {
     const scenes = query({ kind: "scenes" }, opts);
@@ -114,8 +114,8 @@ test("query merges the provider's scene directions and style profiles into scene
     assert.deepEqual(scenes.items[0].examples, [{ id: "2", title: "Bài giảng đạo hàm", has_thumb: false }]);
     assert.deepEqual(query({ kind: "scenes", q: "bien hinh" }, opts).items.map((s) => s.id), ["A1"]);
     const styles = query({ kind: "styles" }, opts);
-    assert.deepEqual(styles.items.map((s) => [s.id, s.name]), [["pixel", "Pixel"], ["neon-cyberpunk", "Đêm neon"]]);
-    assert.deepEqual(query({ kind: "styles", q: "cyberpunk" }, opts).items.map((s) => s.id), ["neon-cyberpunk"]);
+    assert.deepEqual(styles.items.map((s) => [s.id, s.name]), [["pixel", "Pixel"]], "the provider's style profiles live in the Phong cách tab");
+    assert.deepEqual(query({ kind: "styles", q: "cyberpunk" }, opts).items, []);
     const prompts = query({ kind: "prompts" }, opts);
     assert.deepEqual(prompts.items.map((p) => [p.id, p.prompt]), [["1", "Make a launch film"], ["khung-prompt", "<inputs>[...]</inputs>"], ["lemo-opuscar", "<style>"]]);
     assert.deepEqual([prompts.items[2].author, prompts.items[2].url], ["lemomo-ai", "https://lemomo-ai.github.io/lemo-opuscar/"], "a template of its own keeps its credit");

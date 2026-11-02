@@ -50,7 +50,7 @@ Test có thể truyền danh sách route riêng: `createServer({ root, token, ro
 
 Giao diện viết bằng React + TypeScript trong `ui/src/`. Mỗi tính năng giao diện là một thư mục `ui/src/ext/<tên>/` có file `index.ts` export `register(studio)`. Không có file đăng ký chung: lúc build, `ui/src/ext/load.ts` tìm mọi `ui/src/panels/*/index.ts` rồi mọi `ui/src/ext/*/index.ts` (mỗi nhóm theo tên thư mục) và gọi `register(studio)`. Thư mục nào thiếu `register` hoặc ném lỗi thì bị bỏ qua, Studio hiện một toast "Extension lỗi, đã bỏ qua: <thư mục>: <lỗi>", các phần khác vẫn chạy.
 
-Extension được build vào `ui/dist` cùng phần còn lại của trang. `start` build lại khi nguồn trong `ui/src` mới hơn bản build, nên thêm thư mục rồi khởi động lại Studio là thấy. Muốn build ngay thì chạy `npm --prefix ui run build`. Route `GET /api/extensions` vẫn còn để API không đổi, nhưng nay luôn trả `{ "scripts": [], "styles": [] }`: file `ext-*.js` đặt ngoài `ui/src` không còn được nạp.
+Extension được build vào `ui/dist` cùng phần còn lại của trang. `start` build lại khi nguồn trong `ui/src` mới hơn bản build, nên thêm thư mục rồi khởi động lại Studio là thấy. Muốn build ngay thì chạy `npm --prefix ui run build`. File `ext-*.js` đặt ngoài `ui/src` không được nạp.
 
 Component đặt trong file `.tsx` riêng, vì loader chỉ tìm `index.ts`:
 
