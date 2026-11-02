@@ -3,7 +3,7 @@
 Tab **Phong cách** trên rail trái gom ba nguồn vào một danh sách, theo thứ tự:
 
 1. **Của bạn:** phong cách riêng bạn đã giữ.
-2. **Dựng sẵn:** style profile của provider (với opus-video là `data/styles/`, trừ hai profile `lemo-*` vì lớp canvas của thư viện đã thay chúng). Mỗi profile có sẵn màu, chữ, chất liệu, chuyển cảnh và nhịp, nên áp là dựng được ngay. Đây là nguồn hợp nhất cho video có lời đọc tiếng Việt, phụ đề và khổ 9:16.
+2. **Dựng sẵn:** style profile của provider (thư mục `library.stylesDir` của adapter, trừ hai profile `lemo-*` vì lớp canvas của thư viện đã thay chúng). Mỗi profile có sẵn màu, chữ, chất liệu, chuyển cảnh và nhịp, nên áp là dựng được ngay. Đây là nguồn hợp nhất cho video có lời đọc tiếng Việt, phụ đề và khổ 9:16.
 3. **Thư viện lemo-opuscar:** 59 phong cách phim dựng bằng code của [lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar). Phong cách có lớp canvas đã kiểm (hiện là `watercolor` và `glass-product`) dựng được ngay. Các phong cách còn lại chỉ có `STYLE.md` để tham khảo: đạo diễn đọc rồi tự dựng theo, và phim mẫu của chúng là phim 16:9 không lời.
 
 Mỗi phong cách có tên tiếng Việt, nhóm và công dụng. Phong cách thư viện có thêm ảnh khung, phim mẫu và `STYLE.md` (prompt phong cách 11 mục); style profile có nút **Xem hồ sơ** (lệnh `styles show` của provider). Ô **Loại** lọc theo Dựng được ngay (style profile và lớp canvas), Chỉ tham khảo, hay Của bạn. Bạn áp một phong cách cho cả dự án hoặc cho một shot.
