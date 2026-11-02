@@ -127,38 +127,55 @@ describe("keys of a focused control stay with the control", () => {
     el.dispatchEvent(e);
     return e;
   };
+  const cross = <A, B>(a: A[], b: B[]) => a.flatMap((x) => b.map((y) => [x, y] as const));
 
-  it("Space on a button presses the button, not play", () => {
-    const { el, done } = mount("<button>Giữ</button>");
-    const e = press(el, { key: " ", code: "Space" });
-    expect(tr.toggle).not.toHaveBeenCalled();
-    expect(e.defaultPrevented).toBe(false);
-    done();
-  });
+  // Buttons and toggles: pressed with Space and Enter, and Delete/Backspace must not delete a block.
+  const PRESS: [string, string][] = [
+    ["button", "<button>Giữ</button>"],
+    ["link", '<a href="#x">Bài gốc</a>'],
+    ["checkbox", '<div role="checkbox" tabindex="0" aria-checked="false"></div>'],
+    ["switch", '<div role="switch" tabindex="0" aria-checked="false"></div>'],
+  ];
+  // Value controls: their arrows, Home and End move the value, not the playhead.
+  const RANGE: [string, string][] = [
+    ["slider", '<div role="slider" tabindex="0" aria-valuenow="1"></div>'],
+    ["separator", '<div role="separator" tabindex="0" aria-valuenow="50"></div>'],
+    ["option", '<div role="option" tabindex="0" aria-selected="false"></div>'],
+    ["combobox", '<div role="combobox" tabindex="0" aria-expanded="false"></div>'],
+  ];
+  const PRESS_KEYS = [" ", "Enter", "Delete", "Backspace"];
+  const NAV_KEYS = ["ArrowLeft", "ArrowRight", "Home", "End"];
+  const RANGE_KEYS = [" ", "Enter", "ArrowLeft", "ArrowRight", "Home", "End", "Delete"];
+  const NAV_CALL: Record<string, [keyof typeof tr, unknown]> = { ArrowLeft: ["step", -1 / 30], ArrowRight: ["step", 1 / 30], Home: ["seek", 0], End: ["seek", 20.6] };
 
-  it("Delete on a button deletes nothing", () => {
+  const untouched = (el: Element, k: string) => {
     const del = vi.spyOn(actions, "deletePicked").mockResolvedValue();
-    const { el, done } = mount("<button>Xoá</button>");
-    const e = press(el, { key: "Delete" });
+    const split = vi.spyOn(actions, "split").mockResolvedValue();
+    const e = press(el, { key: k });
+    expect(e.defaultPrevented).toBe(false);
+    for (const f of Object.values(tr)) if (f !== tr.time && f !== tr.duration) expect(f).not.toHaveBeenCalled();
     expect(del).not.toHaveBeenCalled();
-    expect(e.defaultPrevented).toBe(false);
+    expect(split).not.toHaveBeenCalled();
+  };
+
+  it.each(cross(PRESS, PRESS_KEYS))("control keeps its press key: %j", ([, html], k) => {
+    const { el, done } = mount(html);
+    untouched(el, k);
     done();
   });
 
-  it("arrows on a slider move the slider, not the playhead", () => {
-    const { el, done } = mount('<div role="slider" tabindex="0" aria-valuenow="1"></div>');
-    const e = press(el, { key: "ArrowLeft" });
-    expect(tr.step).not.toHaveBeenCalled();
-    expect(e.defaultPrevented).toBe(false);
-    press(el, { key: "Home" });
-    expect(tr.seek).not.toHaveBeenCalled();
+  it.each(cross(PRESS, NAV_KEYS))("control keeps no arrows, the timeline gets them: %j", ([, html], k) => {
+    const { el, done } = mount(html);
+    const e = press(el, { key: k });
+    const [fn, arg] = NAV_CALL[k];
+    expect(tr[fn]).toHaveBeenLastCalledWith(arg);
+    expect(e.defaultPrevented).toBe(true);
     done();
   });
 
-  it("arrows after a toolbar button still step frames", () => {
-    const { el, done } = mount("<button>Hít</button>");
-    press(el, { key: "ArrowRight" });
-    expect(tr.step).toHaveBeenLastCalledWith(1 / 30);
+  it.each(cross(RANGE, RANGE_KEYS))("control keeps its value key: %j", ([, html], k) => {
+    const { el, done } = mount(html);
+    untouched(el, k);
     done();
   });
 

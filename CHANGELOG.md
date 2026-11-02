@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Khổ tối thiểu 1280 px ghi vào README; cửa sổ hẹp hơn thì đầu trang có dải nhắc kèm nút Ẩn. Thêm test chặn lỗi cũ quay lại: 60 ca phím tắt trên nút, link, checkbox, switch, slider, thanh chia cột, mục danh sách và combobox; tương phản chữ trắng trên nền xanh và nền đỏ đạt 4,5:1. Script `ui/scripts/ui-layout-check.mjs` mở Studio thử ở 1280×800, đi qua mọi tab và báo phần tử tràn panel.
+
 - Sửa giao diện theo audit 02/11: mục AI (Google Flow) của shot mở ở Ảnh thay vì Video, ghim "Shot N · tên" ở đầu form và ghi số ảnh, clip còn lại hôm nay. Phím tắt timeline nhường phím cho nút và thanh trượt đang có tiêu điểm (Space trên một nút không còn phát video; mũi tên vẫn bước khung sau khi bấm nút). Tab Phong cách không tràn mép phải. Case mẫu đánh số "Case 1, 2, 3" với link "Bài gốc". Khối báo lỗi đỏ đủ tương phản (token `--ms-danger-fill`). Nút đóng hộp thoại đọc là "Đóng". Ngừng hỏi `/api/voice/previews` khi dự án không thuộc series. Hộp Dự án mới báo "Đã có dự án tên này" và khoá nút Tạo khi trùng tên.
 
 ## v2.1.0 (2026-11-02): case mẫu theo brief, ảnh và clip AI qua Google Flow, tab Phong cách gộp

@@ -31,3 +31,29 @@ test("components use colour tokens, not raw colours or palette classes", () => {
   }
   expect(bad, `raw colours found (use a token from styles/tokens.css):\n${bad.join("\n")}`).toEqual([]);
 });
+
+// Filled surfaces carry --ms-accent-text (white): WCAG 2.x contrast of at least 4.5:1.
+const TOKENS = readFileSync(fileURLToPath(new URL("./tokens.css", import.meta.url)), "utf8");
+function token(name: string): string {
+  const m = TOKENS.match(new RegExp(`--${name}:\\s*([^;]+);`));
+  if (!m || !/^#[0-9a-fA-F]{6}$/.test(m[1].trim())) throw new Error(`--${name} is not a 6-digit hex colour`);
+  return m[1].trim();
+}
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+test("contrast() matches known WCAG values", () => {
+  expect(contrast("#ffffff", "#000000")).toBeCloseTo(21, 5);
+  expect(contrast("#ffffff", "#ffffff")).toBeCloseTo(1, 5);
+});
+
+test.each(["ms-accent-fill", "ms-danger-fill"])("white text on --%s is at least 4.5:1", (fill) => {
+  expect(contrast(token(fill), token("ms-accent-text"))).toBeGreaterThanOrEqual(4.5);
+});

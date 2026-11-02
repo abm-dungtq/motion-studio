@@ -42,7 +42,7 @@ AI giờ đã dựng được cả một video, nhưng phần lớn công cụ b
 
 ## Bắt đầu nhanh
 
-Máy cần Node.js 22.18 trở lên và ffmpeg kèm ffprobe. Muốn dùng đạo diễn AI thì cần thêm Claude Code (`claude`) đã cài và đăng nhập.
+Máy cần Node.js 22.18 trở lên và ffmpeg kèm ffprobe. Muốn dùng đạo diễn AI thì cần thêm Claude Code (`claude`) đã cài và đăng nhập. Giao diện thiết kế cho màn hình rộng từ 1280 px.
 
 ```bash
 git clone https://github.com/abm-dungtq/motion-studio ~/Projects/motion-studio
@@ -209,6 +209,12 @@ npm test
 ```
 
 Lệnh này chạy test server (`node --test tests/*.test.mjs`) rồi tới test giao diện trong `ui/`. Phần lớn test server cần provider mặc định đã cài (plugin ở chỗ khác thì đặt `OPUS_VIDEO_HOME`). `tests/no-provider.test.mjs` và `tests/config.test.mjs` chạy được khi chưa có provider.
+
+Trước một PR giao diện, bật một Studio thử ở cổng khác (`MOTION_STUDIO_PORT=4318` kèm `MOTION_STUDIO_STATE` riêng) rồi kiểm không phần tử nào tràn khỏi panel ở khung 1280×800. Lệnh này không nằm trong `npm test` vì cần Studio đang chạy:
+
+```bash
+node ui/scripts/ui-layout-check.mjs --url http://127.0.0.1:4318 --project a-02
+```
 
 </details>
 

@@ -18,6 +18,7 @@ import { Banner } from "@/shell/Banner.tsx";
 import { ErrorBoundary } from "@/shell/ErrorBoundary.tsx";
 import { ExportDialog } from "@/shell/ExportDialog.tsx";
 import { LeftPanel } from "@/shell/LeftPanel.tsx";
+import { NarrowNotice } from "@/shell/NarrowNotice.tsx";
 import { NewProjectDialog } from "@/shell/NewProjectDialog.tsx";
 import { PointMenuHost } from "@/shell/PointMenu.tsx";
 import { Rail } from "@/shell/Rail.tsx";
@@ -95,6 +96,7 @@ export default function App() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
       <TopBar />
+      <NarrowNotice />
       <Banner />
       <AiBanner />
       <div className="flex min-h-0 flex-1">
