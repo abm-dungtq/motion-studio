@@ -50,11 +50,12 @@ export function mockFetch(routes: Routes = {}) {
   return fn;
 }
 
-// Answers the in-page confirm of shell/confirm.tsx ("Đồng ý" or "Huỷ"); returns its question.
+// Answers the in-page confirm of shell/confirm.tsx (its confirm or cancel button, whatever their
+// labels); returns its question.
 export async function answerConfirm(ok: boolean): Promise<string> {
   const d = await screen.findByRole("dialog");
   const text = document.getElementById(d.getAttribute("aria-describedby") ?? "")?.textContent ?? "";
-  fireEvent.click(within(d).getByRole("button", { name: ok ? "Đồng ý" : "Huỷ" }));
+  fireEvent.click(d.querySelector<HTMLElement>(`[data-confirm="${ok ? "ok" : "cancel"}"]`)!);
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   return text;
 }

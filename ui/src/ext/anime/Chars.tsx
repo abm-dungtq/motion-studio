@@ -34,13 +34,13 @@ export function Chars() {
     useAnimeStore.getState().setCharForm(blankChar());
   }
   async function remove(c: Char) {
-    if (!(await ask(`Bỏ ${c.name} khỏi thư viện? File sheet vẫn giữ nguyên.`))) return;
+    if (!(await ask(`Bỏ ${c.name} khỏi thư viện? File sheet vẫn giữ nguyên.`, { ok: "Bỏ khỏi thư viện", danger: true }))) return;
     const r = await animeChars({ name, remove: c.id });
     if (r.status !== 200) return say(r.error ?? `Lỗi ${r.status}`, true);
   }
   async function generate(c: Char, description: string) {
     if (!description.trim()) return say("Ghi mô tả nhân vật trước (tiếng Anh cho agent)", true);
-    if (!(await ask(`Sinh sheet 4 góc cho ${c.name} (tốn 1 ảnh quota)?`))) return;
+    if (!(await ask(`Sinh sheet 4 góc cho ${c.name} (tốn 1 ảnh quota)?`, { ok: "Sinh sheet (tốn 1 ảnh)" }))) return;
     const r = await animeChars({ name, generate: { id: c.id, description } });
     if (r.status !== 200) return say(r.error ?? `Lỗi ${r.status}`, true);
     if (r.data?.job) useAnimeStore.getState().follow("sheet", r.data.job, c.name);

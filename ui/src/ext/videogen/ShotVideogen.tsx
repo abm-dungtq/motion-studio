@@ -10,6 +10,7 @@ import type { Manifest } from "@/api/types.ts";
 import type { InspectorSectionProps } from "@/ext/registry.ts";
 import { Button, Textarea } from "@/shell/controls.tsx";
 import { makeConfirm } from "@/shell/confirm.tsx";
+import { useDraft } from "@/shell/useDraft.ts";
 import { useStudio } from "@/store/studio.ts";
 import {
   DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL, hhmm, IMAGE_ASPECTS, IMAGE_MODELS, kindOf, pickSeconds, SECONDS, stateLabel, VIDEO_MODELS,
@@ -56,18 +57,23 @@ function blocked(st: VgStatus | undefined, kind: VgKind): string | null {
 const { ask, askText, ConfirmHost } = makeConfirm();
 
 // The 409 answers of a send: a second confirm for an unknown earlier result, a free download for
-// a clip Flow made.
-async function sendWithGuards(first: SendResult, again: (id: string) => Promise<SendResult>, recover: (id: string) => Promise<SendResult>) {
+// a clip Flow made. True when a request went through.
+async function sendWithGuards(first: SendResult, again: (id: string) => Promise<SendResult>, recover: (id: string) => Promise<SendResult>): Promise<boolean> {
   if (first.code === "DUPLICATE") {
     const made = first.made ? " Flow có thể đã tạo; tạo lại có thể trả credit lần nữa." : "";
-    if (await ask(`Lần trước của đúng yêu cầu này chưa rõ kết quả và có thể đã tốn credit.${made} Vẫn tạo lại (có thể tốn credit lần hai)?`)) fail(await again(String(first.id)));
-  } else if (first.code === "RECOVERABLE") {
-    if (await ask("Flow đã tạo clip của đúng yêu cầu này. Tải về (miễn phí)?")) fail(await recover(String(first.id)));
-  } else fail(first);
+    if (await ask(`Lần trước của đúng yêu cầu này chưa rõ kết quả và có thể đã tốn credit.${made} Vẫn tạo lại (có thể tốn credit lần hai)?`, { ok: "Tạo lại (có thể tốn credit)", danger: true })) return fail(await again(String(first.id)));
+    return false;
+  }
+  if (first.code === "RECOVERABLE") {
+    if (await ask("Flow đã tạo clip của đúng yêu cầu này. Tải về (miễn phí)?", { ok: "Tải về" })) return fail(await recover(String(first.id)));
+    return false;
+  }
+  return fail(first);
 }
 
 // The inspector keeps one section mounted across shots and projects; the form is keyed on both so
-// nothing typed for one shot carries over to another.
+// nothing typed for one shot carries over to another. The prompt of each shot and kind stays as a
+// draft for the browser session (useDraft) until it is sent.
 export function ShotVideogen({ pick, m }: InspectorSectionProps) {
   const name = useStudio((s) => s.name);
   const shot = m?.shots?.find((s) => s.id === pick.id);
@@ -129,7 +135,7 @@ function Refs({ need, labels, images, refs, setRefs }: { need: number; labels: s
 type FormProps = { name: string; shot: Shot; m: Manifest; st: VgStatus | undefined; images: string[] };
 
 function ImageForm({ name, shot, m, st, images }: FormProps) {
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt, forgetPrompt] = useDraft(`vg-draft:${name}:${shot.id}:image`);
   const [mode, setMode] = useState("t2i");
   const [model, setModel] = useState(DEFAULT_IMAGE_MODEL);
   const [aspect, setAspect] = useState((m.height ?? 0) > (m.width ?? 0) ? "9:16" : "16:9");
@@ -140,11 +146,11 @@ function ImageForm({ name, shot, m, st, images }: FormProps) {
   const why = blocked(st, "image") ?? (!prompt.trim() ? "Nhập mô tả ảnh" : chosen.some((x) => !x) ? "Chọn ảnh mẫu" : null);
   const create = async () => {
     if (!st) return;
-    if (!(await ask(`Tạo một ảnh ${model} ${aspect} qua Flow? Tài liệu gflow ghi ảnh nano miễn phí theo thực nghiệm nhưng có quota ngày. Hôm nay: ${st.images_today}/${st.image_cap} ảnh.`))) return;
+    if (!(await ask(`Tạo một ảnh ${model} ${aspect} qua Flow? Tài liệu gflow ghi ảnh nano miễn phí theo thực nghiệm nhưng có quota ngày. Hôm nay: ${st.images_today}/${st.image_cap} ảnh.`, { ok: "Tạo ảnh (tốn 1 lượt)" }))) return;
     setSending(true);
     try {
       const body = { name, shot: shot.id, base: m.version, prompt, mode, model, aspect, refs: chosen };
-      await sendWithGuards(await vgImage(body), (id) => vgImage({ ...body, again: id }), (id) => vgRecover(name, id));
+      if (await sendWithGuards(await vgImage(body), (id) => vgImage({ ...body, again: id }), (id) => vgRecover(name, id))) forgetPrompt();
     } finally { setSending(false); void refresh(); }
   };
   return (
@@ -165,7 +171,7 @@ function ImageForm({ name, shot, m, st, images }: FormProps) {
 
 function VideoForm({ name, shot, m, st, images }: FormProps) {
   const len = Number(shot.end) - Number(shot.start);
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt, forgetPrompt] = useDraft(`vg-draft:${name}:${shot.id}:video`);
   const [mode, setMode] = useState("t2v");
   const [model, setModelRaw] = useState(DEFAULT_VIDEO_MODEL);
   const [seconds, setSeconds] = useState(() => Math.min(pickSeconds(len), 8));
@@ -181,12 +187,12 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
   const why = blocked(st, "video") ?? (!prompt.trim() ? "Nhập mô tả chuyển động" : chosen.some((x) => !x) ? "Chọn đủ ảnh cho kiểu này" : null);
   const create = async () => {
     if (!st) return;
-    if (!(await ask(`Tạo clip ${seconds}s bằng ${model}${omni ? ` ${resolution}` : ""} qua Flow? Lượt này tốn credit Flow. Hôm nay: ${st.today}/${st.cap} clip.`))) return;
+    if (!(await ask(`Tạo clip ${seconds}s bằng ${model}${omni ? ` ${resolution}` : ""} qua Flow? Lượt này tốn credit Flow. Hôm nay: ${st.today}/${st.cap} clip.`, { ok: "Tạo clip (tốn 1 lượt)" }))) return;
     setSending(true);
     try {
       // gflow stops (exit 11) on --resolution for any model but omni-flash: send it for omni only.
       const body = { name, shot: shot.id, base: m.version, prompt, mode, model, aspect, seconds, refs: chosen, ...(omni ? { resolution } : {}) };
-      await sendWithGuards(await vgCreate(body), (id) => vgCreate({ ...body, again: id }), (id) => vgRecover(name, id));
+      if (await sendWithGuards(await vgCreate(body), (id) => vgCreate({ ...body, again: id }), (id) => vgRecover(name, id))) forgetPrompt();
     } finally { setSending(false); void refresh(); }
   };
   return (
@@ -228,7 +234,7 @@ function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   const stop = async () => {
     let phase = item?.phase;
     if (item) { try { phase = (await vgItems(name)).items.find((x) => x.id === item.id)?.phase ?? phase; } catch { /* keep the polled phase */ } }
-    if (await ask(stopText(image, phase))) void vgCancel(name).then((r) => { fail(r); void refresh(); });
+    if (await ask(stopText(image, phase), { ok: phase === "sent" ? "Ngừng chờ" : "Huỷ lượt", cancel: "Để chạy tiếp" })) void vgCancel(name).then((r) => { fail(r); void refresh(); });
   };
   return (
     <div className="flex items-center gap-2 text-sm">
@@ -244,7 +250,7 @@ function Items({ name, m, items, busyHere, idle }: { name: string; m: Manifest; 
   const act = async (p: Promise<SendResult>) => { fail(await p); void refresh(); };
   const importFile = async (it: VgItem) => {
     const image = kindOf(it) === "image";
-    const path = await askText(image ? "Đường dẫn file ảnh (png, jpg, webp) đã lưu từ Flow:" : "Đường dẫn file mp4 đã tải từ Flow:");
+    const path = await askText(image ? "Đường dẫn file ảnh (png, jpg, webp) đã lưu từ Flow:" : "Đường dẫn file mp4 đã tải từ Flow:", { ok: "Nhập file" });
     if (path?.trim()) void act(vgImport(name, it.id, m.version, path.trim()));
   };
   return (

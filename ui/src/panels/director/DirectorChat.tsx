@@ -3,8 +3,10 @@
 // by follows, the last 12 threads), "Đạo diễn đang làm…" and the box for a new task.
 // Requests and jobs pass through usePressGate, so the chat never changes under a press. The chat
 // follows its end, except when a live gate card is drawn again: then that card stays where the
-// user sees it.
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+// user sees it. Opening the project or the tab shows the suggest card instead when it has
+// something, and a new message while the user reads higher up shows "Tin mới ↓".
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/shell/controls.tsx";
 import { useJobs, useProject, useRequests } from "@/api/queries.ts";
 import type { DirectorRequest, Job } from "@/api/types.ts";
 import { NeedManifest } from "@/shell/states.tsx";
@@ -19,6 +21,12 @@ import { Working } from "./Working.tsx";
 const NONE: never[] = [];
 const viewport = (el: HTMLElement | null): HTMLElement | null => el?.closest<HTMLElement>('[data-slot="scroll-area-viewport"]') ?? null;
 const liveCard = (el: HTMLElement | null): HTMLElement | null => el?.querySelector<HTMLElement>('[data-gate="live"], [data-gate="again"]') ?? null;
+const suggestSection = (vp: HTMLElement | null): HTMLElement | null => vp?.querySelector<HTMLElement>('[data-section="director/suggest"]') ?? null;
+// The suggest card when it shows something (its section stays in the page, empty, otherwise).
+const suggestEl = (vp: HTMLElement | null): HTMLElement | null => {
+  const el = suggestSection(vp);
+  return el && el.childElementCount > 0 && el.textContent?.trim() ? el : null;
+};
 
 export function DirectorChat() {
   const name = useStudio((s) => s.name);
@@ -32,8 +40,20 @@ export function DirectorChat() {
   const threads = useMemo(() => threadsOf(shown.requests).slice(-SHOWN_THREADS), [shown.requests]);
   const anchor = useRef<{ el: HTMLElement; top: number } | null>(null);
   const following = useRef(true);
+  // Set when the project or the tab opens: the next look at the panel shows the suggest card.
+  const wantSuggest = useRef(true);
+  const seen = useRef<unknown>(null);
+  const [unseen, setUnseen] = useState(false);
   const ready = Boolean(name && m);
-  const toEnd = (vp: HTMLElement) => { following.current = true; vp.scrollTop = vp.scrollHeight; };
+  const toEnd = (vp: HTMLElement) => { following.current = true; setUnseen(false); vp.scrollTop = vp.scrollHeight; };
+  const showSuggest = (vp: HTMLElement): boolean => {
+    const el = suggestEl(vp);
+    if (!el) return false;
+    wantSuggest.current = false;
+    following.current = false;
+    el.scrollIntoView?.({ block: "start" });
+    return true;
+  };
 
   // After each redraw: keep a live card in place, or follow the end of the chat.
   useLayoutEffect(() => {
@@ -41,7 +61,9 @@ export function DirectorChat() {
     if (!vp) return;
     const before = anchor.current;
     if (before?.el.isConnected) vp.scrollTop += before.el.getBoundingClientRect().top - before.top;
-    else toEnd(vp);
+    else if (following.current) toEnd(vp);
+    else if (seen.current !== null && seen.current !== threads) setUnseen(true);
+    seen.current = threads;
     const el = liveCard(root.current);
     anchor.current = el ? { el, top: el.getBoundingClientRect().top } : null;
   }, [threads, shown.jobs, ready]);
@@ -56,30 +78,44 @@ export function DirectorChat() {
     const onScroll = () => {
       if (anchor.current) anchor.current.top = anchor.current.el.getBoundingClientRect().top;
       following.current = vp.scrollHeight - vp.scrollTop - vp.clientHeight < 8;
+      if (following.current) setUnseen(false);
     };
-    const ro = new ResizeObserver(() => { if (following.current && !anchor.current) vp.scrollTop = vp.scrollHeight; });
+    const ro = new ResizeObserver(() => {
+      if (!following.current || anchor.current) return;
+      if (!(wantSuggest.current && showSuggest(vp))) vp.scrollTop = vp.scrollHeight;
+    });
     vp.addEventListener("scroll", onScroll, { passive: true });
     ro.observe(el);
+    const suggest = suggestSection(vp);
+    if (suggest) ro.observe(suggest);
     return () => { vp.removeEventListener("scroll", onScroll); ro.disconnect(); };
   }, []);
 
-  // Opening the director tab shows the end of the chat.
+  // Opening the project or the director tab shows the suggest card when it has something, else
+  // the end of the chat. A card that fills in a moment later is caught by the ResizeObserver.
   useEffect(() => {
-    if (rightTab !== "director") return;
+    if (rightTab !== "director" || !ready) return;
     const vp = viewport(root.current);
-    if (vp && !anchor.current) toEnd(vp);
-  }, [rightTab]);
+    if (!vp || anchor.current) return;
+    wantSuggest.current = true;
+    if (!showSuggest(vp)) toEnd(vp);
+  }, [rightTab, ready, name]);
 
   return (
     <div ref={root} data-role="director" className="flex flex-col gap-3">
       {!ready || !name ? <NeedManifest /> : (
         <>
           <Storyboard name={name} />
-          <div data-role="chat" aria-live="polite" className="flex flex-col gap-2">
+          <div data-role="chat" className="flex flex-col gap-2">
             {threads.length
               ? threads.flatMap((t) => t.map((r, i) => <Turn key={r.id} name={name} r={r} joined={i > 0} />))
               : <p className="m-0 text-sm text-muted-foreground">Chưa giao việc nào. Viết việc đầu tiên ở ô dưới rồi bấm Giao việc.</p>}
           </div>
+          {unseen && (
+            <div className="sticky bottom-2 z-10 flex justify-center">
+              <Button variant="primary" className="h-7 shadow" onClick={() => { const vp = viewport(root.current); if (vp) toEnd(vp); }}>Tin mới ↓</Button>
+            </div>
+          )}
           <Working name={name} jobs={shown.jobs} requests={shown.requests} />
           <Composer />
         </>

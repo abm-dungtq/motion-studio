@@ -52,6 +52,7 @@ const stale = (): Manifest => {
 };
 
 beforeEach(() => {
+  sessionStorage.clear();
   mockFetch({});
   store.m = manifest();
   useStudio.setState({ name: "thuy-mau-demo" });
@@ -77,17 +78,33 @@ describe("voice tab", () => {
     expect(screen.queryByText("Nhờ duyệt và lồng tiếng lại")).toBeNull();
   });
 
-  test("Lưu lời with no change says so and sends nothing", async () => {
+  test("Lưu lời and the chưa lưu mark show only while the text differs", () => {
     renderUi(<VoiceTab />);
-    await act(async () => { fireEvent.click(screen.getAllByText("Lưu lời")[2]!); });
-    expect(say).toHaveBeenCalledWith("Không có gì thay đổi");
-    expect(actions.patch).not.toHaveBeenCalled();
+    expect(screen.queryByText("Lưu lời")).toBeNull();
+    expect(screen.queryByText("chưa lưu")).toBeNull();
+    const box = screen.getByLabelText("Câu 3");
+    fireEvent.change(box, { target: { value: "Kéo dài một cảnh." } });
+    expect(screen.getByText("chưa lưu")).toBeInTheDocument();
+    expect(screen.getByText("Lưu lời")).toBeInTheDocument();
+    fireEvent.change(box, { target: { value: "Kéo dài một cảnh, nét vẽ tự giãn theo." } });
+    expect(screen.queryByText("chưa lưu")).toBeNull();
+    expect(screen.queryByText("Lưu lời")).toBeNull();
+  });
+
+  test("an unsaved line text survives a remount and is dropped after saving", async () => {
+    const first = renderUi(<VoiceTab />);
+    fireEvent.change(screen.getByLabelText("Câu 2"), { target: { value: "bản nháp" } });
+    first.unmount();
+    renderUi(<VoiceTab />);
+    expect(screen.getByLabelText("Câu 2")).toHaveValue("bản nháp");
+    await act(async () => { fireEvent.click(screen.getByText("Lưu lời")); });
+    expect(sessionStorage.getItem("voice-draft:thuy-mau-demo:vo-02")).toBeNull();
   });
 
   test("Lưu lời after an edit sends set_line_text, then asks for the viet-pro gate", async () => {
     renderUi(<VoiceTab />);
     fireEvent.change(screen.getByLabelText("Câu 3"), { target: { value: "Kéo dài một cảnh, nét vẽ tự giãn theo nhịp." } });
-    await act(async () => { fireEvent.click(screen.getAllByText("Lưu lời")[2]!); });
+    await act(async () => { fireEvent.click(screen.getByText("Lưu lời")); });
     expect(actions.patch).toHaveBeenCalledWith([{ op: "set_line_text", id: "vo-03", text: "Kéo dài một cảnh, nét vẽ tự giãn theo nhịp." }]);
     expect(say).toHaveBeenCalledWith("Cần đạo diễn duyệt viet-pro rồi lồng tiếng lại");
   });
@@ -96,7 +113,7 @@ describe("voice tab", () => {
     vi.mocked(actions.patch).mockResolvedValueOnce(false);
     renderUi(<VoiceTab />);
     fireEvent.change(screen.getByLabelText("Câu 1"), { target: { value: "khác" } });
-    await act(async () => { fireEvent.click(screen.getAllByText("Lưu lời")[0]!); });
+    await act(async () => { fireEvent.click(screen.getByText("Lưu lời")); });
     expect(actions.patch).toHaveBeenCalledTimes(1);
     expect(say).not.toHaveBeenCalled();
   });
@@ -131,11 +148,11 @@ describe("voice tab", () => {
     expect(useStudio.getState().rightTab).toBe("director");
   });
 
-  test("a read-only project disables the text and Lưu lời", () => {
+  test("a read-only project disables the text and shows no Lưu lời", () => {
     store.m = manifest({ capabilities: { editable: false } } as Partial<Manifest>);
     renderUi(<VoiceTab />);
     expect(screen.getByLabelText("Câu 1")).toBeDisabled();
-    for (const b of screen.getAllByText("Lưu lời")) expect(b).toBeDisabled();
+    expect(screen.queryByText("Lưu lời")).toBeNull();
   });
 
   test("a new manifest keeps a half-typed line, and redraws once typing stops", () => {

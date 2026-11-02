@@ -52,7 +52,7 @@ export function StyleCard({ style, project, name, hasManifest }: { style: LemoSt
         >
           Áp cho dự án
         </Button>
-        {style.guide || style.source === "profile" ? <Button onClick={() => { void showGuide(style); }}>{style.source === "profile" ? "Xem hồ sơ" : "Đọc STYLE.md"}</Button> : null}
+        {style.guide || style.source === "profile" ? <Button data-guide={style.slug} onClick={() => { void showGuide(style); }}>{style.source === "profile" ? "Xem hồ sơ" : "Đọc STYLE.md"}</Button> : null}
         {safeUrl(style.film_url) ? (
           <a className="text-sm text-primary-ink hover:underline" href={style.film_url} target="_blank" rel="noopener noreferrer">Xem phim mẫu ↗</a>
         ) : null}

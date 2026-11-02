@@ -85,8 +85,10 @@ describe("DirectorChat", () => {
     openProject({ requests: [req("run", { status: "running" })], jobs: [job] });
     setJobLogs(NAME, { j1: [] });
     renderUi(<DirectorChat />);
-    const working = screen.getByRole("status");
-    expect(working).toHaveTextContent("Đạo diễn đang làm…");
+    // Only the short line is a status; the log under it is hidden from screen readers.
+    expect(screen.getByRole("status")).toHaveTextContent(/^Đạo diễn đang làm…$/);
+    const working = document.querySelector<HTMLElement>('[data-role="working"]')!;
+    expect(working.querySelector("pre")).toHaveAttribute("aria-hidden", "true");
     expect(working).toHaveTextContent("Đang khởi động…");
     act(() => setJobLogs(NAME, { j1: ["a", "b", "c", "d"] }));
     await waitFor(() => expect(working.querySelector("pre")?.textContent).toBe("b\nc\nd"));
@@ -123,5 +125,55 @@ describe("DirectorChat", () => {
     first.unmount();
     renderUi(<DirectorChat />);
     expect(screen.getByLabelText("Việc giao cho AI")).toHaveValue("shot 3 chậm lại");
+  });
+
+  describe("scrolling", () => {
+    // jsdom has no layout: give the viewport a height so "at the end" means something.
+    const inPanel = (suggest: boolean) => {
+      renderUi(
+        <div data-slot="scroll-area-viewport">
+          <section data-section="director/suggest">{suggest ? <p>Gợi ý hướng dựng</p> : null}</section>
+          <section data-section="director/chat"><DirectorChat /></section>
+        </div>,
+      );
+      const vp = document.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]')!;
+      Object.defineProperty(vp, "scrollHeight", { configurable: true, value: 1000 });
+      Object.defineProperty(vp, "clientHeight", { configurable: true, value: 300 });
+      return vp;
+    };
+    // Query updates reach components on the next tick; wait until the new turn is drawn.
+    const addRequest = async (id: string) => {
+      act(() => { queryClient.setQueryData(keys.requests(NAME), [...(queryClient.getQueryData<ReturnType<typeof req>[]>(keys.requests(NAME)) ?? []), req(id)]); });
+      await waitFor(() => expect(chat().textContent).toContain(`xong ${id}`));
+    };
+
+    it("does not pull the reader down on a new message; Tin mới ↓ does", async () => {
+      openProject({ requests: [req("r1")] });
+      useStudio.setState({ rightTab: "director" });
+      const vp = inPanel(false);
+      vp.scrollTop = 0;
+      fireEvent.scroll(vp);
+      await addRequest("r2");
+      expect(vp.scrollTop).toBe(0);
+      fireEvent.click(screen.getByRole("button", { name: "Tin mới ↓" }));
+      expect(vp.scrollTop).toBe(1000);
+      expect(screen.queryByRole("button", { name: "Tin mới ↓" })).not.toBeInTheDocument();
+    });
+
+    it("shows the suggest card on open instead of the end of the chat", async () => {
+      openProject({ requests: [req("r1")] });
+      useStudio.setState({ rightTab: "director" });
+      const vp = inPanel(true);
+      await addRequest("r2");
+      expect(vp.scrollTop).toBe(0);
+    });
+
+    it("follows the end when the suggest card is empty", async () => {
+      openProject({ requests: [req("r1")] });
+      useStudio.setState({ rightTab: "director" });
+      const vp = inPanel(false);
+      await addRequest("r2");
+      expect(vp.scrollTop).toBe(1000);
+    });
   });
 });

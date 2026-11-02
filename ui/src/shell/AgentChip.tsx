@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { useStudio } from "@/store/studio.ts";
 
 const DOT = { ok: "bg-ok", unknown: "bg-warn", bad: "bg-danger" } as const;
+// The dot's level in words, so it is not told by colour alone.
+const LEVEL = { ok: "Sẵn sàng", unknown: "Chưa rõ", bad: "Có lỗi" } as const;
 
 export function AgentChip() {
   const name = useStudio((s) => s.name);
@@ -23,7 +25,7 @@ export function AgentChip() {
       onClick={() => { useStudio.getState().openDialog("agent"); void reloadAgent(); }}
       className="flex h-8 shrink-0 items-center gap-2 rounded-full px-3 text-xs text-muted-foreground hover:bg-panel-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
-      <span aria-hidden="true" data-level={c.level} className={cn("size-2 rounded-full", DOT[c.level])} />
+      <span role="img" aria-label={LEVEL[c.level]} title={LEVEL[c.level]} data-level={c.level} className={cn("size-2 rounded-full", DOT[c.level])} />
       <span>{c.label}</span>
     </button>
   );

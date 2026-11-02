@@ -1,35 +1,50 @@
-// The version list of the top bar (public/app.js:256-267, renderVersions): newest first,
-// "v<n> · hiện tại" or "v<n> · <who made it>", the actor in the user's words. It is only for reading: picking another version says so
-// and the list stays on the current one. Disabled without a project.
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { say } from "@/api/client.ts";
+// The version history of the top bar (public/app.js:256-267, renderVersions): a "v<n>" button that
+// opens a read-only list, newest first, "v<n> · <who made it> · <time>", the actor in the user's
+// words and the current one marked. Going back is the Hoàn tác button's job, and the list says so.
+// Disabled without a project.
+import { ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLog, useProject } from "@/api/queries.ts";
+import type { LogEntry } from "@/api/types.ts";
 import { useStudio } from "@/store/studio.ts";
+import { Button } from "./controls.tsx";
 
 const ACTOR: Record<string, string> = {
   human: "bạn sửa", user: "bạn sửa", studio: "Studio", director: "đạo diễn AI", tool: "công cụ", import: "nhập từ dự án cũ",
 };
 const actorLabel = (a?: string): string => (a ? ACTOR[a] ?? a : "");
+const TIME = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+
+export function versionTime(at?: string): string {
+  if (!at) return "";
+  const d = new Date(at);
+  return Number.isNaN(d.getTime()) ? "" : TIME.format(d);
+}
+
+export function versionLine(e: Pick<LogEntry, "v" | "actor" | "at">, current: boolean): string {
+  return [`v${e.v}`, actorLabel(e.actor), versionTime(e.at), current ? "hiện tại" : ""].filter(Boolean).join(" · ");
+}
 
 export function VersionSelect() {
   const name = useStudio((s) => s.name);
   const { data: m } = useProject(name);
   const { data: log } = useLog(name);
-  const versions = m ? (log?.length ? [...log].reverse() : [{ v: m.version, actor: "" }]) : [];
+  const versions: Pick<LogEntry, "v" | "actor" | "at">[] = m ? (log?.length ? [...log].reverse() : [{ v: m.version }]) : [];
   return (
-    <Select
-      value={m ? String(m.version) : ""}
-      disabled={!m}
-      onValueChange={() => say("Danh sách chỉ để xem; quay lại bản trước bằng Hoàn tác")}
-    >
-      <SelectTrigger aria-label="Phiên bản" size="sm" className="h-8 border-border bg-panel-2">
-        <SelectValue placeholder="—" />
-      </SelectTrigger>
-      <SelectContent>
-        {versions.map((e) => (
-          <SelectItem key={e.v} value={String(e.v)}>{`v${e.v} · ${e.v === m?.version ? "hiện tại" : actorLabel(e.actor)}`}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild disabled={!m}>
+        <Button aria-label="Lịch sử phiên bản" className="h-8 bg-panel-2">{m ? `v${m.version}` : "—"}<ChevronDown /></Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-80 w-72 overflow-y-auto">
+        <DropdownMenuLabel>Lịch sử phiên bản</DropdownMenuLabel>
+        <ol aria-label="Các phiên bản" className="m-0 list-none p-0">
+          {versions.map((e) => (
+            <li key={e.v} className={e.v === m?.version ? "px-2 py-1 text-sm font-semibold" : "px-2 py-1 text-sm"}>{versionLine(e, e.v === m?.version)}</li>
+          ))}
+        </ol>
+        <DropdownMenuSeparator />
+        <p className="m-0 px-2 py-1 text-xs text-muted-foreground">Quay lại bản trước bằng nút Hoàn tác</p>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

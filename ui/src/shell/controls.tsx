@@ -1,14 +1,15 @@
-// Native form controls styled with the tokens: Button (default, primary, ghost, icon), Input,
+// Native form controls styled with the tokens: Button (default, primary, danger, ghost, icon), Input,
 // Textarea, Checkbox. The only controls besides the shadcn set (Tabs, Dialog, DropdownMenu,
 // Tooltip, Resizable, ScrollArea, Select, Slider, Sonner).
 import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-export type ButtonVariant = "default" | "primary" | "ghost" | "icon";
+export type ButtonVariant = "default" | "primary" | "danger" | "ghost" | "icon";
 
 const BUTTON: Record<ButtonVariant, string> = {
   default: "h-8 px-3 border border-border bg-panel-2 text-foreground hover:bg-accent",
   primary: "h-8 px-3 border border-transparent bg-primary text-primary-foreground hover:bg-primary/90",
+  danger: "h-8 px-3 border border-transparent bg-danger-fill text-primary-foreground hover:bg-danger-fill/90",
   ghost: "h-8 px-2 border border-transparent bg-transparent text-foreground hover:bg-panel-2",
   icon: "size-8 justify-center border border-transparent bg-transparent text-muted-foreground hover:bg-panel-2 hover:text-foreground",
 };

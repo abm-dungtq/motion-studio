@@ -7,11 +7,14 @@ import { SectionHost } from "./SectionHost.tsx";
 
 export const EXPORT_LEAD = "Xuất MP4 bản giao (render rồi nén), bộ lớp dựng cho phần mềm dựng, và tải file đã xuất.";
 
+// The dialog opens through the store, from the Xuất bản menu: give focus back to that button.
+const menuFocus = (e: Event) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-export-menu]")?.focus(); };
+
 export function ExportDialog() {
   const open = useStudio((s) => s.dialog === "export");
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) useStudio.getState().openDialog(null); }}>
-      <DialogContent className="max-w-3xl sm:max-w-3xl">
+      <DialogContent className="max-w-3xl sm:max-w-3xl" onCloseAutoFocus={menuFocus}>
         <DialogHeader>
           <DialogTitle>Xuất bản</DialogTitle>
           <DialogDescription>{EXPORT_LEAD}</DialogDescription>

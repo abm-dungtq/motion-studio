@@ -60,3 +60,13 @@
 
   color-scheme: dark;
 }
+
+/* Less motion when the system asks for it. Only the Studio's own interface: the preview player
+   is an iframe with its own document, so the video being edited keeps its animation. */
+@media (prefers-reduced-motion: reduce) {
+  *:not(iframe), *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -6,7 +6,7 @@
 // the block goes to the shot. Right click: cut at the playhead, roll the cut to the playhead, ask
 // the director about the shot. When the picture is drawn by code (capabilities.picture_from_code)
 // shot edges follow the lines: no edge handle, no cut or roll in the menu, and the hover says why.
-import { memo, useLayoutEffect, useMemo, useRef, type PointerEvent } from "react";
+import { memo, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { actions } from "@/api/actions.ts";
 import { say } from "@/api/client.ts";
 import type { Manifest, Shot, TimelineMedia } from "@/api/types.ts";
@@ -23,12 +23,27 @@ import { byId, clearPreview, leftOf, markDrag, preview, settle, useView, widthOf
 
 export interface ShotBlockProps {
   m: Manifest; s: Shot; i: number; pps: number; mode: EditMode; sel: boolean; editable: boolean;
+  // Some shot is picked: the picked one takes the Tab stop, else the first shot does.
+  anySel?: boolean;
   name: string; render: TimelineMedia["render"] | undefined;
   // Shot edges follow the lines (picture drawn by code): editable, but the edges stay put.
   locked?: boolean;
 }
 
-export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, editable, name, render, locked = false }: ShotBlockProps) {
+// Keyboard: one Tab stop for the track; ←/→ pick and focus the shot beside, Enter picks this one.
+// Every other key (Space, S, Delete, Cmd+Z…) goes on to the timeline shortcuts.
+function onShotKey(e: KeyboardEvent<HTMLDivElement>, m: Manifest, i: number) {
+  const to = e.key === "Enter" ? i : e.key === "ArrowLeft" ? i - 1 : e.key === "ArrowRight" ? i + 1 : null;
+  if (to === null || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const shot = m.shots[to];
+  if (!shot) return;
+  actions.select(shot.id);
+  if (to !== i) e.currentTarget.parentElement?.querySelector<HTMLElement>(`[data-kind="shot"][data-id="${CSS.escape(shot.id)}"]`)?.focus();
+}
+
+export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, editable, name, render, locked = false, anySel = false }: ShotBlockProps) {
   const view = useView();
   const ref = useRef<HTMLDivElement>(null);
   const dur = s.end - s.start;
@@ -88,9 +103,13 @@ export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, edit
       ref={ref}
       data-id={s.id}
       data-kind="shot"
+      role="button"
+      aria-label={`Shot ${i + 1}`}
+      aria-pressed={sel}
+      tabIndex={sel || (!anySel && i === 0) ? 0 : -1}
       title={locked ? `${label}\n${PICTURE_LOCK_NOTE}` : label}
       className={cn(
-        "blk shot absolute top-1.5 bottom-1.5 flex cursor-pointer items-center overflow-hidden rounded-sm border px-2 text-xs font-semibold whitespace-nowrap select-none [&.drop-on]:outline-2 [&.drop-on]:outline-primary",
+        "blk shot absolute focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring top-1.5 bottom-1.5 flex cursor-pointer items-center overflow-hidden rounded-sm border px-2 text-xs font-semibold whitespace-nowrap select-none [&.drop-on]:outline-2 [&.drop-on]:outline-primary",
         sel ? "sel border-primary bg-primary text-primary-foreground" : "border-track-shot bg-track-shot/60 text-foreground",
         thumb && "has-thumb bg-size-[auto_100%] bg-left bg-repeat-x",
         thumb && render?.stale && "thumb-stale bg-blend-luminosity",
@@ -98,6 +117,7 @@ export const ShotBlock = memo(function ShotBlock({ m, s, i, pps, mode, sel, edit
       )}
       style={{ left: leftOf(s.start * pps), width: widthOf(dur * pps), backgroundImage: thumb ? `url("${thumb}")` : undefined }}
       onClick={() => actions.select(s.id)}
+      onKeyDown={(e) => onShotKey(e, m, i)}
       onContextMenu={(e) => shotMenu(e, m, s, Boolean(nextShot), edges)}
       {...dropProps(s.id, editable)}
     >
@@ -115,5 +135,6 @@ export interface ShotTrackProps { m: Manifest; pps: number; mode: EditMode; sel:
 
 export function ShotTrack({ m, pps, mode, sel, editable, name, render }: ShotTrackProps) {
   const locked = pictureFromCode(m);
-  return <>{m.shots.map((s, i) => <ShotBlock key={s.id} m={m} s={s} i={i} pps={pps} mode={mode} sel={s.id === sel} editable={editable} name={name} render={render} locked={locked} />)}</>;
+  const anySel = m.shots.some((s) => s.id === sel);
+  return <>{m.shots.map((s, i) => <ShotBlock key={s.id} m={m} s={s} i={i} pps={pps} mode={mode} sel={s.id === sel} anySel={anySel} editable={editable} name={name} render={render} locked={locked} />)}</>;
 }

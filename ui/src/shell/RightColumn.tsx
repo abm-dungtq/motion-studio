@@ -33,7 +33,15 @@ export function RightColumn() {
         </TabsList>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="icon" aria-label="Thu gọn cột phải" onClick={() => useStudio.getState().toggleRight(false)}>
+            <Button
+              variant="icon"
+              aria-label="Thu gọn cột phải"
+              onClick={() => {
+                useStudio.getState().toggleRight(false);
+                // The column is gone: focus the button that opens it again (Stage).
+                requestAnimationFrame(() => document.querySelector<HTMLElement>('button[aria-label="Mở cột phải"]')?.focus());
+              }}
+            >
               <PanelRightClose />
             </Button>
           </TooltipTrigger>
