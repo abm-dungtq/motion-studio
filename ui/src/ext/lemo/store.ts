@@ -10,6 +10,7 @@ import { create } from "zustand";
 import { queryClient, say } from "@/api/client.ts";
 import { keys, lemoApply, lemoFetch, lemoGuideQuery, lemoStylesQuery } from "@/api/queries.ts";
 import { useStudio } from "@/store/studio.ts";
+import type { AskOptions } from "@/shell/confirm.tsx";
 
 export const POLL_MS = 1500;
 const FETCH_MAX_MS = 10 * 60000;
@@ -146,20 +147,20 @@ export async function fetchLibrary(): Promise<void> {
 // POST /api/lemo/apply, with the follow-ups the answer asks for: replace an existing layer, or
 // ask the director to insert the markers first (lemo-gallery.js:52-73).
 // ask: the in-page confirm of the caller (lemo/confirm.tsx).
-export async function applyStyle({ name, hasManifest, style, mode, shot = null, ask }: { name: string | null; hasManifest: boolean; style: LemoStyle; mode: StyleMode; shot?: string | null; ask: (text: string) => Promise<boolean> }): Promise<void> {
+export async function applyStyle({ name, hasManifest, style, mode, shot = null, ask }: { name: string | null; hasManifest: boolean; style: LemoStyle; mode: StyleMode; shot?: string | null; ask: (text: string, opts?: AskOptions) => Promise<boolean> }): Promise<void> {
   if (!name || !hasManifest) { say("Mở một dự án trước", true); return; }
   const where = shot ? `shot ${shot}` : "cả dự án";
   const how = mode === "layer" ? "thêm lớp canvas (sửa index.html, ghi lemo_style vào BRIEF.md)"
     : mode === "profile" ? (shot ? "nhờ đạo diễn dựng lại shot theo style profile (BRIEF.md giữ nguyên)" : "ghi style_profile vào BRIEF.md và nhờ đạo diễn dựng lại theo style profile")
     : "nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)";
-  if (!(await ask(`Áp "${style.ten}" cho ${where}: ${how}?`))) return;
+  if (!(await ask(`Áp "${style.ten}" cho ${where}: ${how}?`, { ok: "Áp phong cách" }))) return;
   const body = { name, slug: style.slug, source: style.source, mode, shot };
   useLemo.setState({ busy: true });
   try {
     let r = await lemoApply(body);
-    if (r.data?.code === "exists" && await ask("Dự án đã có một lớp canvas. Thay lớp cũ bằng phong cách này? (scene đã viết được giữ)")) r = await lemoApply({ ...body, replace: true });
+    if (r.data?.code === "exists" && await ask("Dự án đã có một lớp canvas. Thay lớp cũ bằng phong cách này? (scene đã viết được giữ)", { ok: "Thay lớp cũ", danger: true })) r = await lemoApply({ ...body, replace: true });
     else if (r.data?.code === "markers") {
-      if (await ask("index.html thiếu bốn dấu của lớp canvas. Nhờ đạo diễn chèn dấu? Xong thì bấm áp lại.")) {
+      if (await ask("index.html thiếu bốn dấu của lớp canvas. Nhờ đạo diễn chèn dấu? Xong thì bấm áp lại.", { ok: "Nhờ đạo diễn" })) {
         const m = await lemoApply({ ...body, mode: "markers" });
         say(m.status === 200 ? "Đã gửi yêu cầu chèn dấu cho đạo diễn" : (m.error ?? `Lỗi ${m.status}`), m.status !== 200);
       }

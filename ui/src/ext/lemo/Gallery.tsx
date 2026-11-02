@@ -33,10 +33,18 @@ export function Credit({ credit }: { credit?: LemoCredit }) {
 function GuideDialog() {
   const viewing = useLemo((s) => s.viewing);
   const close = () => useLemo.getState().setViewing(null);
+  // The dialog opens after STYLE.md loads, through the store: give focus back to the card's button.
+  const opener = useRef<string | null>(null);
+  if (viewing) opener.current = viewing.style.slug;
+  const backToCard = (e: Event) => {
+    if (!opener.current) return;
+    e.preventDefault();
+    document.querySelector<HTMLElement>(`[data-guide="${CSS.escape(opener.current)}"]`)?.focus();
+  };
   return (
     <Dialog open={Boolean(viewing)} onOpenChange={(o) => { if (!o) close(); }}>
       {viewing ? (
-        <DialogContent showCloseButton={false} aria-label={`STYLE.md của ${viewing.style.ten}`} className="max-w-[min(820px,92vw)] gap-2 p-3 sm:max-w-[min(820px,92vw)]">
+        <DialogContent showCloseButton={false} onCloseAutoFocus={backToCard} aria-label={`STYLE.md của ${viewing.style.ten}`} className="max-w-[min(820px,92vw)] gap-2 p-3 sm:max-w-[min(820px,92vw)]">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-sm font-semibold">{`STYLE.md · ${viewing.style.ten}`}</DialogTitle>
             <Button onClick={close}>Đóng</Button>

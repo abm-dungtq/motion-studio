@@ -68,9 +68,19 @@ describe("AiBanner", () => {
     ], { "/api/snapshots": { snapshots: [], can_restore: true } });
     setup([turn()]);
     fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
+    expect(await answerConfirm(true)).toMatch(/Hoàn tác thay đổi của AI/);
     expect(await answerConfirm(true)).toMatch(/v5 → v6/);
     await waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[1].body).toEqual({ name: "p1", id: ID, force: true });
+  });
+
+  it("Hoàn tác asks first; Huỷ restores nothing; Giữ is the main button", async () => {
+    const posts = stubPosts([[200, { version: 7, files: 3, overwritten: [], created: [], lines: [] }]], { "/api/snapshots": { snapshots: [], can_restore: true } });
+    setup([turn()]);
+    expect(screen.getByRole("button", { name: "Giữ" })).toHaveClass("bg-primary");
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
+    expect(await answerConfirm(false)).toMatch(/Hoàn tác thay đổi của AI/);
+    expect(posts).toHaveLength(0);
   });
 
   it("after an undo with overwritten voice, says which lines need voicing again", async () => {
@@ -78,6 +88,7 @@ describe("AiBanner", () => {
       { "/api/snapshots": { snapshots: [], can_restore: true } });
     setup([turn({ overwritten: ["assets/voice/01.mp3"] })]);
     fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
+    await answerConfirm(true);
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("1 file đã bị ghi đè, không lấy lại được: assets/voice/01.mp3");
     expect(alert).toHaveTextContent("Cần lồng tiếng lại câu: l1 “Xin chào”");

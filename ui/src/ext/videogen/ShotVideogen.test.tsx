@@ -38,7 +38,7 @@ const open = () => { const r = openRaw(); fireEvent.click(screen.getByRole("butt
 const agree = async (): Promise<string> => {
   const d = await screen.findByRole("dialog");
   const text = d.textContent ?? "";
-  fireEvent.click(screen.getByRole("button", { name: "Đồng ý" }));
+  fireEvent.click(screen.getByRole("dialog").querySelector<HTMLElement>('[data-confirm="ok"]')!);
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   return text;
 };
@@ -51,6 +51,7 @@ const create = async () => {
 
 beforeEach(() => {
   resetAll();
+  sessionStorage.clear();
   useStudio.setState({ name: "ep" });
   vi.restoreAllMocks();
 });
@@ -154,6 +155,30 @@ describe("shot inspector AI clip section", () => {
     await waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[1]).toEqual({ path: "/api/videogen/recover", body: { name: "ep", id: "vg-made" } });
     expect(posts.some((p) => "again" in p.body)).toBe(false);
+  });
+
+  it("keeps the typed prompt per shot for the session, and drops it once sent", async () => {
+    const posts = serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
+    const m = M2([{ id: "a", start: 0, end: 4 }, { id: "b", start: 4, end: 8 }]);
+    const first = renderUi(<ShotVideogen pick={{ kind: "shot", id: "a" }} m={m} />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Mô tả ảnh" }), { target: { value: "xin chào" } });
+    first.unmount();
+    const again = renderUi(<ShotVideogen pick={{ kind: "shot", id: "a" }} m={m} />);
+    expect(screen.getByRole("textbox", { name: "Mô tả ảnh" })).toHaveValue("xin chào");
+    again.unmount();
+    const other = renderUi(<ShotVideogen pick={{ kind: "shot", id: "b" }} m={m} />);
+    expect(screen.getByRole("textbox", { name: "Mô tả ảnh" })).toHaveValue("");
+    other.unmount();
+    const sent = renderUi(<ShotVideogen pick={{ kind: "shot", id: "a" }} m={m} />);
+    const b = screen.getByRole("button", { name: "Tạo ảnh AI" });
+    await waitFor(() => expect(b).toBeEnabled());
+    fireEvent.click(b);
+    await agree();
+    await waitFor(() => expect(posts).toHaveLength(1));
+    await waitFor(() => expect(sessionStorage.getItem("vg-draft:ep:a:image")).toBeNull());
+    sent.unmount();
+    renderUi(<ShotVideogen pick={{ kind: "shot", id: "a" }} m={m} />);
+    expect(screen.getByRole("textbox", { name: "Mô tả ảnh" })).toHaveValue("");
   });
 
   it("opens on Ảnh, not on the clip that costs credits", () => {
@@ -261,7 +286,7 @@ describe("shot inspector AI clip section", () => {
     const d = await screen.findByRole("dialog");
     expect(d.textContent).toMatch(/file mp4 đã tải từ Flow/);
     fireEvent.change(within(d).getByRole("textbox"), { target: { value: "  /Users/u/Downloads/flow.mp4 " } });
-    fireEvent.click(within(d).getByRole("button", { name: "Đồng ý" }));
+    fireEvent.click(d.querySelector<HTMLElement>('[data-confirm="ok"]')!);
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toEqual({ path: "/api/videogen/import", body: { name: "ep", id: "q", base: M.version, path: "/Users/u/Downloads/flow.mp4" } });
     expect(native).not.toHaveBeenCalled();

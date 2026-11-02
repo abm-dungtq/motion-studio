@@ -124,6 +124,26 @@ describe("TimelineArea", () => {
     expect(patch).toHaveBeenCalledTimes(4);
   });
 
+  it("shot blocks: one Tab stop, ← → move between shots, Enter picks, Space still plays", () => {
+    open();
+    useStudio.setState({ pick: null });
+    renderUi(<TimelineArea />);
+    const shots = [...document.querySelectorAll<HTMLElement>('[data-kind="shot"]')];
+    expect(shots.map((x) => x.tabIndex)).toEqual([0, -1, -1]);
+    shots[0].focus();
+    fireEvent.keyDown(shots[0], { key: "ArrowRight" });
+    expect(document.activeElement).toHaveAttribute("aria-label", "Shot 2");
+    expect(pick).toHaveBeenLastCalledWith("shot", "s2");
+    pick.mockClear();
+    fireEvent.keyDown(document.activeElement!, { key: "Enter" });
+    expect(pick).toHaveBeenLastCalledWith("shot", "s2");
+    expect(el('[data-id="s2"]')).toHaveAttribute("aria-pressed", "true");
+    expect(el('[data-id="s2"]').tabIndex).toBe(0);
+    const toggle = vi.spyOn(actions.transport, "toggle").mockImplementation(() => {});
+    fireEvent.keyDown(document.activeElement!, { key: " ", code: "Space" });
+    expect(toggle).toHaveBeenCalledTimes(1);
+  });
+
   it("a press that moves 2 px picks the block and sends nothing", () => {
     open();
     renderUi(<TimelineArea />);

@@ -38,7 +38,7 @@ export function MyStyle() {
   const s = draft?.style;
   const keep = async () => {
     if (!s) return;
-    if (!(await tabConfirm.ask(`Giữ "${s.en || s.slug}" vào ${d.my_dir}/${s.slug}/? Thư mục đã có thì không ghi đè.`))) return;
+    if (!(await tabConfirm.ask(`Giữ "${s.en || s.slug}" vào ${d.my_dir}/${s.slug}/? Thư mục đã có thì không ghi đè.`, { ok: "Giữ phong cách" }))) return;
     const r = await lemoKeep({ name });
     if (r.status === 200) say(`Đã giữ phong cách ở ${r.data?.dir}${r.data?.frame === "styleframe.png" ? " (chưa có ffmpeg nên khung giữ dạng PNG)" : ""}`);
     else say(r.error ?? `Lỗi ${r.status}`, true);

@@ -122,7 +122,7 @@ function Detail({ name, b, s }: { name: string; b: BoardData; s: BoardShot }) {
   async function submit() {
     if (!f.base) return say("Chọn ảnh gốc", true);
     if (!f.change.trim()) return say("Ghi thay đổi cần làm", true);
-    if (!(await ask(`Sinh một ảnh bằng agent sinh ảnh (tốn 1 ảnh quota) cho ${s.id} → ${f.out_name}.png?`))) return;
+    if (!(await ask(`Sinh một ảnh bằng agent sinh ảnh (tốn 1 ảnh quota) cho ${s.id} → ${f.out_name}.png?`, { ok: "Sinh ảnh (tốn 1 ảnh)" }))) return;
     const r = await animeVariant({ name, shot: s.id, base: f.base, chars: f.chars, kind: f.kind, change: f.change, out_name: f.out_name, sim: Number(f.sim), blend: Number(f.blend), edge: f.edge });
     if (r.status !== 200) return say(r.error ?? `Lỗi ${r.status}`, true);
     if (r.data?.job) useAnimeStore.getState().follow("variant", r.data.job);

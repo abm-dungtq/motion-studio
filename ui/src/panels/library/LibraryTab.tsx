@@ -29,7 +29,7 @@ function Page({ offset, first, last, onMore }: { offset: number; first: boolean;
   if (first && !page.items.length) {
     return (
       <>
-        <p className="m-0 text-sm text-muted-foreground">{`Không thấy ${src.label.toLowerCase()} nào khớp "${query}". Thử từ khoá ngắn hơn, bỏ dấu, hoặc đổi loại mẫu.`}</p>
+        <p role="status" className="m-0 text-sm text-muted-foreground">{`Không thấy ${src.label.toLowerCase()} nào khớp "${query}". Thử từ khoá ngắn hơn, bỏ dấu, hoặc đổi loại mẫu.`}</p>
         <Sources list={page.sources} />
       </>
     );
@@ -37,7 +37,7 @@ function Page({ offset, first, last, onMore }: { offset: number; first: boolean;
   const next = page.offset + page.items.length;
   return (
     <>
-      {first ? <p className="m-0 text-xs text-muted-foreground">{`${page.total} mẫu`}</p> : null}
+      {first ? <p role="status" className="m-0 text-xs text-muted-foreground">{`${page.total} mẫu`}</p> : null}
       {first && page.toolkit && !query ? <ToolkitCard kit={page.toolkit} /> : null}
       {page.items.map((row) => <LibraryCard key={`${mode}:${row.id}`} kind={mode} row={row} />)}
       {last ? (next < page.total
@@ -99,7 +99,7 @@ export function LibraryTab() {
         </div>
       ) : null}
       {m ? null : <p className="m-0 text-xs text-muted-foreground">Chưa mở dự án: vẫn xem và chép prompt được. Mở một dự án để gửi mẫu cho đạo diễn.</p>}
-      <div className="flex flex-col gap-2" aria-live="polite">
+      <div className="flex flex-col gap-2">
         {offsets.map((o, i) => (
           <Page key={`${searchKey}|${o}`} offset={o} first={i === 0} last={i === offsets.length - 1} onMore={(next) => setMore({ key: searchKey, offsets: [...offsets, next] })} />
         ))}

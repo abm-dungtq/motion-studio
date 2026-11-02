@@ -17,6 +17,11 @@ export function LeftPanel() {
   const name = useStudio((s) => s.name);
   const tab = tabs.find((t) => t.id === leftTab) ?? tabs[0];
 
+  // Focus goes to the rail tab of this panel, which stays on screen once the panel is gone.
+  const collapse = () => {
+    useStudio.getState().toggleLeft(false);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-slot="rail"] [role="tab"][aria-selected="true"]')?.focus());
+  };
   return (
     <div data-slot="left" className="flex h-full min-h-0 flex-col bg-panel">
       {tab ? (
@@ -28,7 +33,7 @@ export function LeftPanel() {
             </div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="icon" aria-label="Thu gọn" onClick={() => useStudio.getState().toggleLeft(false)}>
+                <Button variant="icon" aria-label="Thu gọn" onClick={collapse}>
                   <PanelLeftClose />
                 </Button>
               </TooltipTrigger>

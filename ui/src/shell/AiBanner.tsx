@@ -1,6 +1,7 @@
 // The strip under the top bar after an AI turn that changed the project (routes/snapshots.mjs):
-// "AI đã sửa N file, vX → vY" with Giữ, Hoàn tác and Xem thay đổi. Hoàn tác puts the text files
-// back and project.json as a new version; when project.json changed after the turn it asks first.
+// "AI đã sửa N file, vX → vY" with Giữ (the main button), Xem thay đổi and Hoàn tác. Hoàn tác asks
+// first, then puts the text files back and project.json as a new version; when project.json
+// changed after the turn it asks a second time.
 // Media the director wrote over cannot come back: the strip that follows the undo names them and
 // the lines to voice again, instead of claiming a full undo.
 import { useEffect, useState } from "react";
@@ -41,13 +42,17 @@ export function AiBanner() {
     if (r.status !== 200) say(r.error ?? `Lỗi ${r.status}`, true);
   }
 
+  async function confirmUndo(): Promise<void> {
+    if (await ask("Hoàn tác thay đổi của AI? Các file AI vừa sửa sẽ trở về như trước.", { ok: "Hoàn tác", danger: true })) await undo();
+  }
+
   async function undo(force = false): Promise<void> {
     if (!name || !s) return;
     setBusy(true);
     const r = await Q.snapshotRestore({ name, id: s.id, force });
     setBusy(false);
     if (r.status === 409 && r.data?.code === "NEWER") {
-      if (await ask(r.error ?? "Hoàn tác cả các sửa sau đó?")) return undo(true);
+      if (await ask(r.error ?? "Hoàn tác cả các sửa sau đó?", { ok: "Hoàn tác cả", danger: true })) return undo(true);
       return;
     }
     if (r.status !== 200) { say(r.error ?? `Lỗi ${r.status}`, true); return; }
@@ -74,9 +79,9 @@ export function AiBanner() {
             {headline(s)}
             {s.late && <span className="text-muted-foreground"> · chụp sau khi AI đã bắt đầu, có thể thiếu</span>}
           </span>
+          <Button className="h-7" disabled={busy} variant="primary" onClick={() => { void keep(); }}>Giữ</Button>
           <Button className="h-7" onClick={() => setView(s.id)}>Xem thay đổi</Button>
-          <Button className="h-7" disabled={busy} onClick={() => { void keep(); }}>Giữ</Button>
-          {data?.can_restore && <Button className="h-7" disabled={busy} onClick={() => { void undo(); }}>{busy ? "Đang hoàn tác…" : "Hoàn tác"}</Button>}
+          {data?.can_restore && <Button className="h-7" variant="ghost" disabled={busy} onClick={() => { void confirmUndo(); }}>{busy ? "Đang hoàn tác…" : "Hoàn tác"}</Button>}
         </div>
       )}
       <ChangesDialog name={name} id={view} onClose={() => setView(null)} />

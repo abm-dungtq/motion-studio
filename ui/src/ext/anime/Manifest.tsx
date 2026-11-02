@@ -79,7 +79,7 @@ export function Manifest() {
     const cur = useAnimeStore.getState().draft ?? d;
     if (cur.rawErr) return say(`Ô JSON chưa hợp lệ: ${cur.rawErr}`, true);
     const r = await animeManifest({ name, base_sha: cur.sha, manifest: cur.m, confirm: confirmed });
-    if (r.status === 428) { if (await ask(`${r.error}\n\nVẫn lưu? Bản cũ được sao lưu vào .opus/anim-backups/.`)) return save(true); return; }
+    if (r.status === 428) { if (await ask(`${r.error}\n\nVẫn lưu? Bản cũ được sao lưu vào .opus/anim-backups/.`, { ok: "Vẫn lưu" })) return save(true); return; }
     if (r.status === 409) { say("Manifest vừa được sửa ở chỗ khác. Bấm Bỏ bản nháp để tải bản mới.", true); return; }
     if (r.status !== 200) { say(r.error ?? `Lỗi ${r.status}`, true); return; }
     useAnimeStore.getState().editDraft((x) => { x.sha = r.data?.sha ?? null; });
@@ -88,7 +88,7 @@ export function Manifest() {
   }
   async function rebuild(confirmed = false): Promise<void> {
     const r = await animeRebuild({ name, confirm: confirmed });
-    if (r.status === 428) { if (await ask(`${r.error}\n\nVẫn build?`)) return rebuild(true); return; }
+    if (r.status === 428) { if (await ask(`${r.error}\n\nVẫn build?`, { ok: "Vẫn build" })) return rebuild(true); return; }
     if (r.status !== 200) return say(r.error ?? `Lỗi ${r.status}`, true);
     if (r.data?.job) useAnimeStore.getState().follow("build", r.data.job);
   }
@@ -247,7 +247,7 @@ function StackForm({ id, st, edit }: { id: string; st: Stack; edit: Edit }) {
       />
       <div>
         <Button onClick={async () => {
-          if (!(await ask(`Xoá stack ${id}?`))) return;
+          if (!(await ask(`Xoá stack ${id}?`, { ok: "Xoá", danger: true }))) return;
           edit((x) => { delete x.m.stacks[id]; x.stack = Object.keys(x.m.stacks)[0] ?? null; });
         }}>Xoá stack</Button>
       </div>

@@ -8,7 +8,7 @@ import { useStudio, type AudioGroup } from "@/store/studio.ts";
 // Track label → audio group of the player (the old "voiceover" is "voice" in the store).
 export const GROUPS: Record<string, AudioGroup> = { "Lồng tiếng": "voice", "Nhạc": "music", "SFX": "sfx" };
 
-const BTN = "ms-btn h-[18px] w-[22px] cursor-pointer rounded-sm border border-border bg-panel p-0 text-[11px] leading-none font-bold text-muted-foreground hover:border-primary hover:text-primary-ink aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground";
+const BTN = "ms-btn min-h-6 min-w-6 cursor-pointer rounded-sm border border-border bg-panel p-0 text-[11px] leading-none font-bold text-muted-foreground hover:border-primary hover:text-primary-ink aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground";
 
 export const MuteSolo = memo(function MuteSolo({ group, name }: { group: AudioGroup; name: string }) {
   const muted = useStudio((s) => s.audio.mute.includes(group));

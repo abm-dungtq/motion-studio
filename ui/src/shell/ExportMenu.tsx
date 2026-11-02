@@ -14,8 +14,8 @@ export function ExportMenu() {
   const { data: m } = useProject(name);
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="primary">Xuất bản<ChevronDown /></Button>
+      <DropdownMenuTrigger asChild disabled={!m}>
+        <Button variant="primary" data-export-menu="" title={m ? undefined : "Mở một dự án để xuất"}>Xuất bản<ChevronDown /></Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem disabled={!m} onSelect={() => { void actions.exportVideo(); }}>Xuất video</DropdownMenuItem>

@@ -124,7 +124,7 @@ describe("Anime tab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sinh biến thể" }));
     const dlg = await screen.findByRole("dialog");
     expect(dlg).toHaveTextContent("Sinh một ảnh bằng agent sinh ảnh (tốn 1 ảnh quota) cho s2 → s2-v1.png?");
-    fireEvent.click(within(dlg).getByRole("button", { name: "Đồng ý" }));
+    fireEvent.click(dlg.querySelector<HTMLElement>('[data-confirm="ok"]')!);
     await waitFor(() => expect(h.variant).toHaveBeenCalledWith(expect.objectContaining({ name: "demo", shot: "s2", base: "assets/plates/s2-a.png", change: "mouth open", out_name: "s2-v1", sim: 0.18, blend: 0.06 })));
     await waitFor(() => expect(h.say).toHaveBeenCalledWith("Đã có s2-v1.png (1024px, nền #0047FF)", false)); // token-exempt: test data
   });
@@ -162,7 +162,7 @@ describe("Hoạt hình (manifest editor)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lưu và build" }));
     const dlg = await screen.findByRole("dialog");
     expect(dlg).toHaveTextContent("Vẫn lưu? Bản cũ được sao lưu vào .opus/anim-backups/.");
-    fireEvent.click(within(dlg).getByRole("button", { name: "Đồng ý" }));
+    fireEvent.click(dlg.querySelector<HTMLElement>('[data-confirm="ok"]')!);
     await waitFor(() => expect(h.manifest).toHaveBeenCalledTimes(2));
     expect(h.manifest.mock.calls[1][0]).toMatchObject({ confirm: true });
     await waitFor(() => expect(h.say).toHaveBeenCalledWith("Đã lưu (sao lưu .opus/anim-backups/x.json)"));

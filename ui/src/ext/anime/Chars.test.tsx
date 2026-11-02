@@ -91,7 +91,7 @@ test("Sửa fills the form; Bỏ asks then removes", async () => {
   fireEvent.click(within(root).getByRole("button", { name: "Bỏ" }));
   const dlg = await screen.findByRole("dialog");
   expect(dlg).toHaveTextContent("Bỏ Nhân vật thử khỏi thư viện? File sheet vẫn giữ nguyên.");
-  fireEvent.click(within(dlg).getByRole("button", { name: "Đồng ý" }));
+  fireEvent.click(dlg.querySelector<HTMLElement>('[data-confirm="ok"]')!);
   await waitFor(() => expect(h.chars).toHaveBeenCalledWith({ name: "demo", remove: "thu-nv" }));
 });
 

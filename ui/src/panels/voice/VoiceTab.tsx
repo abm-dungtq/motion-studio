@@ -17,6 +17,7 @@ import { useProject } from "@/api/queries.ts";
 import type { Line } from "@/api/types.ts";
 import { Button, Textarea } from "@/shell/controls.tsx";
 import { Empty, NeedManifest } from "@/shell/states.tsx";
+import { useDraft } from "@/shell/useDraft.ts";
 import { useStudio } from "@/store/studio.ts";
 import { cn } from "@/lib/utils";
 
@@ -97,17 +98,22 @@ function typingIn(root: RefObject<HTMLElement | null>): boolean {
 
 function LineCard({ name, line, n, editable, version, root, voices }: { name: string; line: Line; n: number; editable: boolean; version: number; root: RefObject<HTMLElement | null>; voices: SeriesVoices | null }) {
   const text = line.text ?? "";
-  const [draft, setDraft] = useState(text);
-  // Follow the manifest (a new version or new text) the way the old panel redrew, except mid-typing.
+  // The typed text survives a switch of tab or project for this session, until it is saved.
+  const [draft, setDraft, forget] = useDraft(`voice-draft:${name}:${line.id}`, text);
+  const dirty = draft !== text;
+  // Follow the manifest (a new version or new text) the way the old panel redrew, except mid-typing
+  // and except on mount, where a kept draft wins.
+  const mounted = useRef(false);
   useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
     if (!typingIn(root)) setDraft(text);
-  }, [text, version, root]);
+  }, [text, version, root, setDraft]);
 
   const gate = line.gate ?? "unknown";
   const stale = line.gate === "stale";
   const save = async () => {
     if (draft === text) { say("Không có gì thay đổi"); return; }
-    if (await actions.patch([{ op: "set_line_text", id: line.id, text: draft }])) say(REDUB);
+    if (await actions.patch([{ op: "set_line_text", id: line.id, text: draft }])) { forget(); say(REDUB); }
   };
 
   return (
@@ -115,12 +121,13 @@ function LineCard({ name, line, n, editable, version, root, voices }: { name: st
       <div className="flex items-center gap-2">
         <strong className="text-sm">{`${n}. ${line.id}`}</strong>
         <span className={cn("rounded-full border px-2 text-xs font-semibold", GATE_BADGE[gate] ?? "border-border bg-background text-muted-foreground")}>{GATE_LABEL[gate] ?? gate}</span>
+        {dirty ? <span className="inline-flex items-center gap-1 text-xs text-warn"><span aria-hidden="true" className="size-1.5 rounded-full bg-warn" />chưa lưu</span> : null}
       </div>
       {voices ? <SpeakerPick line={line} n={n} voices={voices} editable={editable} /> : null}
       <Textarea value={draft} disabled={!editable} aria-label={`Câu ${n}`} onChange={(e) => setDraft(e.target.value)} />
       {stale ? <p className="m-0 text-xs text-muted-foreground">{voices ? NEEDS_VOICE : REDUB}</p> : null}
       <div className="flex flex-wrap items-center gap-2">
-        <Button disabled={!editable} onClick={() => void save()}>Lưu lời</Button>
+        {dirty ? <Button variant="primary" disabled={!editable} onClick={() => void save()}>Lưu lời</Button> : null}
         {stale && voices ? (
           <Button disabled={!speakerOf(line)} title={speakerOf(line) ? undefined : "Chọn người nói trước"} onClick={() => void voiceLines(name, [line.id])}>Lồng tiếng lại</Button>
         ) : null}
