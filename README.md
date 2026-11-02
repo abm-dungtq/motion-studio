@@ -4,11 +4,11 @@
 
 **A video editor where an AI director builds the video and you make the decisions.** Motion Studio is a web app that runs on your own computer. You create a project, add footage, brief the director in plain language, approve its choices on cards, adjust the result on a CapCut-style timeline, and export an MP4 or a layered project for Final Cut Pro, Premiere and DaVinci Resolve. After the first start you do not need a terminal. The interface is in Vietnamese; this guide gives an English gloss next to each label.
 
-[![Release](https://img.shields.io/badge/release-v2.0.0-orange.svg)](https://github.com/abm-dungtq/motion-studio/releases/tag/v2.0.0)
+[![Release](https://img.shields.io/badge/release-v2.1.0-orange.svg)](https://github.com/abm-dungtq/motion-studio/releases/tag/v2.1.0)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-339933.svg)
 ![Runs locally](https://img.shields.io/badge/runs-127.0.0.1%20only-555.svg)
-![Tests](https://img.shields.io/badge/tests-850%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-887%20passing-brightgreen.svg)
 
 ![Motion Studio: the director asks you to pick a direction while the timeline shows shots, voice, music and SFX](plans/261023-1018-react-ui-rewrite/screens/1440-director.jpg)
 
@@ -29,14 +29,15 @@ AI can now build a whole video, but most tools make you pick one of two shapes. 
 
 | | |
 |---|---|
-| **AI director** | Multi-turn chat with the director; approval cards for directions, animatics and scenes; suggestion cards that rank directions and styles from your brief; a status chip that shows whether `claude` is installed and signed in |
+| **AI director** | Multi-turn chat with the director; approval cards for directions, animatics and scenes; a suggestion card that ranks directions and styles from your brief and adds three example cases from the library (source link, Jev's reason, demo video); a status chip that shows whether `claude` is installed and signed in |
 | **Timeline** | Shot, B-roll, Voice, Music and SFX tracks; ripple and roll trims; cut a shot at the playhead; snapping to shots, lines, beats and word starts; waveforms; mute and solo; editable beat and word markers; gate chips that say what still blocks export |
-| **Look and motion** | One Styles tab: the provider's ready-made style profiles plus 59 code-driven film styles from lemo-opuscar (two as canvas layers, the rest as references), applied to the whole project or to one shot; a transition library with live previews (54 entries with the default provider and HyperFrames installed); four anime packs (impact frame, smear cut, ink wipe, speed lines); a clip fixer for trims, speed, freeze frames, LUTs and reframing |
+| **Look and motion** | One Styles tab: the provider's 64 ready-made style profiles plus 59 code-driven film styles from lemo-opuscar (two as canvas layers, the rest as references), applied to the whole project or to one shot; a transition library with live previews (54 entries with the default provider and HyperFrames installed); four anime packs (impact frame, smear cut, ink wipe, speed lines); a clip fixer for trims, speed, freeze frames, LUTs and reframing |
+| **AI images and clips** | Generate an image (Nano Banana) or a clip (Veo, Omni Flash) for one shot through gflow-studio and Google Flow, right in the inspector; each request runs exactly once, with daily image and clip caps, a 45-minute pause when Flow reports too many requests, and undo when it is attached to a shot |
 | **Footage** | Browse your disk and register video, audio and images; a content-hashed B-roll index that finds shots from a description in Vietnamese or English and places them with undo |
 | **Reference library** | About 1,250 videos made with Claude Opus 5.5, 200 of them explained in Vietnamese, plus scene techniques, style recipes and prompt templates |
 | **Series production** | Shared characters, voices, backgrounds and tools across episodes; asset boards to approve character sheets and backgrounds; batch image generation with self-checks; a voice per character; rebuild and approve one scene without re-rendering the episode |
 | **Delivery** | One-click MP4 export and compression; versions for YouTube, Facebook and TikTok; titles and descriptions with chapters; SRT captions; three thumbnail options; upload to Google Drive after you consent |
-| **Trust** | Consent cards before any job that spends credits (Codex, ElevenLabs, Drive); receipts with a pass, warn or fail verdict from built-in quality checks; a "Cần xử lý ngoài" (needs outside help) card when a step fails twice, with text you can paste into Claude Code |
+| **Trust** | Consent cards before any job that spends credits (Codex, ElevenLabs, Drive, Google Flow); receipts with a pass, warn or fail verdict from built-in quality checks; a "Cần xử lý ngoài" (needs outside help) card when a step fails twice, with text you can paste into Claude Code |
 | **Open ends** | MCP tools for Claude Code, Codex, Antigravity and opencode; a provider contract; plug-in folders for routes, tabs, tools, quality checks and agent CLIs |
 
 ## Quick start
@@ -129,7 +130,7 @@ Transitions are baked into the shots they span, so the shots join seamlessly as 
 
 The **Thư viện mẫu** (Reference library) tab has four sections: **Video mẫu** (sample videos), **Cảnh mẫu** (scene techniques), **Phong cách** (style recipes) and **Prompt mẫu** (prompt templates). You can search in Vietnamese with or without diacritics, or in English. You can browse and copy prompts without opening a project. Inside a project, "Dùng cho dự án" (Use for this project) sends the sample and its notes to the director.
 
-Prompt templates start with Studio's own two: a six-part prompt frame, and the Lemo-Opuscar directing frame described in the next section.
+The Styles section here holds Studio's own 12 style groups, each with sample videos; the provider's style profiles and the lemo-opuscar library live in the Styles tab. Prompt templates start with Studio's own two: a six-part prompt frame, and the Lemo-Opuscar directing frame described in the next section.
 
 Cover images are not in the repository. Download them once (about 25 MB) to `~/.cache/motion-studio/library/thumbs`:
 
@@ -143,7 +144,7 @@ Sources, licences and how to rebuild the data are in [library/SOURCES.md](librar
 
 [Lemo-Opuscar](https://lemomo-ai.github.io/lemo-opuscar/) by LemoLab is a set of 59 film styles. Each style is a style prompt plus a short film built entirely in code. Motion Studio uses it in two places:
 
-- **The Phong cách (Styles) tab** lists the 59 styles in 11 groups, with frames, Vietnamese names and the `STYLE.md` of each style, after your own styles and the provider's ready-made style profiles (tag **Dựng sẵn**). Only the canvas-layer styles are built as they are; the rest are tagged **Tham khảo** (reference): the director reads the `STYLE.md` and builds in that grammar, and their sample films are 16:9 without voice. "Áp cho dự án" (Apply to project) applies a style to the whole project; in the shot inspector, "Áp phong cách cho shot này" (Apply style to this shot) applies it to one shot. Every style is built inside the project's own HyperFrames composition, so the player, timeline and export work as usual. On first use the tab offers "Tải thư viện (≈ 5 MB)" (Download library), which fetches data only, pinned to one commit. The director can also draft a style of your own, and "Giữ phong cách" (Keep style) saves it to `~/lemo-my-styles/`, the folder the lemo-opuscar plugin uses.
+- **The Phong cách (Styles) tab** lists the 59 styles in 11 groups, with frames, Vietnamese names and the `STYLE.md` of each style, after your own styles and the provider's ready-made style profiles (tag **Dựng sẵn**). Only the canvas-layer styles are built as they are; the rest are tagged **Tham khảo** (reference): the director reads the `STYLE.md` and builds in that grammar, and their sample films are 16:9 without voice. "Áp cho dự án" (Apply to project) applies a style to the whole project; in the shot inspector, "Áp phong cách cho shot này" (Apply style to this shot) applies it to one shot. Every style is built inside the project's own HyperFrames composition, so the player, timeline and export work as usual. On first use the tab offers "Tải thư viện (≈ 5 MB)" (Download library), which fetches data only, pinned to the commit the opus-video plugin pins (currently `413a6bd`). The director can also draft a style of your own, and "Giữ phong cách" (Keep style) saves it to `~/lemo-my-styles/`, the folder the lemo-opuscar plugin uses.
 - **The directing-frame prompt template** in Prompt mẫu is a Vietnamese rewrite of lemo-opuscar's `DIRECTOR.md`: read `STYLE.md`, ask once, choose references, write a treatment before watching the sample film, three style frames, lock the music grid, one review pass, and differ from the sample film on four of six points. Use it with a style from the Phong cách tab, especially for a project created in Mẫu nhanh mode.
 
 How each style is applied, own styles, and how to move the pin: [docs/lemo-styles.md](docs/lemo-styles.md).
@@ -163,7 +164,7 @@ Add a feature by adding a file, without touching `server.mjs` or the shell in `u
 - `lib/quality/*.mjs`: checks that run on every file Studio produces; results land in `<project>/.opus/receipts/`.
 - `lib/agents/cli/*.mjs`: local agent CLIs (claude, codex, codex-pool, agy, gemini, cursor-agent, opencode) for writing, reading images and generating images.
 
-Working examples: [docs/extensions.md](docs/extensions.md). Agents and fallback order: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Receipts and quality thresholds: [docs/receipts.md](docs/receipts.md). AI images and clips per shot through gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
+Working examples: [docs/extensions.md](docs/extensions.md). Suggestion card and example cases: [docs/suggest.md](docs/suggest.md). Agents and fallback order: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Receipts and quality thresholds: [docs/receipts.md](docs/receipts.md). AI images and clips per shot through gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
 
 </details>
 
@@ -174,7 +175,7 @@ Everything Studio needs from outside goes through `lib/provider.mjs`: reading an
 
 Adapters live in `lib/providers/`, one file per provider shipped with Studio; Studio never loads code from outside the repository. Today there is `lib/providers/opus-video.mjs`. The provider loads lazily: if it is missing or incompatible, the server still runs, `GET /api/status` explains what is wrong, and routes that need it answer 503 with the reason. Installing the provider does not require a restart.
 
-Motion Studio 2.0 needs opus-video 2.x that declares `STUDIO_API` 3 or 4 and the project schema `opus-video/project@1`. The check is `NEED` in `lib/providers/opus-video.mjs`.
+Motion Studio 2.1 needs opus-video 2.x that declares `STUDIO_API` 3 or 4 and the project schema `opus-video/project@1`. The check is `NEED` in `lib/providers/opus-video.mjs`.
 
 </details>
 

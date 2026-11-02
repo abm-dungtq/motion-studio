@@ -4,11 +4,11 @@
 
 **Phần mềm dựng video để đạo diễn AI làm phần dựng, còn bạn là người quyết.** Motion Studio là ứng dụng web chạy ngay trên máy bạn. Bạn tạo dự án, thêm footage, giao việc cho đạo diễn bằng lời thường, bấm duyệt lựa chọn của nó trên thẻ, chỉnh kết quả trên timeline kiểu CapCut, rồi xuất MP4 hoặc bộ lớp dựng cho Final Cut Pro, Premiere và DaVinci Resolve. Sau lần khởi động đầu, bạn không cần mở terminal nữa.
 
-[![Release](https://img.shields.io/badge/release-v2.0.0-orange.svg)](https://github.com/abm-dungtq/motion-studio/releases/tag/v2.0.0)
+[![Release](https://img.shields.io/badge/release-v2.1.0-orange.svg)](https://github.com/abm-dungtq/motion-studio/releases/tag/v2.1.0)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-339933.svg)
 ![Runs locally](https://img.shields.io/badge/runs-127.0.0.1%20only-555.svg)
-![Tests](https://img.shields.io/badge/tests-850%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-887%20passing-brightgreen.svg)
 
 ![Motion Studio: đạo diễn hỏi bạn chọn hướng, timeline hiện shot, lồng tiếng, nhạc và SFX](plans/261023-1018-react-ui-rewrite/screens/1440-director.jpg)
 
@@ -29,14 +29,15 @@ AI giờ đã dựng được cả một video, nhưng phần lớn công cụ b
 
 | | |
 |---|---|
-| **Đạo diễn AI** | Trò chuyện nhiều lượt với đạo diễn; thẻ duyệt hướng, animatic và từng cảnh; thẻ gợi ý xếp hạng hướng và phong cách theo brief; chip trạng thái cho biết `claude` đã cài và đăng nhập chưa |
+| **Đạo diễn AI** | Trò chuyện nhiều lượt với đạo diễn; thẻ duyệt hướng, animatic và từng cảnh; thẻ Gợi ý xếp hạng hướng và phong cách theo brief, kèm ba case mẫu từ thư viện (link bài gốc, lý do Jev chọn, video demo); chip trạng thái cho biết `claude` đã cài và đăng nhập chưa |
 | **Timeline** | Các track Shot, B-roll, Lồng tiếng, Nhạc và SFX; kéo mép kiểu Ripple và Roll; cắt shot tại playhead; hít vào mép shot, câu thoại, phách nhạc và đầu từ; sóng âm; tắt tiếng và solo; kéo được mốc phách và mốc từ; chip cổng báo còn gì chặn việc xuất |
-| **Hình và chuyển động** | Một tab Phong cách: style profile dựng sẵn của provider cùng 59 phong cách dựng bằng code của lemo-opuscar (hai phong cách là lớp canvas, còn lại để tham khảo), áp cho cả dự án hoặc từng shot; thư viện chuyển cảnh có trang xem thử (54 mục khi đã cài provider mặc định và HyperFrames); bốn gói anime (impact frame, smear cut, ink wipe, speed lines); công cụ sửa clip để cắt đoạn, đổi tốc độ, đứng hình, áp LUT và đổi khung |
+| **Hình và chuyển động** | Một tab Phong cách: 64 style profile dựng sẵn của provider cùng 59 phong cách dựng bằng code của lemo-opuscar (hai phong cách là lớp canvas, còn lại để tham khảo), áp cho cả dự án hoặc từng shot; thư viện chuyển cảnh có trang xem thử (54 mục khi đã cài provider mặc định và HyperFrames); bốn gói anime (impact frame, smear cut, ink wipe, speed lines); công cụ sửa clip để cắt đoạn, đổi tốc độ, đứng hình, áp LUT và đổi khung |
+| **Ảnh và clip AI** | Tạo ảnh (Nano Banana) hoặc clip (Veo, Omni Flash) cho một shot qua gflow-studio và Google Flow, ngay trong inspector; mỗi yêu cầu chạy đúng một lần, có trần ảnh và clip mỗi ngày, tự chặn 45 phút khi Flow báo gửi quá nhiều, gắn vào shot có hoàn tác |
 | **Footage** | Duyệt thư mục trên máy và đăng ký video, âm thanh, ảnh; chỉ mục B-roll theo nội dung, tìm shot bằng mô tả tiếng Việt hay tiếng Anh rồi đặt vào timeline, hoàn tác được |
 | **Thư viện mẫu** | Khoảng 1.250 video làm bằng Claude Opus 5.5, trong đó 200 video có giải thích tiếng Việt, cùng cảnh mẫu, công thức phong cách và prompt mẫu |
 | **Làm phim nhiều tập** | Dùng chung nhân vật, giọng, nền và công cụ giữa các tập; bảng duyệt tờ nhân vật và bảng nền; vẽ ảnh theo đợt có tự kiểm; giọng riêng cho từng nhân vật; dựng lại và duyệt một cảnh mà không phải render lại cả tập |
 | **Giao bản cuối** | Xuất MP4 và nén bằng một nút; bản riêng cho YouTube, Facebook và TikTok; tiêu đề và mô tả có mốc chương; phụ đề SRT; ba ảnh thumbnail để chọn; tải lên Google Drive sau khi bạn đồng ý |
-| **Minh bạch** | Thẻ đồng ý trước mọi việc tốn lượt (Codex, ElevenLabs, Drive); biên nhận có kết luận đạt, cảnh báo hoặc lỗi từ các bài kiểm chất lượng có sẵn; thẻ "Cần xử lý ngoài" khi một bước lỗi hai lần, kèm sẵn câu để dán vào Claude Code |
+| **Minh bạch** | Thẻ đồng ý trước mọi việc tốn lượt (Codex, ElevenLabs, Drive, Google Flow); biên nhận có kết luận đạt, cảnh báo hoặc lỗi từ các bài kiểm chất lượng có sẵn; thẻ "Cần xử lý ngoài" khi một bước lỗi hai lần, kèm sẵn câu để dán vào Claude Code |
 | **Mở rộng được** | Tool MCP cho Claude Code, Codex, Antigravity và opencode; hợp đồng provider; các thư mục cắm thêm route, tab, tool, bài kiểm chất lượng và agent CLI |
 
 ## Bắt đầu nhanh
@@ -129,7 +130,7 @@ Chuyển cảnh nằm sẵn trong hình của các shot nó vắt qua, nên ch�
 
 Tab **Thư viện mẫu** có bốn mục: **Video mẫu**, **Cảnh mẫu**, **Phong cách** và **Prompt mẫu**. Bạn tìm được bằng tiếng Việt có dấu hay không dấu, hoặc bằng tiếng Anh. Chưa mở dự án vẫn xem và chép prompt được. Khi đã mở dự án, nút "Dùng cho dự án" gửi mẫu kèm phần giải thích cho đạo diễn.
 
-Mục Prompt mẫu mở đầu bằng hai khung của Studio: khung prompt sáu phần, và khung đạo diễn Lemo-Opuscar ở mục ngay dưới.
+Mục Phong cách ở đây có 12 nhóm phong cách riêng của Studio, mỗi nhóm kèm video mẫu; style profile của provider và thư viện lemo-opuscar nằm ở tab Phong cách. Mục Prompt mẫu mở đầu bằng hai khung của Studio: khung prompt sáu phần, và khung đạo diễn Lemo-Opuscar ở mục ngay dưới.
 
 Ảnh bìa không nằm trong repo. Tải một lần (khoảng 25 MB) về `~/.cache/motion-studio/library/thumbs`:
 
@@ -143,7 +144,7 @@ Nguồn, giấy phép và cách dựng lại dữ liệu ghi trong [library/SOUR
 
 [Lemo-Opuscar](https://lemomo-ai.github.io/lemo-opuscar/) của LemoLab là bộ 59 phong cách phim. Mỗi phong cách gồm một prompt phong cách và một phim ngắn dựng hoàn toàn bằng code. Motion Studio dùng bộ này ở hai chỗ:
 
-- **Tab Phong cách** liệt kê 59 phong cách trong 11 nhóm, có ảnh khung, tên tiếng Việt và `STYLE.md` của từng phong cách, sau phong cách riêng của bạn và style profile dựng sẵn của provider (nhãn **Dựng sẵn**). Chỉ phong cách lớp canvas dựng được ngay; còn lại mang nhãn **Tham khảo**: đạo diễn đọc `STYLE.md` rồi dựng theo ngữ pháp đó, và phim mẫu của chúng là phim 16:9 không lời. Nút "Áp cho dự án" áp phong cách cho cả dự án; trong inspector của shot, mục "Áp phong cách cho shot này" áp cho riêng shot đó. Phong cách nào cũng dựng trong chính composition HyperFrames của dự án, nên player, timeline và bản xuất vẫn chạy như thường. Lần đầu, tab hiện nút "Tải thư viện (≈ 5 MB)"; Studio chỉ tải dữ liệu, ghim ở một commit. Đạo diễn còn soạn được phong cách riêng cho bạn, và nút "Giữ phong cách" lưu nó vào `~/lemo-my-styles/`, đúng thư mục plugin lemo-opuscar dùng.
+- **Tab Phong cách** liệt kê 59 phong cách trong 11 nhóm, có ảnh khung, tên tiếng Việt và `STYLE.md` của từng phong cách, sau phong cách riêng của bạn và style profile dựng sẵn của provider (nhãn **Dựng sẵn**). Chỉ phong cách lớp canvas dựng được ngay; còn lại mang nhãn **Tham khảo**: đạo diễn đọc `STYLE.md` rồi dựng theo ngữ pháp đó, và phim mẫu của chúng là phim 16:9 không lời. Nút "Áp cho dự án" áp phong cách cho cả dự án; trong inspector của shot, mục "Áp phong cách cho shot này" áp cho riêng shot đó. Phong cách nào cũng dựng trong chính composition HyperFrames của dự án, nên player, timeline và bản xuất vẫn chạy như thường. Lần đầu, tab hiện nút "Tải thư viện (≈ 5 MB)"; Studio chỉ tải dữ liệu, ghim đúng commit mà plugin opus-video ghim (hiện là `413a6bd`). Đạo diễn còn soạn được phong cách riêng cho bạn, và nút "Giữ phong cách" lưu nó vào `~/lemo-my-styles/`, đúng thư mục plugin lemo-opuscar dùng.
 - **Khung đạo diễn trong Prompt mẫu** viết lại bằng tiếng Việt theo `DIRECTOR.md` của lemo-opuscar: đọc `STYLE.md`, hỏi một lần, chọn tác phẩm tham chiếu, viết treatment trước khi xem phim mẫu, ba khung tĩnh, khoá lưới nhạc, một vòng sửa, và khác phim mẫu ở bốn trong sáu điểm. Dùng khung này cùng một phong cách ở tab Phong cách, nhất là khi tạo dự án ở chế độ Mẫu nhanh.
 
 Cách áp từng phong cách, phong cách riêng và cách đổi commit ghim: [docs/lemo-styles.md](docs/lemo-styles.md).
@@ -163,7 +164,7 @@ Thêm tính năng bằng cách thêm file, không sửa `server.mjs` hay khung g
 - `lib/quality/*.mjs`: bài kiểm chạy trên mọi file Studio tạo ra; kết quả nằm trong `<dự án>/.opus/receipts/`.
 - `lib/agents/cli/*.mjs`: agent CLI trên máy (claude, codex, codex-pool, agy, gemini, cursor-agent, opencode) để viết chữ, đọc ảnh và sinh ảnh.
 
-Ví dụ chạy được: [docs/extensions.md](docs/extensions.md). Agent và thứ tự thử: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Biên nhận và ngưỡng kiểm chất lượng: [docs/receipts.md](docs/receipts.md). Ảnh và clip AI cho shot qua gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
+Ví dụ chạy được: [docs/extensions.md](docs/extensions.md). Thẻ Gợi ý và case mẫu: [docs/suggest.md](docs/suggest.md). Agent và thứ tự thử: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Biên nhận và ngưỡng kiểm chất lượng: [docs/receipts.md](docs/receipts.md). Ảnh và clip AI cho shot qua gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
 
 </details>
 
@@ -174,7 +175,7 @@ Mọi thứ Studio cần từ bên ngoài đi qua `lib/provider.mjs`: đọc và
 
 Adapter nằm trong `lib/providers/`, mỗi provider một file đi kèm Studio; Studio không nạp mã từ ngoài repo. Hiện có `lib/providers/opus-video.mjs`. Provider nạp lười: thiếu hay không tương thích thì server vẫn chạy, `GET /api/status` nói rõ lỗi, còn các route cần provider trả 503 kèm lý do. Cài provider xong không cần khởi động lại.
 
-Motion Studio 2.0 cần opus-video 2.x khai `STUDIO_API` 3 hoặc 4 và schema dự án `opus-video/project@1`. Điều kiện này nằm ở `NEED` trong `lib/providers/opus-video.mjs`.
+Motion Studio 2.1 cần opus-video 2.x khai `STUDIO_API` 3 hoặc 4 và schema dự án `opus-video/project@1`. Điều kiện này nằm ở `NEED` trong `lib/providers/opus-video.mjs`.
 
 </details>
 
