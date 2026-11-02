@@ -80,7 +80,8 @@ function VgPanel({ name, shot, m }: { name: string; shot: Shot; m: Manifest }) {
   const st = status.data;
   const busyHere = Boolean(st?.job && st.job.name === name);
   const items = useQuery({ queryKey: ["videogen", "items", name], queryFn: () => vgItems(name), refetchInterval: busyHere ? 2000 : false });
-  const [kind, setKind] = useState<VgKind>("video");
+  // Image first: an image is free in quota, a clip costs Flow credits.
+  const [kind, setKind] = useState<VgKind>("image");
   // The job's end settles its item (attached, indeterminate…): fetch the list once more.
   const wasBusy = useRef(busyHere);
   useEffect(() => {
@@ -91,10 +92,13 @@ function VgPanel({ name, shot, m }: { name: string; shot: Shot; m: Manifest }) {
   const mine = all.filter((x) => x.shot === shot.id);
   const running = busyHere ? all.find((x) => x.state === "running" || x.state === "intent") : undefined;
   const images = (shot.assets ?? []).filter((a) => IMAGE.test(a));
+  const n = m.shots.findIndex((s) => s.id === shot.id) + 1;
 
   return (
     <section className="flex flex-col gap-2" aria-label="AI (Google Flow)">
       <h3 className="m-0 text-sm font-semibold">AI (Google Flow)</h3>
+      {/* The shot this form sends for stays in view while the form scrolls. */}
+      <p data-testid="vg-shot" className="sticky top-0 z-10 m-0 bg-panel py-1 text-sm font-medium">{`Shot ${n} · ${shot.name || shot.id}`}</p>
       <div className="flex gap-2">
         <Button aria-pressed={kind === "image"} variant={kind === "image" ? "primary" : "default"} onClick={() => setKind("image")}>Ảnh</Button>
         <Button aria-pressed={kind === "video"} variant={kind === "video" ? "primary" : "default"} onClick={() => setKind("video")}>Video</Button>
@@ -150,7 +154,10 @@ function ImageForm({ name, shot, m, st, images }: FormProps) {
       <Refs need={need} labels={["Ảnh mẫu"]} images={images} refs={refs} setRefs={setRefs} />
       <Pick label="Model ảnh" value={model} options={opts(IMAGE_MODELS)} onChange={setModel} />
       <Pick label="Khung ảnh" value={aspect} options={opts(IMAGE_ASPECTS)} onChange={setAspect} />
-      <div><Button variant="primary" aria-describedby={why ? "vg-why-image" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo ảnh AI</Button></div>
+      <div className="flex items-center gap-2">
+        <Button variant="primary" aria-describedby={why ? "vg-why-image" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo ảnh AI</Button>
+        {st && <span className="text-sm text-muted-foreground">{`Còn ${Math.max(0, st.image_cap - st.images_today)} ảnh hôm nay`}</span>}
+      </div>
       {why && <p id="vg-why-image" className="m-0 text-sm text-muted-foreground">{why}</p>}
     </div>
   );
@@ -196,7 +203,10 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
       {len > seconds && <p className="m-0 text-sm text-warn">Shot dài {len.toFixed(1)} s: clip chỉ phủ {seconds} s đầu{len > 10 ? ", nên tách shot" : ""}</p>}
       {omni && <Pick label="Chất lượng" value={resolution} options={RESOLUTIONS} onChange={setResolution} />}
       <Pick label="Khung" value={aspect} options={opts(["16:9", "9:16"])} onChange={setAspect} />
-      <div><Button variant="primary" aria-describedby={why ? "vg-why-video" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo clip AI</Button></div>
+      <div className="flex items-center gap-2">
+        <Button variant="primary" aria-describedby={why ? "vg-why-video" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo clip AI</Button>
+        {st && <span className="text-sm text-muted-foreground">{`Còn ${Math.max(0, st.cap - st.today)} clip hôm nay`}</span>}
+      </div>
       {why && <p id="vg-why-video" className="m-0 text-sm text-muted-foreground">{why}</p>}
     </div>
   );

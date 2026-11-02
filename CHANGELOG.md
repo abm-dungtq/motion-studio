@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Sửa giao diện theo audit 02/11: mục AI (Google Flow) của shot mở ở Ảnh thay vì Video, ghim "Shot N · tên" ở đầu form và ghi số ảnh, clip còn lại hôm nay. Phím tắt timeline nhường phím cho nút và thanh trượt đang có tiêu điểm (Space trên một nút không còn phát video; mũi tên vẫn bước khung sau khi bấm nút). Tab Phong cách không tràn mép phải. Case mẫu đánh số "Case 1, 2, 3" với link "Bài gốc". Khối báo lỗi đỏ đủ tương phản (token `--ms-danger-fill`). Nút đóng hộp thoại đọc là "Đóng". Ngừng hỏi `/api/voice/previews` khi dự án không thuộc series. Hộp Dự án mới báo "Đã có dự án tên này" và khoá nút Tạo khi trùng tên.
+
 ## v2.1.0 (2026-11-02): case mẫu theo brief, ảnh và clip AI qua Google Flow, tab Phong cách gộp
 
 - README.md và README.vi.md viết lại cho bản này: case mẫu trong thẻ Gợi ý, ảnh và clip AI cho shot, 64 style profile của provider ở tab Phong cách, thư viện lemo ghim theo commit của plugin, số test mới.

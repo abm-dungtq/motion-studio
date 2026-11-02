@@ -14,6 +14,7 @@
   --color-panel-2: var(--ms-panel-2);
   --color-warn: var(--ms-warn);
   --color-danger: var(--ms-danger);
+  --color-danger-fill: var(--ms-danger-fill);
   --color-ok: var(--ms-ok);
   --color-stage: var(--ms-stage);
   --color-playhead: var(--ms-playhead);

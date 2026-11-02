@@ -26,6 +26,13 @@ export function nameProblem(text: string): string | null {
   return NAME_RE.test(folder) ? null : "Tên thư mục cần ít nhất 2 ký tự chữ hoặc số.";
 }
 
+// The typed name becomes the folder of a project the studio already lists.
+export function nameTaken(text: string, projects: readonly { name: string }[]): boolean {
+  const folder = folderOf(text);
+  return Boolean(folder) && projects.some((p) => p.name === folder);
+}
+export const NAME_TAKEN = "Đã có dự án tên này";
+
 export const LIMITS = { topic: 500, audience: 500, first_request: 4000, durationMin: 5, durationMax: 600 } as const;
 export const DEFAULTS = { mode: "tu-dau", aspect: "16:9", duration: "30" } as const;
 

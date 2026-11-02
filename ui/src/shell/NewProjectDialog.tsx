@@ -5,8 +5,8 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { actions } from "@/api/actions.ts";
-import { projectsNew } from "@/api/queries.ts";
-import { ASPECTS, DEFAULTS, LIMITS, MODES, bodyOf, failureText, folderOf, hintOf, nameProblem, type NewProjectForm } from "@/core/new-project.ts";
+import { projectsNew, useProjects } from "@/api/queries.ts";
+import { ASPECTS, DEFAULTS, LIMITS, MODES, NAME_TAKEN, bodyOf, failureText, folderOf, hintOf, nameProblem, nameTaken, type NewProjectForm } from "@/core/new-project.ts";
 import { useStudio } from "@/store/studio.ts";
 import { Button, Input, Textarea } from "./controls.tsx";
 
@@ -65,6 +65,8 @@ export function NewProjectDialog() {
   // Every opening starts from the defaults (new-project.js resets the form on click).
   useEffect(() => { if (open) { setF(EMPTY); setError(null); setNameError(null); } }, [open]);
 
+  const projects = useProjects().data;
+  const taken = nameTaken(f.name, projects ?? []);
   const set = <K extends keyof NewProjectForm>(k: K, v: NewProjectForm[K]) => setF((x) => ({ ...x, [k]: v }));
   const close = () => { if (!busy) useStudio.getState().openDialog(null); };
 
@@ -73,7 +75,7 @@ export function NewProjectDialog() {
     setError(null);
     const problem = nameProblem(f.name);
     setNameError(problem);
-    if (problem) { nameRef.current?.focus(); return; }
+    if (problem || taken) { nameRef.current?.focus(); return; }
     if (!e.currentTarget.reportValidity()) return;
     const body = bodyOf(f);
     setBusy(true);
@@ -110,10 +112,10 @@ export function NewProjectDialog() {
         </DialogHeader>
         <form noValidate onSubmit={(e) => { void submit(e); }} onInvalidCapture={(e) => sayInvalid(e.target)} onInputCapture={(e) => clearInvalid(e.target)}
           className="flex flex-col gap-3" aria-describedby={error ? errId : undefined}>
-          <Field label="Tên thư mục" noteId={nameNoteId} problem={nameError}
+          <Field label="Tên thư mục" noteId={nameNoteId} problem={nameError ?? (taken ? NAME_TAKEN : null)}
             note={folderOf(f.name) && folderOf(f.name) !== f.name.trim() ? `Thư mục sẽ là: ${folderOf(f.name)}` : "chữ thường, số, gạch nối (2–49 ký tự); gõ có dấu cũng được"}>
             <Input ref={nameRef} name="name" autoComplete="off" spellCheck={false} placeholder="vi-du-video-moi" value={f.name}
-              aria-invalid={nameError ? true : undefined} aria-describedby={nameNoteId}
+              aria-invalid={nameError || taken ? true : undefined} aria-describedby={nameNoteId}
               onChange={(e) => { set("name", e.target.value); if (nameError) setNameError(nameProblem(e.target.value)); }} />
           </Field>
           <Choices legend="Chế độ" name="mode" items={MODES.map((m) => [m.id, m.label] as const)} value={f.mode} onChange={(v) => set("mode", v)} />
@@ -135,7 +137,7 @@ export function NewProjectDialog() {
           {error ? <p id={errId} role="alert" className="m-0 text-sm whitespace-pre-line text-danger">{error}</p> : null}
           <DialogFooter>
             <Button disabled={busy} onClick={close}>Huỷ</Button>
-            <Button type="submit" variant="primary" disabled={busy}>{busy ? "Đang tạo…" : "Tạo dự án"}</Button>
+            <Button type="submit" variant="primary" disabled={busy || taken}>{busy ? "Đang tạo…" : "Tạo dự án"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

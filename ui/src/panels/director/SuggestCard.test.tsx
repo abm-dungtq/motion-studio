@@ -149,7 +149,11 @@ describe("SuggestCard", () => {
     ] } }));
     const items = [...card().querySelectorAll('[data-role="suggest-case"]')];
     expect(items.map((e) => e.getAttribute("data-id"))).toEqual(["y:ror-fly-880547", "c:12", "y:post-only"]);
-    expect(screen.getByRole("link", { name: "y:ror-fly-880547" })).toHaveAttribute("href", "https://x.com/Ror_Fly/status/1");
+    const post = screen.getByRole("link", { name: "Bài gốc của case 1" });
+    expect(post).toHaveAttribute("href", "https://x.com/Ror_Fly/status/1");
+    expect(post).toHaveTextContent("Bài gốc");
+    expect(post).toHaveAttribute("title", "y:ror-fly-880547");
+    expect(items[1]).toHaveTextContent("Case 2.");
     const demos = card().querySelectorAll('[data-role="suggest-case-demo"]');
     expect(demos).toHaveLength(1); // none for c:12 (no demo) or y:post-only (the demo is the post itself)
     expect(demos[0]).toHaveAttribute("href", "https://skillry.dev/ai-videos/opus-5-5/ror-fly-880547");
