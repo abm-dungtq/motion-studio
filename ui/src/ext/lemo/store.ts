@@ -1,5 +1,6 @@
 // Port of public/lemo-gallery.js; behaviour unchanged.
-// The state the "Phong cách" tab, the "Phong cách riêng" section and the shot section share (as
+// The state the "Phong cách" tab (the provider's style profiles, the lemo-opuscar library and own
+// styles), the "Phong cách riêng" section and the shot section share (as
 // createStore, lemo-gallery.js:13), the shape of GET /api/lemo/styles, and the three commands that
 // talk to routes/lemo.mjs: download the library, apply a style, read a STYLE.md.
 // Source: lemo-opuscar, github.com/lemomo-ai/lemo-opuscar (code and docs MIT; frames and films
@@ -16,10 +17,12 @@ export const DEBOUNCE_MS = 200;
 export const safeUrl = (u: unknown): u is string => /^https:\/\//.test(String(u ?? ""));
 
 // GET /api/lemo/styles (routes/lemo.mjs), the fields the UI reads.
-export type StyleMode = "layer" | "grammar";
+export type StyleMode = "layer" | "grammar" | "profile";
+// "" every style · ready: a style profile or a canvas layer · ref: a library STYLE.md · mine
+export type StyleType = "" | "ready" | "ref" | "mine";
 export interface LemoStyle {
   slug: string;
-  source: "library" | "mine" | string;
+  source: "library" | "mine" | "profile" | string;
   ten: string;
   en?: string | null;
   cn?: string | null;
@@ -33,6 +36,8 @@ export interface LemoStyle {
   guide?: string | null;
   layer?: boolean;
   kind?: string | null;
+  ready?: boolean;
+  energy?: number | null;
 }
 export interface LemoApplied { slug: string; mode: StyleMode | string }
 export interface LemoDraft {
@@ -54,6 +59,7 @@ export interface LemoCredit { text?: string; url?: string; code_license?: string
 export interface LemoStyles {
   fetched: boolean;
   total: number;
+  profiles?: number;
   groups: { id: string; ten: string; count: number }[];
   rows: LemoStyle[];
   warnings?: string[];
@@ -69,29 +75,32 @@ export interface Viewing { style: LemoStyle; text: string }
 interface LemoState {
   q: string;               // the search text the list was asked for (after the debounce)
   group: string;           // the group filter, "" for every group
+  type: StyleType;         // the type filter
   busy: boolean;           // an apply is in flight
   fetching: boolean;       // the library download is running
   viewing: Viewing | null; // the STYLE.md shown in the dialog
   setQ(q: string): void;
   setGroup(g: string): void;
+  setType(t: StyleType): void;
   setViewing(v: Viewing | null): void;
 }
 
 export const useLemo = create<LemoState>()((set) => ({
-  q: "", group: "", busy: false, fetching: false, viewing: null,
+  q: "", group: "", type: "", busy: false, fetching: false, viewing: null,
   setQ: (q) => set({ q }),
   setGroup: (group) => set({ group }),
+  setType: (type) => set({ type }),
   setViewing: (viewing) => set({ viewing }),
 }));
 
-const stylesParams = (name: string | null, q = "", group = "") => ({ q, group, name: name ?? "" });
+const stylesParams = (name: string | null, q = "", group = "", type: StyleType = "") => ({ q, group, type, name: name ?? "" });
 
 // The list the gallery shows (search and group applied). The key carries the project name, so
 // opening another project loads it again (the old ctx.on("project")). The previous answer stays
 // on screen while a new search loads.
 export function useGalleryStyles(name: string | null) {
-  const q = useLemo((s) => s.q), group = useLemo((s) => s.group);
-  return useQuery({ ...lemoStylesQuery(stylesParams(name, q, group)), placeholderData: keepPreviousData, select: (d) => d as LemoStyles });
+  const q = useLemo((s) => s.q), group = useLemo((s) => s.group), type = useLemo((s) => s.type);
+  return useQuery({ ...lemoStylesQuery(stylesParams(name, q, group, type)), placeholderData: keepPreviousData, select: (d) => d as LemoStyles });
 }
 
 // The whole list (no search, no group): the old store.allRows, for the shot and own-style sections.
@@ -140,7 +149,9 @@ export async function fetchLibrary(): Promise<void> {
 export async function applyStyle({ name, hasManifest, style, mode, shot = null, ask }: { name: string | null; hasManifest: boolean; style: LemoStyle; mode: StyleMode; shot?: string | null; ask: (text: string) => Promise<boolean> }): Promise<void> {
   if (!name || !hasManifest) { say("Mở một dự án trước", true); return; }
   const where = shot ? `shot ${shot}` : "cả dự án";
-  const how = mode === "layer" ? "thêm lớp canvas (sửa index.html, ghi lemo_style vào BRIEF.md)" : "nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)";
+  const how = mode === "layer" ? "thêm lớp canvas (sửa index.html, ghi lemo_style vào BRIEF.md)"
+    : mode === "profile" ? (shot ? "nhờ đạo diễn dựng lại shot theo style profile (BRIEF.md giữ nguyên)" : "ghi style_profile vào BRIEF.md và nhờ đạo diễn dựng lại theo style profile")
+    : "nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)";
   if (!(await ask(`Áp "${style.ten}" cho ${where}: ${how}?`))) return;
   const body = { name, slug: style.slug, source: style.source, mode, shot };
   useLemo.setState({ busy: true });
@@ -174,4 +185,14 @@ export async function showGuide(style: LemoStyle): Promise<void> {
   useLemo.getState().setViewing({ style, text });
 }
 
-export const modeText = (mode: string): string => (mode === "layer" ? "lớp canvas" : "theo ngữ pháp");
+export const modeText = (mode: string): string => (mode === "layer" ? "lớp canvas" : mode === "profile" ? "dựng sẵn" : "tham khảo STYLE.md");
+// How a style is applied: a profile by its profile, a verified library style as a canvas layer,
+// any other by the grammar of its STYLE.md.
+export const modeOf = (s: LemoStyle): StyleMode => (s.source === "profile" ? "profile" : s.layer ? "layer" : "grammar");
+// The card's tag and its tooltip.
+export function tagOf(s: LemoStyle): { text: string; title: string; ready: boolean } {
+  if (s.source === "mine") return { text: "Của bạn", title: "Phong cách riêng, đạo diễn dựng theo STYLE.md", ready: false };
+  if (s.source === "profile") return { text: "Dựng sẵn", title: "Style profile: màu, chữ, chuyển cảnh và nhịp có sẵn, dựng được ngay bằng HyperFrames", ready: true };
+  if (s.layer) return { text: "Lớp canvas", title: "Studio thêm được thành lớp canvas", ready: true };
+  return { text: "Tham khảo", title: "Chỉ có STYLE.md: đạo diễn đọc rồi tự dựng theo ngữ pháp, kết quả không giống hệt phim mẫu", ready: false };
+}

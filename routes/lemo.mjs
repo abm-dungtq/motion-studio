@@ -1,22 +1,28 @@
-// routes/lemo.mjs — code-made film styles (lemo-opuscar, github.com/lemomo-ai/lemo-opuscar; code
-// MIT, frames and films CC BY 4.0 by LemoLab): the gallery, applying a style, own styles.
-//   GET  /api/lemo/styles?q=&group=&name=   library + own styles (lib/lemo/catalog.mjs), works
-//        without a provider (then no style is a canvas layer); { fetched: false } until the
-//        library is downloaded
+// routes/lemo.mjs — the "Phong cách" tab: the provider's style profiles and code-made film styles
+// (lemo-opuscar, github.com/lemomo-ai/lemo-opuscar; code MIT, frames and films CC BY 4.0 by
+// LemoLab): the gallery, applying a style, own styles.
+//   GET  /api/lemo/styles?q=&group=&type=&name=   own styles + profiles + library
+//        (lib/lemo/catalog.mjs; type "" | ready | ref | mine), works without a provider (then no
+//        profile and no canvas layer); { fetched: false } until the library is downloaded, the
+//        profiles and own styles are listed all the same
 //   GET  /api/lemo/frame/<slug>.jpg, /api/lemo/frame/mine/<slug>.jpg   a style's frame: the slug
 //        matches SLUG, the realpath stays in the library cache or the own-styles folder, the file
 //        starts like a JPEG (an own style may also keep styleframe.png, sent as image/png)
 //        (else 403 / 404 / 415)
-//   GET  /api/lemo/guide?slug=&source=      STYLE.md as plain text
+//   GET  /api/lemo/guide?slug=&source=      STYLE.md as plain text; source profile: the provider's
+//        `styles show` text
 //   GET  /api/lemo/project?name=            the style applied to the project (.opus/lemo.json),
 //        canvas-layer files, scene file, vertical frame, and the draft in lemo-style/
 //   POST /api/lemo/fetch                    job "lemo-fetch" (owner LEMO_OWNER): lib/lemo/fetch.mjs
-//   POST /api/lemo/apply { name, slug, mode: layer | grammar | markers, shot?, source?, replace? }
+//   POST /api/lemo/apply { name, slug, mode: layer | grammar | profile | markers, shot?, source?, replace? }
 //        layer: only a style the provider's lemo command lists as verified; runs `lemo add` as the
 //        project's "lemo" job (exit 4 → `lemo fetch`, then add once more; 5 → 409 code exists,
 //        unless replace: remove first; 3 → 422 code markers), then sets lemo_style: in BRIEF.md
 //        and queues a request for the director. grammar: BRIEF.md is not touched; the request
-//        points the director at the style's STYLE.md. markers: queues the request that inserts the
+//        points the director at the style's STYLE.md. profile: a style profile of the provider; for
+//        the project, style_profile: is set in BRIEF.md (a lemo_ref: is dropped, it would win the
+//        look) and the request asks for a restyle by that profile; for a shot BRIEF.md stays.
+//        markers: queues the request that inserts the
 //        four empty markers. One apply per project at a time (409 code busy).
 //   POST /api/lemo/draft { name, base?, source?, title?, description? }   queues "make my own style"
 //   POST /api/lemo/keep { name }            copies lemo-style/ to the own-styles folder (only the
@@ -29,16 +35,17 @@ import { getJob, running, startJob } from "../jobs.mjs";
 import { queueRequest } from "../director.mjs";
 import { setFrontmatter } from "../create.mjs";
 import { PIN, cacheHome, readyDir } from "../lib/lemo/fetch.mjs";
-import { findStyle, groupsOf, layerSlugs, libraryStyles, merge, myStyles, myStylesDir, search, SLUG } from "../lib/lemo/catalog.mjs";
+import { findStyle, groupsOf, layerSlugs, libraryStyles, merge, myStyles, myStylesDir, profileGuide, profileStyles, search, SLUG, TYPES } from "../lib/lemo/catalog.mjs";
 import { DRAFT, imageKind, keepStyle, pickFrame } from "../lib/lemo/my-styles.mjs";
-import { draftStyle, grammarProject, grammarShot, insertMarkers, layerScene } from "../lib/lemo/requests.mjs";
+import { draftStyle, grammarProject, grammarShot, insertMarkers, layerScene, profileProject, profileShot } from "../lib/lemo/requests.mjs";
 
 const FETCH = fileURLToPath(new URL("../lib/lemo/fetch.mjs", import.meta.url));
 // Not a valid project name, so the library download never meets a project's jobs.
 export const LEMO_OWNER = "(lemo)";
 export const CREDIT = { text: "Ảnh và phim mẫu: LemoLab, CC BY 4.0", url: PIN.web, license: "CC BY 4.0", code_license: "MIT" };
 const SHOT = /^[A-Za-z0-9_-]{1,40}$/;
-const MODES = ["layer", "grammar", "markers"];
+const MODES = ["layer", "grammar", "profile", "markers"];
+const SOURCES = ["mine", "library", "profile"];
 const FRAME_MAX = 8 << 20;
 const GUIDE_MAX = 200 << 10;
 const busy = new Set(); // project names with an apply or keep in flight
@@ -62,12 +69,21 @@ function saveLemo(dir, j) {
   writeAtomic(lemoFile(dir), JSON.stringify(j, null, 2) + "\n");
 }
 
-// Own styles first, then the library, with the provider's canvas-layer styles marked.
+// Own styles, the provider's style profiles, then the library with its canvas-layer styles marked.
 async function catalog(P) {
   const lib = libraryStyles();
   const mine = myStyles();
+  const profiles = profileStyles(P?.library?.stylesDir);
   const layers = P ? await layerSlugs(P) : { available: false, styles: {} };
-  return { lib, mine, layers, rows: merge(mine.rows, lib.rows, layers) };
+  return { lib, mine, profiles, layers, rows: merge(mine.rows, lib.rows, layers, profiles.rows) };
+}
+
+// A lemo_ref: line takes the look from a library STYLE.md, so a project profile drops it.
+function dropKey(text, key) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n|$)/);
+  if (!m) return text;
+  const fm = m[1].split(/\r?\n/).filter((l) => !l.startsWith(`${key}:`)).join("\n");
+  return `---\n${fm}\n---${m[2]}${text.slice(m[0].length)}`;
 }
 
 // Width and height of the composition root in index.html, or null.
@@ -160,7 +176,7 @@ async function apply(c) {
     busy.add(name);
     try {
       const { rows } = await catalog(c.P);
-      const source = b.source === "mine" || b.source === "library" ? b.source : null;
+      const source = SOURCES.includes(b.source) ? b.source : null;
       const style = findStyle(rows, b.slug, source) ?? { slug: b.slug, ten: b.slug, source: "library" };
       const at = new Date().toISOString();
       const state = readLemo(dir);
@@ -171,6 +187,20 @@ async function apply(c) {
       };
       if (b.mode === "markers") {
         return { ok: true, ...direct(c, name, dir, { scope: "project", text: insertMarkers({ slug: b.slug }) }) };
+      }
+      if (b.mode === "profile") {
+        const found = findStyle(rows, b.slug, "profile");
+        if (!found) throw err(404, `không có style profile ${b.slug}`);
+        const styles = c.P?.commands?.styles;
+        if (typeof styles !== "string") throw err(422, "provider chưa có lệnh style profile", { code: "no_profile" });
+        if (!shot) {
+          const brief = join(dir, "BRIEF.md");
+          const text = dropKey(existsSync(brief) ? readFileSync(brief, "utf8") : "", "lemo_ref");
+          writeAtomic(brief, setFrontmatter(text, { style_profile: found.slug }));
+        }
+        record({ slug: found.slug, source: "profile", mode: "profile", at });
+        const text = shot ? profileShot({ slug: found.slug, ten: found.ten, styles, shot }) : profileProject({ slug: found.slug, ten: found.ten, styles });
+        return { ok: true, lemo: readLemo(dir), ...direct(c, name, dir, { scope: shot ? "shot" : "project", target: shot, text }) };
       }
       if (b.mode === "grammar") {
         const found = findStyle(rows, b.slug, source);
@@ -218,14 +248,15 @@ export const ROUTES = [
   {
     method: "GET", path: "/api/lemo/styles", provider: false,
     async handler(c) {
-      const { lib, mine, layers, rows } = await catalog(c.P);
+      const { lib, mine, profiles, layers, rows } = await catalog(c.P);
       const q = String(c.q("q") ?? "").slice(0, 200), group = String(c.q("group") ?? "").slice(0, 80);
+      const type = TYPES.includes(c.q("type") ?? "") ? (c.q("type") ?? "") : "";
       const name = c.q("name");
       let project = null;
       if (name) { const pd = c.projectDir(name); if (!pd.error) project = projectState(pd.dir); }
       return {
-        fetched: lib.fetched, sha: PIN.sha, total: rows.length, groups: groupsOf(rows), rows: search(rows, q, group),
-        warnings: [...lib.warnings, ...mine.warnings], layer_available: layers.available, my_dir: mine.dir,
+        fetched: lib.fetched, sha: PIN.sha, total: rows.length, groups: groupsOf(rows), rows: search(rows, q, group, type),
+        profiles: profiles.rows.length, warnings: [...lib.warnings, ...mine.warnings, ...profiles.warnings], layer_available: layers.available, my_dir: mine.dir,
         fetch_job: lastFetch ? getJob(lastFetch) : null, project, credit: CREDIT,
       };
     },
@@ -236,6 +267,11 @@ export const ROUTES = [
     async handler(c) {
       const slug = c.q("slug");
       if (typeof slug !== "string" || !SLUG.test(slug)) return c.send(400, { error: "slug không hợp lệ" });
+      if (c.q("source") === "profile") {
+        const text = await profileGuide(c.P, slug);
+        if (text == null) return c.send(404, { error: `không có style profile ${slug}` });
+        return { slug, source: "profile", path: null, text: text.slice(0, GUIDE_MAX) };
+      }
       const { rows } = await catalog(null);
       const s = findStyle(rows, slug, ["mine", "library"].includes(c.q("source")) ? c.q("source") : null);
       if (!s?.guide) return c.send(404, { error: `không có STYLE.md của ${slug}` });

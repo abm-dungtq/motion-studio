@@ -6,7 +6,7 @@ import type { InspectorSectionProps } from "@/ext/registry.ts";
 import { Button } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { SELECT } from "./Gallery.tsx";
-import { applyStyle, modeText, useAllStyles, useLemo } from "./store.ts";
+import { applyStyle, modeOf, modeText, tagOf, useAllStyles, useLemo } from "./store.ts";
 import { shotConfirm } from "./confirm.tsx";
 
 export function ShotStyle({ pick, m }: InspectorSectionProps) {
@@ -17,20 +17,20 @@ export function ShotStyle({ pick, m }: InspectorSectionProps) {
   const shot = pick.id;
   if (!shot) return null;
 
-  const head = <h3 className="m-0 text-sm font-semibold">Phong cách code</h3>;
+  const head = <h3 className="m-0 text-sm font-semibold">Phong cách</h3>;
   if (!d) return <div className="flex flex-col gap-1.5" data-testid="lemo-shot">{head}<p className="m-0 text-sm text-muted-foreground">Đang tải…</p></div>;
 
   const p = d.project ?? {};
   const rows = d.rows;
-  const styleName = (slug: string) => rows.find((r) => r.slug === slug)?.ten ?? slug;
+  const styleName = (slug: string, mode = "") => rows.find((r) => r.slug === slug && (mode === "profile") === (r.source === "profile"))?.ten ?? slug;
   const lines = [
-    p.project ? `Dự án: ${styleName(p.project.slug)} (${modeText(p.project.mode)})` : "Dự án chưa áp phong cách code nào.",
-    p.shots?.[shot] ? `Shot ${shot}: ${styleName(p.shots[shot].slug)} (${modeText(p.shots[shot].mode)})` : null,
+    p.project ? `Dự án: ${styleName(p.project.slug, p.project.mode)} (${modeText(p.project.mode)})` : "Dự án chưa áp phong cách nào.",
+    p.shots?.[shot] ? `Shot ${shot}: ${styleName(p.shots[shot].slug, p.shots[shot].mode)} (${modeText(p.shots[shot].mode)})` : null,
   ].filter((t): t is string => Boolean(t));
   const apply = () => {
     const [source, slug] = (sel.current?.value ?? "").split(":");
     const style = rows.find((r) => r.slug === slug && r.source === source);
-    if (style) void applyStyle({ name, hasManifest: Boolean(m), style, mode: style.layer ? "layer" : "grammar", shot, ask: shotConfirm.ask });
+    if (style) void applyStyle({ name, hasManifest: Boolean(m), style, mode: modeOf(style), shot, ask: shotConfirm.ask });
   };
 
   return (
@@ -42,7 +42,7 @@ export function ShotStyle({ pick, m }: InspectorSectionProps) {
         {rows.length ? (
           <div className="mt-2 flex flex-col gap-2">
             <select ref={sel} className={`${SELECT} w-full`} aria-label="Phong cách cho shot này">
-              {rows.map((r) => <option key={`${r.source}:${r.slug}`} value={`${r.source}:${r.slug}`}>{`${r.source === "mine" ? "★ " : ""}${r.ten}${r.layer ? " · lớp canvas" : ""}`}</option>)}
+              {rows.map((r) => <option key={`${r.source}:${r.slug}`} value={`${r.source}:${r.slug}`}>{`${r.source === "mine" ? "★ " : ""}${r.ten} · ${tagOf(r).text.toLowerCase()}`}</option>)}
             </select>
             <div><Button variant="primary" disabled={!m || busy} onClick={apply}>Áp</Button></div>
           </div>

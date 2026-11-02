@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { say } from "@/api/client.ts";
 import { lemoApply, lemoFetch } from "@/api/queries.ts";
 import { useStudio } from "@/store/studio.ts";
-import { LIBRARY, MANIFEST, NAME, PROJECTS, stylesRoute } from "./fixtures.ts";
+import { LIBRARY, MANIFEST, NAME, PROFILES, PROJECTS, stylesRoute } from "./fixtures.ts";
 import { Gallery } from "./Gallery.tsx";
 import { useLemo } from "./store.ts";
 
@@ -36,7 +36,7 @@ describe("Gallery", () => {
     setup();
     await waitFor(() => expect(titles()).toEqual(LIBRARY.map((r) => r.ten)));
     expect(screen.getByTestId("lemo-count")).toHaveTextContent("3 / 3 phong cách");
-    expect(screen.getByPlaceholderText("Tìm: thuỷ màu, ukiyo, tin tức…")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Tìm: truyện tranh, thuỷ màu, tin tức…")).toBeInTheDocument();
     const group = screen.getByLabelText("Nhóm phong cách");
     expect([...group.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Mọi nhóm (3)", "Hội hoạ (2)", "Truyền thống Đông Á (1)", "Tin tức (1)"]);
     expect(screen.getByTestId("lemo-credit")).toHaveTextContent("Ảnh và phim mẫu: LemoLab, CC BY 4.0, github.com/lemomo-ai/lemo-opuscar. Mã và tài liệu: MIT.");
@@ -70,24 +70,49 @@ describe("Gallery", () => {
     setup();
     await waitFor(() => expect(titles()).toHaveLength(3));
     await userEvent.type(screen.getByLabelText("Tìm phong cách code"), "zzzzqq");
-    expect(await screen.findByText('Không có phong cách nào khớp "zzzzqq". Thử từ khoá ngắn hơn hoặc bỏ dấu.')).toBeInTheDocument();
+    expect(await screen.findByText('Không có phong cách nào khớp "zzzzqq". Thử từ khoá ngắn hơn, bỏ dấu hoặc đổi bộ lọc.')).toBeInTheDocument();
   });
 
-  it("own styles come under Của bạn, before Thư viện", async () => {
-    setup(stylesRoute({ mine: true }));
-    await waitFor(() => expect(titles()).toHaveLength(4));
+  it("own styles, then the ready-made profiles, then the lemo-opuscar library, each with a head and its count", async () => {
+    setup(stylesRoute({ mine: true, withProfiles: true }));
+    await waitFor(() => expect(titles()).toHaveLength(5));
     const heads = [...screen.getByTestId("lemo-grid").querySelectorAll("h3")].map((h) => h.textContent);
-    expect(heads).toEqual(["Của bạn", "Thư viện"]);
-    const grid = screen.getByTestId("lemo-grid");
-    expect(grid.children[0].textContent).toBe("Của bạn");
-    expect(grid.children[1]).toHaveTextContent("Mực của tôi");
-    expect(grid.children[2].textContent).toBe("Thư viện");
+    expect(heads).toEqual(["Của bạn (1)", "Dựng sẵn (1)", "Thư viện lemo-opuscar (3)"]);
+    expect(titles()).toEqual(["Mực của tôi", "Truyện tranh đa vũ trụ", ...LIBRARY.map((r) => r.ten)]);
+    expect(screen.getByTestId("lemo-section-library")).toHaveTextContent("phim mẫu là phim 16:9 không lời");
   });
 
-  it("no heads when there is no own style", async () => {
-    setup();
-    await waitFor(() => expect(titles()).toHaveLength(3));
-    expect(screen.getByTestId("lemo-grid").querySelectorAll("h3")).toHaveLength(0);
+  it("tags say what can be built as is and what is only a reference", async () => {
+    setup(stylesRoute({ withProfiles: true }));
+    await waitFor(() => expect(titles()).toHaveLength(4));
+    const tags = screen.getAllByTestId("lemo-card").map((c) => c.querySelector("span[title]")?.textContent);
+    expect(tags).toEqual(["Dựng sẵn", "Lớp canvas", "Tham khảo", "Tham khảo"]);
+  });
+
+  it("the type filter asks for that type", async () => {
+    const fetch = setup(stylesRoute({ withProfiles: true }));
+    await waitFor(() => expect(titles()).toHaveLength(4));
+    await userEvent.selectOptions(screen.getByLabelText("Loại phong cách"), "ready");
+    await waitFor(() => expect(titles()).toEqual(["Truyện tranh đa vũ trụ", "Thuỷ màu"]));
+    expect(fetch.mock.calls.map(([u]) => String(u)).filter((u) => u.startsWith("/api/lemo/styles")).at(-1)).toContain("type=ready");
+    await userEvent.selectOptions(screen.getByLabelText("Loại phong cách"), "ref");
+    await waitFor(() => expect(titles()).toEqual(["Tranh khắc gỗ", "Bàn tin tức"]));
+  });
+
+  it("a profile: Xem hồ sơ shows its text, and apply writes style_profile after the question", async () => {
+    setup(stylesRoute({ withProfiles: true }), { "/api/lemo/guide": { slug: "comic-multiverse", source: "profile", text: "comic-multiverse — Truyện tranh đa vũ trụ" } });
+    await waitFor(() => expect(titles()).toHaveLength(4));
+    const card = screen.getAllByTestId("lemo-card")[0];
+    expect(within(card).queryByRole("button", { name: "Đọc STYLE.md" })).toBeNull();
+    await userEvent.click(within(card).getByRole("button", { name: "Xem hồ sơ" }));
+    expect((await screen.findByTestId("lemo-guide")).textContent).toBe("comic-multiverse — Truyện tranh đa vũ trụ");
+    expect(screen.queryByText(/Văn bản của bên thứ ba/)).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Đóng" }));
+    vi.mocked(lemoApply).mockResolvedValue({ status: 200, data: { runner: "cli" } });
+    await waitFor(() => expect(within(card).getByRole("button", { name: "Áp cho dự án" })).toBeEnabled());
+    await userEvent.click(within(card).getByRole("button", { name: "Áp cho dự án" }));
+    expect(await answerConfirm(true)).toBe('Áp "Truyện tranh đa vũ trụ" cho cả dự án: ghi style_profile vào BRIEF.md và nhờ đạo diễn dựng lại theo style profile?');
+    await waitFor(() => expect(lemoApply).toHaveBeenCalledWith({ name: NAME, slug: PROFILES[0].slug, source: "profile", mode: "profile", shot: null }));
   });
 
   it("STYLE.md is shown as text: a <script> in it stays text and adds no script element", async () => {
@@ -138,14 +163,15 @@ describe("Gallery", () => {
   it("marks the style the project uses", async () => {
     setup(stylesRoute({ project: { vertical: false, draft: null, project: { slug: "ukiyo-e", mode: "grammar" } } }));
     await waitFor(() => expect(titles()).toHaveLength(3));
-    expect(screen.getByText("Đang dùng cho dự án (theo ngữ pháp)")).toBeInTheDocument();
+    expect(screen.getByText("Đang dùng cho dự án (tham khảo STYLE.md)")).toBeInTheDocument();
   });
 
-  it("without the library: the download button, which polls until it is there", async () => {
+  it("without the library: the profiles are there, and the download button polls until the library is", async () => {
     let fetched = false;
-    setup((u) => ({ ...stylesRoute()(u), fetched, rows: fetched ? LIBRARY : [] }));
+    setup((u) => ({ ...stylesRoute()(u), fetched, rows: fetched ? LIBRARY : PROFILES }));
     const btn = await screen.findByRole("button", { name: "Tải thư viện (≈ 5 MB)" });
-    expect(screen.getByText(/Thư viện 59 phong cách phim dựng bằng code chưa có trên máy/)).toBeInTheDocument();
+    expect(screen.getByText(/Thư viện lemo-opuscar \(59 phong cách phim dựng bằng code, phần lớn để tham khảo\) chưa có trên máy/)).toBeInTheDocument();
+    expect(titles()).toEqual(["Truyện tranh đa vũ trụ"]);
     vi.mocked(lemoFetch).mockImplementation(async () => { fetched = true; return { status: 200, data: { ok: true } }; });
     await userEvent.click(btn);
     expect(lemoFetch).toHaveBeenCalledTimes(1);

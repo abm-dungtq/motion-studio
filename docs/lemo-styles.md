@@ -1,6 +1,14 @@
-# Phong cách (lemo-opuscar)
+# Phong cách
 
-Tab **Phong cách** trên rail trái mở thư viện 59 phong cách phim dựng bằng code của [lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar), cùng các phong cách riêng của bạn. Mỗi phong cách có ảnh khung, tên tiếng Việt, nhóm, công dụng, phim mẫu và `STYLE.md` (prompt phong cách 11 mục). Bạn áp một phong cách cho cả dự án hoặc cho một shot.
+Tab **Phong cách** trên rail trái gom ba nguồn vào một danh sách, theo thứ tự:
+
+1. **Của bạn:** phong cách riêng bạn đã giữ.
+2. **Dựng sẵn:** style profile của provider (với opus-video là `data/styles/`, trừ hai profile `lemo-*` vì lớp canvas của thư viện đã thay chúng). Mỗi profile có sẵn màu, chữ, chất liệu, chuyển cảnh và nhịp, nên áp là dựng được ngay. Đây là nguồn hợp nhất cho video có lời đọc tiếng Việt, phụ đề và khổ 9:16.
+3. **Thư viện lemo-opuscar:** 59 phong cách phim dựng bằng code của [lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar). Phong cách có lớp canvas đã kiểm (hiện là `watercolor` và `glass-product`) dựng được ngay. Các phong cách còn lại chỉ có `STYLE.md` để tham khảo: đạo diễn đọc rồi tự dựng theo, và phim mẫu của chúng là phim 16:9 không lời.
+
+Mỗi phong cách có tên tiếng Việt, nhóm và công dụng. Phong cách thư viện có thêm ảnh khung, phim mẫu và `STYLE.md` (prompt phong cách 11 mục); style profile có nút **Xem hồ sơ** (lệnh `styles show` của provider). Ô **Loại** lọc theo Dựng được ngay (style profile và lớp canvas), Chỉ tham khảo, hay Của bạn. Bạn áp một phong cách cho cả dự án hoặc cho một shot.
+
+Style profile và phong cách riêng hiện ngay cả khi chưa tải thư viện lemo-opuscar.
 
 Studio không có bộ render thứ hai. Mọi phong cách đều dựng bằng chính composition HyperFrames của dự án, nên player, timeline, cổng viet-pro và bản xuất vẫn chạy như cũ.
 
@@ -16,14 +24,15 @@ Thư viện được ghim ở một commit trong [`lib/lemo/pin.json`](../lib/le
 
 Phim mẫu không tải về. Nút **Xem phim mẫu** mở bản phát hành `films` trên GitHub ở tab mới.
 
-## Hai cách áp
+## Ba cách áp
 
 Mỗi thẻ ghi rõ một nhãn:
 
 | Nhãn | Phong cách | Studio làm gì |
 |---|---|---|
+| **Dựng sẵn** | Style profile của provider | Cả dự án: ghi `style_profile: <id>` vào `BRIEF.md` (bỏ dòng `lemo_ref:` nếu có, vì nó giành phần giao diện), rồi nhờ đạo diễn chạy `styles resolve --project . --markdown`, thay mục "Ý đồ sáng tạo" của `PLAN.md` và dựng lại giao diện mọi shot, giữ lời và thời lượng. Một shot: `BRIEF.md` giữ nguyên, đạo diễn chỉ dựng lại shot đó theo hồ sơ |
 | **Lớp canvas** | Các phong cách mà lệnh `lemo list --json` của provider báo `verified` (hiện là `watercolor` và `glass-product`) | Chạy `lemo add --project <dự án> --style <slug>` thành job `lemo` của dự án, ghi `lemo_style: <slug>` vào `BRIEF.md`, rồi gửi đạo diễn yêu cầu viết scene kèm dòng `next:` mà lệnh in ra |
-| **Theo ngữ pháp** | 57 phong cách còn lại và phong cách riêng | Không đổi `BRIEF.md`. Gửi đạo diễn yêu cầu đọc `STYLE.md` rồi dựng bằng GSAP, DOM hoặc canvas trong composition của dự án |
+| **Tham khảo** (phong cách riêng ghi **Của bạn**) | 57 phong cách còn lại và phong cách riêng | Không đổi `BRIEF.md`. Gửi đạo diễn yêu cầu đọc `STYLE.md` rồi dựng bằng GSAP, DOM hoặc canvas trong composition của dự án |
 
 Lớp canvas có thêm các trường hợp sau:
 
@@ -36,7 +45,7 @@ Thẻ cũng cảnh báo hai việc. Với dự án 9:16, lớp canvas chỉ vẽ
 **Áp cho một shot.** Chọn một shot trên timeline. Inspector có mục **Phong cách code**: phong cách đang dùng của dự án và của shot, và **Áp phong cách cho shot này**.
 
 - Lớp canvas cho một shot: scene chỉ vẽ khi `t` nằm trong `win["<shot>"]`, ngoài khoảng đó trả canvas trống.
-- Theo ngữ pháp cho một shot: đạo diễn chỉ sửa shot đó, giữ các shot khác.
+- Tham khảo (theo ngữ pháp) hay dựng sẵn cho một shot: đạo diễn chỉ sửa shot đó, giữ các shot khác.
 
 Studio ghi lựa chọn vào `<dự án>/.opus/lemo.json`. File có `project` (phong cách của cả dự án), `shots.<id>` (phong cách từng shot) và `layer` (lớp canvas đang có). Provider không đọc file này, nên xoá nó không làm hỏng dự án.
 
@@ -74,23 +83,23 @@ Mục **Prompt mẫu** của tab Thư viện mẫu có khung `lemo-opuscar`, vi�
 
 Hai tool chỉ đọc nằm trong [`lib/tools/lemo.mjs`](../lib/tools/lemo.mjs):
 
-- `lemo_styles` tìm phong cách, có dấu hay không dấu đều được;
-- `lemo_style_guide` trả đường tới `STYLE.md` và 8 000 ký tự đầu.
+- `lemo_styles` tìm phong cách, có dấu hay không dấu đều được; `type` là `ready`, `ref` hoặc `mine`, và mỗi kết quả có `ready` (dựng được ngay);
+- `lemo_style_guide` trả đường tới `STYLE.md` và 8 000 ký tự đầu; với `source: "profile"` trả chữ của `styles show`.
 
 ## HTTP
 
 | Route | Việc |
 |---|---|
-| `GET /api/lemo/styles?q=&group=&name=` | Thư viện và phong cách riêng, lọc theo từ khoá và nhóm; `project` là trạng thái của dự án `name` |
+| `GET /api/lemo/styles?q=&group=&type=&name=` | Phong cách riêng, style profile và thư viện, lọc theo từ khoá, nhóm (`profile` cho style profile) và loại (`ready`, `ref`, `mine`); `profiles` là số style profile; `project` là trạng thái của dự án `name` |
 | `GET /api/lemo/frame/<slug>.jpg`, `/api/lemo/frame/mine/<slug>.jpg` | Ảnh khung. Slug sai mẫu hoặc đường ra ngoài thư mục thì 403, không có thì 404. Ảnh thư viện chỉ nhận JPEG, phong cách riêng nhận JPEG hoặc PNG; khác thì 415 |
-| `GET /api/lemo/guide?slug=&source=` | `STYLE.md` dạng chữ thuần |
+| `GET /api/lemo/guide?slug=&source=` | `STYLE.md` dạng chữ thuần; `source=profile` trả chữ của `styles show` |
 | `GET /api/lemo/project?name=` | `.opus/lemo.json`, file của lớp canvas, scene, khung dọc hay ngang, bản nháp trong `lemo-style/` |
 | `POST /api/lemo/fetch` | Tải thư viện (job `lemo-fetch`) |
-| `POST /api/lemo/apply {name, slug, mode, shot?, source?, replace?}` | `mode` là `layer`, `grammar` hoặc `markers`. Mỗi dự án chỉ một lần áp một lúc (409 `busy`) |
+| `POST /api/lemo/apply {name, slug, mode, shot?, source?, replace?}` | `mode` là `layer`, `grammar`, `profile` hoặc `markers`; `profile` cần `source: "profile"`. Mỗi dự án chỉ một lần áp một lúc (409 `busy`) |
 | `POST /api/lemo/draft {name, base?, source?, title?, description?}` | Nhờ đạo diễn tạo phong cách riêng |
 | `POST /api/lemo/keep {name}` | Giữ bản nháp `lemo-style/` |
 
-Các route GET và `keep` chạy được khi chưa cài provider. Khi đó không có phong cách nào là lớp canvas.
+Các route GET và `keep` chạy được khi chưa cài provider. Khi đó không có style profile, và không có phong cách nào là lớp canvas.
 
 ## Đổi commit ghim
 

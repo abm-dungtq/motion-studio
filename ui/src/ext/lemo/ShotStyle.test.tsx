@@ -40,18 +40,18 @@ describe("register", () => {
 });
 
 describe("ShotStyle", () => {
-  it("shows Phong cách code for a picked shot, with the project's and the shot's style", async () => {
+  it("shows Phong cách for a picked shot, with the project's and the shot's style", async () => {
     pickShot("s2", { project: { vertical: false, draft: null, project: { slug: "watercolor", mode: "layer" }, shots: { s2: { slug: "ukiyo-e", mode: "grammar" } } } });
-    expect(await screen.findByText("Phong cách code")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Phong cách" })).toBeInTheDocument();
     expect(await screen.findByText("Dự án: Thuỷ màu (lớp canvas)")).toBeInTheDocument();
-    expect(screen.getByText("Shot s2: Tranh khắc gỗ (theo ngữ pháp)")).toBeInTheDocument();
+    expect(screen.getByText("Shot s2: Tranh khắc gỗ (tham khảo STYLE.md)")).toBeInTheDocument();
     const sel = screen.getByLabelText("Phong cách cho shot này");
-    expect([...sel.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Thuỷ màu · lớp canvas", "Tranh khắc gỗ", "Bàn tin tức"]);
+    expect([...sel.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Thuỷ màu · lớp canvas", "Tranh khắc gỗ · tham khảo", "Bàn tin tức · tham khảo"]);
   });
 
   it("applies the chosen style to the shot after the question", async () => {
     pickShot("s2");
-    expect(await screen.findByText("Dự án chưa áp phong cách code nào.")).toBeInTheDocument();
+    expect(await screen.findByText("Dự án chưa áp phong cách nào.")).toBeInTheDocument();
     await userEvent.click(screen.getByText("Áp phong cách cho shot này"));
     await userEvent.selectOptions(screen.getByLabelText("Phong cách cho shot này"), "library:news-desk");
     vi.mocked(lemoApply).mockResolvedValue({ status: 200, data: { runner: "mcp" } });
@@ -66,6 +66,6 @@ describe("ShotStyle", () => {
     useStudio.setState({ name: NAME, pick: { kind: "line", id: "l1" } });
     renderUi(<InspectorHost />);
     await new Promise((r) => setTimeout(r, 20));
-    expect(screen.queryByText("Phong cách code")).toBeNull();
+    expect(screen.queryByTestId("lemo-shot")).toBeNull();
   });
 });

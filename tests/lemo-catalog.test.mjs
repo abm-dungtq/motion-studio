@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { groupsOf, layerSlugs, libraryStyles, MAX_TEXT, merge, myStyles, parseList, search, VI } from "../lib/lemo/catalog.mjs";
+import { groupsOf, layerSlugs, libraryStyles, MAX_TEXT, merge, myStyles, parseList, profileGuide, profileStyles, search, VI } from "../lib/lemo/catalog.mjs";
 import { PIN } from "../lib/lemo/fetch.mjs";
 import { FAKE_LEMO, makeLibrary, REPO } from "./fixtures/lemo/make.mjs";
 
@@ -94,4 +94,31 @@ test("the verified list is read defensively", async () => {
   assert.deepEqual(parseList(JSON.stringify([{ slug: "watercolor" }, { slug: "../x", status: "verified" }, { slug: "glass-product", kind: "3d", status: "verified" }])), { "glass-product": { kind: "3d" } });
   assert.deepEqual(await layerSlugs(null), { available: false, styles: {} });
   assert.deepEqual(await layerSlugs({ commands: { lemo: "/nonexistent/lemo.mjs" } }), { available: false, styles: {} });
+});
+
+test("profiles: read from index.json, lemo-canvas and bad ids left out, placed after own styles", async () => {
+  const d = tmp("profiles-");
+  writeFileSync(join(d, "index.json"), JSON.stringify([
+    { id: "kinetic-film", ten_vi: "Phim chữ động", name: "Kinetic Film", best_for: ["a", "b", "c", "d", "e", "f", "g"], mo_ta_vi: "x".repeat(MAX_TEXT + 50) },
+    { id: "lemo-watercolor", ten_vi: "Thuỷ màu", engine: "lemo-canvas" },
+    { id: "../escape", ten_vi: "Bad" },
+    { ten_vi: "No id" },
+  ]));
+  const p = profileStyles(d);
+  assert.deepEqual(p.rows.map((r) => r.slug), ["kinetic-film"]);
+  assert.equal(p.rows[0].line.length, MAX_TEXT);
+  assert.equal(p.rows[0].uses.length, 6);
+  assert.deepEqual(profileStyles(null), { rows: [], warnings: [] });
+  writeFileSync(join(d, "index.json"), "{");
+  assert.equal(profileStyles(d).warnings.length, 1);
+  const lib = libraryStyles(home(), { pin });
+  const rows = merge([{ slug: "my-rain", source: "mine", ten: "Mưa", group_en: "mine" }], lib.rows, { styles: { watercolor: { kind: "2d" } } }, p.rows);
+  assert.deepEqual(rows.slice(0, 2).map((r) => r.source), ["mine", "profile"]);
+  assert.deepEqual(groupsOf(rows).slice(0, 2).map((g) => g.id), ["mine", "profile"]);
+  assert.deepEqual(search(rows, "", "", "ready").map((r) => r.slug), ["kinetic-film", "watercolor"]);
+  assert.ok(search(rows, "", "", "ref").every((r) => r.source === "library" && !r.layer));
+  assert.deepEqual(search(rows, "", "", "mine").map((r) => r.slug), ["my-rain"]);
+  assert.equal(await profileGuide({ commands: {} }, "kinetic-film"), null);
+  assert.equal(await profileGuide({ commands: { styles: FAKE_LEMO } }, "../x", { run: async () => "x" }), null);
+  assert.equal(await profileGuide({ commands: { styles: FAKE_LEMO } }, "kinetic-film", { run: async (_c, id) => `${id} — Phim chữ động` }), "kinetic-film — Phim chữ động");
 });

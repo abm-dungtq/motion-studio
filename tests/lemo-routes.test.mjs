@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { createServer } from "../server.mjs";
-import { adapterFor } from "../lib/provider.mjs";
+import { adapterFor, loadProvider } from "../lib/provider.mjs";
 import { PIN } from "../lib/lemo/fetch.mjs";
 import { callTool, toolEnv } from "../lib/tools.mjs";
 import { fakePlugin } from "./fake-plugin.mjs";
@@ -18,6 +18,11 @@ const MANIFEST = fileURLToPath(new URL("./fixtures/manifest", import.meta.url));
 const TOKEN = "l".repeat(64);
 const ENV = ["OPUS_VIDEO_HOME", "MOTION_STUDIO_LEMO_CACHE", "LEMO_MY_STYLES", "MOTION_STUDIO_STATE", "FAKE_LEMO_LOG", "FAKE_LEMO_ADD", "FAKE_LEMO_SLEEP"];
 let tmp, root, plugin, server, port, saved, log, reqLog;
+const PROFILES = [
+  { id: "comic-multiverse", ten_vi: "Truyện tranh đa vũ trụ", name: "Comic Multiverse", family: "house", aliases: ["comic"], energy: 5, best_for: ["hype-launch"], mo_ta_vi: "Chấm halftone, viền mực dày.", engine: "hyperframes" },
+  { id: "kinetic-film", ten_vi: "Phim chữ động", name: "Kinetic Film", energy: 4, best_for: ["explainer"], mo_ta_vi: "Chữ lớn chạy theo lời.", engine: "hyperframes" },
+  { id: "lemo-watercolor", ten_vi: "Thuỷ màu lemo", name: "Lemo Watercolor", engine: "lemo-canvas" },
+];
 
 // The fake plugin's manifest loader reads project.json; its request queue appends to a file.
 function plugin4() {
@@ -40,6 +45,10 @@ before(async () => {
   writeFileSync(join(cache, PIN.sha, ".pin.json"), JSON.stringify({ sha: PIN.sha }));
   writeFileSync(join(tmp, "studio.json"), JSON.stringify({ director: { runner: "mcp" } }));
   plugin = plugin4();
+  // The provider's style profiles: index.json and a styles command that answers show.
+  mkdirSync(join(plugin, "data", "styles"), { recursive: true });
+  writeFileSync(join(plugin, "data", "styles", "index.json"), JSON.stringify(PROFILES));
+  writeFileSync(join(plugin, "scripts", "styles.mjs"), `const [cmd, id] = process.argv.slice(2);\nif (cmd === "show" && id === "comic-multiverse") console.log("comic-multiverse — Truyện tranh đa vũ trụ\\nChấm halftone");\nelse process.exit(2);\n`);
   Object.assign(process.env, { OPUS_VIDEO_HOME: plugin, MOTION_STUDIO_LEMO_CACHE: cache, LEMO_MY_STYLES: join(tmp, "my-styles"), MOTION_STUDIO_STATE: join(tmp, "studio.json"), FAKE_LEMO_LOG: log });
   root = join(tmp, "root");
   mkdirSync(root);
@@ -248,4 +257,54 @@ test("tools search the styles and read a guide", async () => {
   assert.equal(g.ok, true);
   assert.match(g.result.text, /ukiyoe/);
   assert.equal((await callTool("lemo_style_guide", { slug: "nope" }, env)).ok, false);
+});
+
+test("the provider's style profiles are listed as ready, without its lemo-canvas profiles", async () => {
+  const r = await http("GET", "/api/lemo/styles?name=demo");
+  assert.equal(r.status, 200);
+  assert.equal(r.json.profiles, 2);
+  const prof = r.json.rows.filter((x) => x.source === "profile");
+  assert.deepEqual(prof.map((x) => x.slug).sort(), ["comic-multiverse", "kinetic-film"]);
+  assert.ok(prof.every((x) => x.ready === true && x.group_en === "profile"));
+  assert.ok(r.json.groups.some((g) => g.id === "profile" && g.count === 2));
+  const ready = await http("GET", "/api/lemo/styles?type=ready");
+  assert.deepEqual(ready.json.rows.map((x) => x.slug).sort(), ["comic-multiverse", "kinetic-film", "watercolor"]);
+  const ref = await http("GET", "/api/lemo/styles?type=ref");
+  assert.ok(ref.json.rows.length > 0 && ref.json.rows.every((x) => x.source === "library" && !x.layer));
+  assert.deepEqual((await http("GET", "/api/lemo/styles?q=comic")).json.rows.map((x) => x.slug), ["comic-multiverse"]);
+  const g = await http("GET", "/api/lemo/guide?slug=comic-multiverse&source=profile");
+  assert.equal(g.status, 200);
+  assert.match(g.json.text, /Truyện tranh đa vũ trụ/);
+  assert.equal((await http("GET", "/api/lemo/guide?slug=nope&source=profile")).status, 404);
+});
+
+test("apply profile sets style_profile, drops lemo_ref and asks for a restyle; a shot leaves BRIEF.md", async () => {
+  writeFileSync(join(dir(), "BRIEF.md"), "---\ntitle: Demo\nlemo_ref: ukiyoe\nstyle_profile: swiss-kinetic-editorial\n---\n\n# Brief\nlemo_ref: in the body stays\n");
+  const r = await post("/api/lemo/apply", { name: "demo", slug: "comic-multiverse", source: "profile", mode: "profile" });
+  assert.equal(r.status, 200, JSON.stringify(r.json));
+  assert.equal(brief(), "---\ntitle: Demo\nstyle_profile: comic-multiverse\n---\n\n# Brief\nlemo_ref: in the body stays\n");
+  assert.deepEqual({ slug: lemo().project.slug, mode: lemo().project.mode }, { slug: "comic-multiverse", mode: "profile" });
+  const before = sha(brief());
+  const s = await post("/api/lemo/apply", { name: "demo", slug: "kinetic-film", source: "profile", mode: "profile", shot: "s2" });
+  assert.equal(s.status, 200);
+  assert.equal(sha(brief()), before);
+  assert.equal(lemo().shots.s2.slug, "kinetic-film");
+  const [p, q] = queued();
+  assert.equal(p.scope, "project");
+  assert.ok(p.text.includes(`${join(plugin, "scripts", "styles.mjs")} resolve --project . --markdown`));
+  assert.doesNotMatch(p.text, /STYLE\.md/);
+  assert.equal(q.scope, "shot");
+  assert.match(q.text, /shot s2/);
+  assert.deepEqual(calls(), [], "no lemo command runs");
+  assert.equal((await post("/api/lemo/apply", { name: "demo", slug: "ukiyoe", source: "profile", mode: "profile" })).status, 404);
+});
+
+test("tools list the profiles and read one", async () => {
+  const env = toolEnv({ root, P: await loadProvider() });
+  const r = await callTool("lemo_styles", { type: "ready" }, env);
+  assert.equal(r.ok, true, JSON.stringify(r));
+  assert.ok(r.result.styles.some((s) => s.slug === "comic-multiverse" && s.ready));
+  const g = await callTool("lemo_style_guide", { slug: "comic-multiverse", source: "profile" }, env);
+  assert.equal(g.ok, true, JSON.stringify(g));
+  assert.match(g.result.text, /halftone/);
 });

@@ -16,6 +16,10 @@ export const LIBRARY = [
   lib("ukiyo-e", "Tranh khắc gỗ", "Ukiyo-e", "East Asian Traditions", "Truyền thống Đông Á"),
   lib("news-desk", "Bàn tin tức", "News Desk", "News", "Tin tức"),
 ];
+export const PROFILES = [{
+  slug: "comic-multiverse", source: "profile", ten: "Truyện tranh đa vũ trụ", en: "Comic Multiverse", cn: "", nhom: "Dựng sẵn", group_en: "profile",
+  line: "Chấm halftone, viền mực dày.", uses: ["hype-launch"], frame: null, film_url: null, guide: null, layer: false, kind: null, ready: true,
+}];
 export const MINE = [{ ...lib("my-ink", "Mực của tôi", "My Ink", "Painting", "Hội hoạ"), source: "mine", film_url: null }];
 
 export const GROUPS = [
@@ -27,12 +31,13 @@ export const GROUPS = [
 const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 // The styles route: a search over ten/en and a group filter, as lib/lemo/catalog.mjs search().
-export function stylesRoute(over: Partial<LemoStyles> & { mine?: boolean } = {}) {
-  const { mine = false, ...rest } = over;
-  const all = [...(mine ? MINE : []), ...LIBRARY];
+export function stylesRoute(over: Partial<LemoStyles> & { mine?: boolean; withProfiles?: boolean } = {}) {
+  const { mine = false, withProfiles = false, ...rest } = over;
+  const all: { ten: string; en: string; group_en: string; source: string; layer?: boolean; ready?: boolean }[] = [...(mine ? MINE : []), ...(withProfiles ? PROFILES : []), ...LIBRARY];
+  const ofType = (r: (typeof all)[number], t: string) => !t || (t === "ready" ? r.source === "profile" || r.layer === true : t === "ref" ? r.source === "library" && !r.layer : r.source === t);
   return (url: URL) => {
-    const q = fold(url.searchParams.get("q") ?? ""), group = url.searchParams.get("group") ?? "";
-    const rows = all.filter((r) => (!q || fold(`${r.ten} ${r.en}`).includes(q)) && (!group || r.group_en === group));
+    const q = fold(url.searchParams.get("q") ?? ""), group = url.searchParams.get("group") ?? "", type = url.searchParams.get("type") ?? "";
+    const rows = all.filter((r) => (!q || fold(`${r.ten} ${r.en}`).includes(q)) && (!group || r.group_en === group) && ofType(r, type));
     return {
       fetched: true, total: all.length, groups: GROUPS, rows, warnings: [], layer_available: true,
       my_dir: "/tmp/ms-react-lemo-test/my-styles", fetch_job: null,

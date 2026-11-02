@@ -1,7 +1,9 @@
 // Port of public/lemo-gallery.js; behaviour unchanged.
-// The "Phong cách" tab (galleryView, lemo-gallery.js:121-161): the lemo-opuscar library (59
-// code-made film styles, github.com/lemomo-ai/lemo-opuscar; frames and films CC BY 4.0 by LemoLab)
-// plus the user's own styles, searched and filtered by group, and applied to the open project.
+// The "Phong cách" tab (galleryView, lemo-gallery.js:121-161): the user's own styles, the
+// provider's style profiles (built as they are), and the lemo-opuscar library (59 code-made film
+// styles, github.com/lemomo-ai/lemo-opuscar; frames and films CC BY 4.0 by LemoLab; a canvas layer
+// for the verified ones, a STYLE.md to read for the rest), searched, filtered by group and by type,
+// and applied to the open project. The profiles and own styles show before the library is fetched.
 // STYLE.md is third-party text: the dialog shows it as plain text, never as HTML.
 import { useEffect, useRef, useState } from "react";
 import { useProject } from "@/api/queries.ts";
@@ -9,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button, Input } from "@/shell/controls.tsx";
 import { Fail, Loading } from "@/shell/states.tsx";
 import { useStudio } from "@/store/studio.ts";
-import { DEBOUNCE_MS, fetchLibrary, safeUrl, useGalleryStyles, useLemo, type LemoCredit, type LemoStyles } from "./store.ts";
+import { DEBOUNCE_MS, fetchLibrary, safeUrl, useGalleryStyles, useLemo, type LemoCredit, type LemoStyles, type StyleType } from "./store.ts";
 import { StyleCard } from "./StyleCard.tsx";
 import { tabConfirm } from "./confirm.tsx";
 
@@ -59,7 +61,7 @@ function SearchBox() {
       type="search"
       className="min-w-0 flex-[1_1_180px]"
       value={text}
-      placeholder="Tìm: thuỷ màu, ukiyo, tin tức…"
+      placeholder="Tìm: truyện tranh, thuỷ màu, tin tức…"
       aria-label="Tìm phong cách code"
       onChange={(e) => {
         const v = e.target.value;
@@ -71,10 +73,22 @@ function SearchBox() {
   );
 }
 
+const TYPES: { id: StyleType; ten: string }[] = [
+  { id: "", ten: "Mọi loại" },
+  { id: "ready", ten: "Dựng được ngay" },
+  { id: "ref", ten: "Chỉ tham khảo" },
+  { id: "mine", ten: "Của bạn" },
+];
+
 function Library({ d, name, hasManifest }: { d: LemoStyles; name: string | null; hasManifest: boolean }) {
-  const q = useLemo((s) => s.q), group = useLemo((s) => s.group);
+  const q = useLemo((s) => s.q), group = useLemo((s) => s.group), type = useLemo((s) => s.type);
   const rows = d.rows;
-  const mine = rows.filter((r) => r.source === "mine"), lib = rows.filter((r) => r.source !== "mine");
+  const mine = rows.filter((r) => r.source === "mine"), prof = rows.filter((r) => r.source === "profile"), lib = rows.filter((r) => r.source === "library");
+  const sections = [
+    { key: "mine", title: "Của bạn", rows: mine, note: null },
+    { key: "profile", title: "Dựng sẵn", rows: prof, note: "Style profile có sẵn màu, chữ, chuyển cảnh và nhịp; áp là dựng được ngay, hợp video có lời và khổ 9:16." },
+    { key: "library", title: "Thư viện lemo-opuscar", rows: lib, note: "Lớp canvas dựng được ngay. Thẻ Tham khảo chỉ có STYLE.md: đạo diễn đọc rồi tự dựng theo, phim mẫu là phim 16:9 không lời." },
+  ].filter((x) => x.rows.length);
   const card = (r: (typeof rows)[number]) => <StyleCard key={`${r.source}:${r.slug}`} style={r} project={d.project} name={name} hasManifest={hasManifest} />;
   return (
     <>
@@ -84,9 +98,12 @@ function Library({ d, name, hasManifest }: { d: LemoStyles; name: string | null;
           <option value="">{`Mọi nhóm (${d.groups.length})`}</option>
           {d.groups.map((g) => <option key={g.id} value={g.id}>{`${g.ten} (${g.count})`}</option>)}
         </select>
+        <select className={`${SELECT} min-w-0 flex-[0_1_180px]`} aria-label="Loại phong cách" value={type} onChange={(e) => useLemo.getState().setType(e.target.value as StyleType)}>
+          {TYPES.map((t) => <option key={t.id} value={t.id}>{t.ten}</option>)}
+        </select>
       </div>
       <p className="m-0 text-sm text-muted-foreground" data-testid="lemo-count">
-        {`${rows.length} / ${d.total} phong cách${d.layer_available ? "" : " · chưa có lệnh lớp canvas, mọi phong cách áp theo ngữ pháp"}`}
+        {`${rows.length} / ${d.total} phong cách${d.fetched && !d.layer_available ? " · chưa có lệnh lớp canvas, phong cách thư viện chỉ để tham khảo" : ""}`}
       </p>
       {d.warnings?.length ? (
         <details>
@@ -95,11 +112,14 @@ function Library({ d, name, hasManifest }: { d: LemoStyles; name: string | null;
         </details>
       ) : null}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2.5" aria-live="polite" data-testid="lemo-grid">
-        {mine.length ? <h3 className="col-span-full m-0 mt-1.5 text-sm font-semibold">Của bạn</h3> : null}
-        {mine.map(card)}
-        {mine.length && lib.length ? <h3 className="col-span-full m-0 mt-1.5 text-sm font-semibold">Thư viện</h3> : null}
-        {lib.map(card)}
-        {rows.length ? null : <p className="col-span-full m-0 text-sm text-muted-foreground">{`Không có phong cách nào khớp "${q}". Thử từ khoá ngắn hơn hoặc bỏ dấu.`}</p>}
+        {sections.map((x) => [
+          <div key={`h:${x.key}`} className="col-span-full mt-1.5 flex flex-col gap-0.5" data-testid={`lemo-section-${x.key}`}>
+            <h3 className="m-0 text-sm font-semibold">{`${x.title} (${x.rows.length})`}</h3>
+            {x.note ? <p className="m-0 text-xs text-muted-foreground">{x.note}</p> : null}
+          </div>,
+          ...x.rows.map(card),
+        ])}
+        {rows.length ? null : <p className="col-span-full m-0 text-sm text-muted-foreground">{q || group || type ? `Không có phong cách nào khớp${q ? ` "${q}"` : " bộ lọc này"}. Thử từ khoá ngắn hơn, bỏ dấu hoặc đổi bộ lọc.` : "Chưa có phong cách nào."}</p>}
       </div>
       <Credit credit={d.credit} />
     </>
@@ -128,24 +148,18 @@ export function Gallery() {
     );
   } else if (!d) {
     body = <Loading />;
-  } else if (!d.fetched) {
+  } else {
     body = (
       <>
-        <div className="flex flex-col items-start gap-2 text-sm text-muted-foreground">
-          <p className="m-0">Thư viện 59 phong cách phim dựng bằng code chưa có trên máy. Tải một lần (khoảng 5 MB: ảnh khung, STYLE.md, DEMO.md; không tải mã chạy được).</p>
-          <Button variant="primary" disabled={fetching} onClick={() => { void fetchLibrary(); }}>{fetching ? "Đang tải…" : "Tải thư viện (≈ 5 MB)"}</Button>
-        </div>
-        {d.rows.length ? (
-          <div className="flex flex-col gap-2.5">
-            <h3 className="m-0 text-sm font-semibold">Của bạn</h3>
-            {d.rows.map((r) => <StyleCard key={`${r.source}:${r.slug}`} style={r} project={d.project} name={name} hasManifest={hasManifest} />)}
+        {d.fetched ? null : (
+          <div className="flex flex-col items-start gap-2 text-sm text-muted-foreground" data-testid="lemo-fetch">
+            <p className="m-0">Thư viện lemo-opuscar (59 phong cách phim dựng bằng code, phần lớn để tham khảo) chưa có trên máy. Tải một lần (khoảng 5 MB: ảnh khung, STYLE.md, DEMO.md; không tải mã chạy được).</p>
+            <Button disabled={fetching} onClick={() => { void fetchLibrary(); }}>{fetching ? "Đang tải…" : "Tải thư viện (≈ 5 MB)"}</Button>
           </div>
-        ) : null}
-        <Credit credit={d.credit} />
+        )}
+        <Library d={d} name={name} hasManifest={hasManifest} />
       </>
     );
-  } else {
-    body = <Library d={d} name={name} hasManifest={hasManifest} />;
   }
   return (
     <div className="flex flex-col gap-2.5" data-testid="lemo-gallery">
