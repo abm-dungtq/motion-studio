@@ -42,7 +42,7 @@ AI can now build a whole video, but most tools make you pick one of two shapes. 
 
 ## Quick start
 
-You need Node.js 22.18 or later and ffmpeg with ffprobe. For the AI director you also need Claude Code (`claude`) installed and signed in.
+You need Node.js 22.18 or later and ffmpeg with ffprobe. For the AI director you also need Claude Code (`claude`) installed and signed in. The interface is designed for screens at least 1280 px wide.
 
 ```bash
 git clone https://github.com/abm-dungtq/motion-studio ~/Projects/motion-studio
@@ -209,6 +209,12 @@ npm test
 ```
 
 This runs the server tests (`node --test tests/*.test.mjs`) and then the interface tests in `ui/`. Most server tests need the default provider installed (set `OPUS_VIDEO_HOME` if the plugin lives elsewhere). `tests/no-provider.test.mjs` and `tests/config.test.mjs` run without it.
+
+Before an interface PR, start a test Studio on another port (`MOTION_STUDIO_PORT=4318` with its own `MOTION_STUDIO_STATE`) and check that nothing overflows its panel at 1280×800. The check is not part of `npm test` because it needs a running Studio:
+
+```bash
+node ui/scripts/ui-layout-check.mjs --url http://127.0.0.1:4318 --project a-02
+```
 
 </details>
 
