@@ -11,7 +11,6 @@ import type {
   AgentStatus, AgentsScan, DirectorRequest, FileEntry, Gates, Job, LogEntry, Manifest, MediaEntry,
   ProjectEntry, SnapshotDiff, SnapshotsResponse, SoundsList, StatusResponse, SuggestChooseResult, SuggestResponse, TimelineMedia,
 } from "./types.ts";
-import type { TimingData } from "@/core/markers.ts";
 
 const enc = encodeURIComponent;
 const params = (p: Record<string, string | number | boolean | null | undefined>): string => {
@@ -39,7 +38,6 @@ export const keys = {
   files: (name: string | null, dir?: string) => (dir ? ["/api/files", name, dir] as const : ["/api/files", name] as const),
   library: (p?: Record<string, string>) => (p ? ["/api/library", p] as const : ["/api/library"] as const),
   directions: () => ["/api/directions"] as const,
-  timing: (name: string | null) => ["/api/timing", name] as const,
   projectText: (name: string | null, path?: string) => (path ? ["/p", name, path] as const : ["/p", name] as const),
   brollSearch: (p?: Record<string, string | number>) => (p ? ["/api/broll/search", p] as const : ["/api/broll/search"] as const),
   brollPlan: (p?: Record<string, string>) => (p ? ["/api/broll/plan", p] as const : ["/api/broll/plan"] as const),
@@ -83,7 +81,6 @@ export const statusQuery = () => queryOptions({
   queryFn: () => api<StatusResponse>(`/api/status`).catch(() => null),
   staleTime: Infinity,
 });
-export const useStatus = () => useQuery(statusQuery());
 
 // `/api/project` — public/app.js:249. Only for a project with project.json; SSE keeps it current.
 export const projectQuery = (name: string | null) => queryOptions({
@@ -231,11 +228,9 @@ export const useAgent = (name: string | null) => useQuery(agentQuery(name));
 // `/api/agents` — public/ext-agents.js:42. data stays undefined and error is set when it fails:
 // an agent row shows the error, never controls over a missing scan.
 export const agentsQuery = () => queryOptions({ queryKey: keys.agents(), queryFn: () => api<AgentsScan>(`/api/agents`) });
-export const useAgents = (enabled = true) => useQuery({ ...agentsQuery(), enabled });
 
 // `/api/sounds` — public/app.js:107
 export const soundsQuery = (name: string | null) => queryOptions({ queryKey: keys.sounds(name), queryFn: () => api<SoundsList>(`/api/sounds?name=${enc(name ?? "")}`) });
-export const useSounds = (name: string | null) => useQuery({ ...soundsQuery(name), enabled: Boolean(name) });
 
 // `/api/media` — public/panels.js:135, public/fx-footage.js:166
 export const mediaQuery = (name: string | null) => queryOptions({ queryKey: keys.media(name), queryFn: () => api<MediaEntry[]>(`/api/media?name=${enc(name ?? "")}`) });
@@ -246,7 +241,6 @@ export const mediaBrowseQuery = (path: string | null) => queryOptions({
   queryKey: keys.mediaBrowse(path),
   queryFn: () => api<unknown>(`/api/media/browse${path ? `?path=${enc(path)}` : ""}`),
 });
-export const useMediaBrowse = (path: string | null, enabled = true) => useQuery({ ...mediaBrowseQuery(path), enabled });
 
 // `/api/files` — public/panels.js:182 (dir=assets), public/panels.js:320 (dir=renders)
 export const filesQuery = (name: string | null, dir: string) => queryOptions({
@@ -264,8 +258,6 @@ export const directionsQuery = () => queryOptions({ queryKey: keys.directions(),
 export const useDirections = () => useQuery(directionsQuery());
 
 // `/api/timing` — public/timeline-markers.js:26. The shared markers (markers.ts) read it too.
-export const timingQuery = (name: string | null) => queryOptions({ queryKey: keys.timing(name), queryFn: () => api<TimingData>(`/api/timing?name=${enc(name ?? "")}`) });
-export const useTiming = (name: string | null) => useQuery({ ...timingQuery(name), enabled: Boolean(name) });
 
 // /p/<name>/<path> — public/panels.js:128 (STORYBOARD.md). null when the file is not there.
 export const projectTextQuery = (name: string | null, path: string) => queryOptions({
@@ -279,22 +271,18 @@ export const brollSearchQuery = (p: { q: string; kind?: string; limit?: number }
   queryKey: keys.brollSearch(p as Record<string, string | number>),
   queryFn: () => api<unknown>(`/api/broll/search?${params({ q: p.q, kind: p.kind ?? "", limit: p.limit ?? 40 })}`),
 });
-export const useBrollSearch = (p: { q: string; kind?: string; limit?: number }, enabled = true) => useQuery({ ...brollSearchQuery(p), enabled });
 
 // `/api/broll/plan` — public/broll-search.js:74 (p: the scope query)
 export const brollPlanQuery = (p: Record<string, string>) => queryOptions({ queryKey: keys.brollPlan(p), queryFn: () => api<unknown>(`/api/broll/plan?${params(p)}`) });
-export const useBrollPlan = (p: Record<string, string>, enabled = true) => useQuery({ ...brollPlanQuery(p), enabled });
 
 // `/api/broll/job` — public/broll-search.js:112
 export const brollJobQuery = () => queryOptions({ queryKey: keys.brollJob(), queryFn: () => api<{ job: Job | null }>(`/api/broll/job`) });
-export const useBrollJob = (refetchInterval: number | false = false) => useQuery({ ...brollJobQuery(), refetchInterval });
 
 // `/api/broll/suggest` — public/ext-broll.js:18
 export const brollSuggestQuery = (name: string | null, shot: string) => queryOptions({
   queryKey: keys.brollSuggest(name, shot),
   queryFn: () => api<unknown>(`/api/broll/suggest?name=${enc(name ?? "")}&shot=${enc(shot)}`),
 });
-export const useBrollSuggest = (name: string | null, shot: string | null, enabled = true) => useQuery({ ...brollSuggestQuery(name, shot ?? ""), enabled: Boolean(enabled && name && shot) });
 
 // `/api/receipt` — public/ext-receipts.js:16
 export const receiptQuery = (name: string | null, id: string) => queryOptions({
@@ -323,14 +311,12 @@ export const fxClipUrl = (name: string, src: string): string => `/api/fx/clip?na
 
 // `/api/lemo/styles` — public/lemo-gallery.js:24 (p: the gallery's query)
 export const lemoStylesQuery = (p: Record<string, string>) => queryOptions({ queryKey: keys.lemoStyles(p), queryFn: () => api<unknown>(`/api/lemo/styles?${params(p)}`) });
-export const useLemoStyles = (p: Record<string, string>, enabled = true) => useQuery({ ...lemoStylesQuery(p), enabled });
 
 // `/api/lemo/guide` — public/lemo-gallery.js:78 (STYLE.md of one style)
 export const lemoGuideQuery = (slug: string, source: string) => queryOptions({
   queryKey: keys.lemoGuide(slug, source),
   queryFn: () => api<{ text: string }>(`/api/lemo/guide?${params({ slug, source })}`),
 });
-export const useLemoGuide = (slug: string | null, source: string | null) => useQuery({ ...lemoGuideQuery(slug ?? "", source ?? ""), enabled: Boolean(slug && source) });
 
 // `/api/suggest` — routes/suggest.mjs (the stored ranking, the pitch rows, the modes)
 export const suggestQuery = (name: string | null) => queryOptions({
@@ -407,13 +393,9 @@ export const soundsImport = (b: NameBody & { file: string }) => write(`/api/soun
 // `/api/timeline/asset` — public/timeline-lanes.js:50 ({ name, shot, base, path })
 export const timelineAsset = (b: NameBody & { shot: string; base: number; path: string }) => write(`/api/timeline/asset`, b, [...edits(b.name), keys.timelineMedia(b.name), keys.media(b.name)]);
 // `/api/timing/beat` — public/timeline-markers.js:55 (the shared markers send it; see markers.ts)
-export const timingBeat = (b: NameBody) => write(`/api/timing/beat`, b, [keys.timing(b.name)]);
 // `/api/timing/word` — public/timeline-markers.js:60
-export const timingWord = (b: NameBody) => write(`/api/timing/word`, b, [keys.timing(b.name)]);
 // `/api/timing/undo` — public/timeline-markers.js:63
-export const timingUndo = (b: NameBody) => write(`/api/timing/undo`, b, [keys.timing(b.name)]);
 // `/api/timing/word-sync` — public/timeline-markers.js:70
-export const timingWordSync = (b: NameBody) => write(`/api/timing/word-sync`, b, [keys.jobs(b.name)]);
 // `/api/agents/refresh` — public/ext-agents.js:39 (answers the new scan)
 export const agentsRefresh = () => write(`/api/agents/refresh`, {}, [keys.agents()]);
 // `/api/agents/probe` — public/ext-agents.js:61 ({ id, cap })

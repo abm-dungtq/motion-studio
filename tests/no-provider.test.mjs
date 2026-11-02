@@ -75,9 +75,7 @@ test("routes that need a provider answer 503 with the reason; the rest still wor
   assert.equal(patch.status, 503);
   assert.equal((await http("POST", "/api/patch", { body: { name: "demo" } })).status, 403, "the token check comes first");
   assert.deepEqual((await http("GET", "/api/directions")).json, { seams: [], directions: [] });
-  assert.deepEqual((await http("GET", "/api/cases?q=x")).json, []);
   const scenes = await http("GET", "/api/library?kind=scenes&limit=100");
   assert.equal(scenes.status, 200);
   assert.ok(scenes.json.items.every((s) => s.source === "library"));
-  assert.equal((await http("GET", "/api/settings")).status, 200);
 });

@@ -70,8 +70,8 @@ const TYPES = {
 };
 const statusOf = (EXIT) => ({ [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.invalid]: 422, [EXIT.nothingToUndo]: 422, [EXIT.nothingToRedo]: 422, [EXIT.busy]: 503, [EXIT.usage]: 400 });
 // Routes that work without a provider; every other /api route answers 503 when there is none.
-const FREE = new Set(["/api/projects", "/api/status", "/api/agent", "/api/media/browse", "/api/media", "/api/jobs", "/api/settings", "/api/files", "/api/sounds", "/api/library",
-  "/api/directions", "/api/cases", "/api/styles", "/api/media/register", "/api/sounds/import", "/api/jobs/cancel"]);
+const FREE = new Set(["/api/projects", "/api/status", "/api/agent", "/api/media/browse", "/api/media", "/api/jobs", "/api/files", "/api/sounds", "/api/library",
+  "/api/directions", "/api/media/register", "/api/sounds/import", "/api/jobs/cancel"]);
 
 // The transitions a directions file offers, as { id, kind }: seams is a list of { id, kind, … }
 // (an older file had an object keyed by id). Ids in seam_classes.banned are left out.
@@ -87,7 +87,7 @@ export function transitionItems(d) {
 // Extension routes (lib/routes.mjs) may not reuse one.
 export const BUILTIN = ["/", "/index.html", "/hf/runtime.js",
   "/api/projects", "/api/status", "/api/project", "/api/log", "/api/requests", "/api/agent", "/api/media/browse", "/api/media", "/api/jobs",
-  "/api/settings", "/api/files", "/api/sounds", "/api/gates", "/api/directions", "/api/library", "/api/cases", "/api/styles", "/api/events",
+  "/api/files", "/api/sounds", "/api/gates", "/api/directions", "/api/library", "/api/events",
   "/api/import", "/api/patch", "/api/undo", "/api/redo", "/api/director", "/api/projects/new", "/api/media/register", "/api/sounds/import",
   "/api/director/answer", "/api/director/cancel", "/api/jobs/cancel", "/api/export", "/api/bundle"];
 // The routes/*.mjs of this checkout; createServer({ routes }) replaces them (tests).
@@ -374,7 +374,6 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
       }
       if (p === "/api/media") { const pd = projectDir(q("name")); return pd.error ? send(res, pd.status, { error: pd.error }) : send(res, 200, readMedia(pd.dir)); }
       if (p === "/api/jobs") { const pd = projectDir(q("name")); return pd.error ? send(res, pd.status, { error: pd.error }) : send(res, 200, listJobs(q("name"))); }
-      if (p === "/api/settings") return send(res, 200, { director: { runner: runnerSetting() } });
       if (p === "/api/files") {
         const pd = projectDir(q("name"));
         if (pd.error) return send(res, pd.status, { error: pd.error });
@@ -404,26 +403,12 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
       }
       if (p === "/api/library") {
         try {
-          return send(res, 200, libraryQuery({ kind: q("kind") ?? "videos", q: String(q("q") ?? "").slice(0, 200), cat: q("cat") ?? "", featured: q("featured") === "1", offset: q("offset"), limit: q("limit") }, P ? { stylesDir: P.library.stylesDir, directionsFile: P.library.directionsFile, source: { id: P.id, label: P.label } } : {}));
+          return send(res, 200, libraryQuery({ kind: q("kind") ?? "videos", q: String(q("q") ?? "").slice(0, 200), cat: q("cat") ?? "", featured: q("featured") === "1", offset: q("offset"), limit: q("limit") }, P ? { directionsFile: P.library.directionsFile, source: { id: P.id, label: P.label } } : {}));
         } catch (e) { return send(res, e.status ?? 500, { error: e.message }); }
       }
       if (p.startsWith("/library/thumb/")) {
         const f = thumbFile(p.slice("/library/thumb/".length));
         return f ? serveFile(req, res, f) : send(res, 404, "không có ảnh");
-      }
-      if (p === "/api/cases") {
-        if (!P) return send(res, 200, []);
-        const args = ["--json", "--limit", "12", "--max-chars", "600"];
-        for (const k of String(q("q") ?? "").split(/\s+/).filter(Boolean).slice(0, 6)) args.push("--keyword", k);
-        const cat = q("category");
-        if (cat) { if (!/^[a-z-]+$/.test(cat)) return send(res, 400, { error: "category không hợp lệ" }); args.push("--category", cat); }
-        const r = await run(P.commands.cases, args);
-        return r.code ? send(res, 200, []) : send(res, 200, JSON.parse(r.stdout || "[]"));
-      }
-      if (p === "/api/styles") {
-        if (!P) return send(res, 200, []);
-        const r = await run(P.commands.styles, ["find", String(q("q") ?? "").slice(0, 200) || "minimal", "--json"]);
-        try { return send(res, 200, JSON.parse(r.stdout || "[]")); } catch { return send(res, 200, []); }
       }
       if (p === "/api/events") {
         const pd = withManifest(q("name"));

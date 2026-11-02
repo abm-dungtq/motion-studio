@@ -4,7 +4,7 @@ import { chmodSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { fetchLibrary, readyDir, SPARSE, allowed } from "../lib/lemo/fetch.mjs";
+import { fetchLibrary, readyDir, SPARSE, allowed, PIN, pinFor } from "../lib/lemo/fetch.mjs";
 import { gitLibrary } from "./fixtures/lemo/make.mjs";
 
 const made = [];
@@ -72,4 +72,16 @@ test("a bad pin is refused before any git call", async () => {
   await assert.rejects(fetchLibrary({ home: tmp("lemo-home-"), pin: { repo: lib.url, sha: "abc" }, git: g.git }), /sha/);
   await assert.rejects(fetchLibrary({ home: tmp("lemo-home-"), pin: { repo: "ext::sh -c x", sha: lib.sha }, git: g.git }), /repo/);
   assert.deepEqual(g.calls(), []);
+});
+
+test("pinFor takes the provider's sha for the same repo, else keeps pin.json", () => {
+  const d = tmp("lemo-pin-");
+  const write = (o) => { const f = join(d, `${Math.random().toString(36).slice(2)}.json`); writeFileSync(f, JSON.stringify(o)); return f; };
+  const sha = "a".repeat(40);
+  assert.equal(pinFor({ lemo: { pinFile: write({ repo: PIN.repo, sha }) } }).sha, sha);
+  assert.equal(pinFor({ lemo: { pinFile: write({ repo: PIN.repo, sha }) } }).slugs, PIN.slugs, "the rest of pin.json stays");
+  assert.equal(pinFor({ lemo: { pinFile: write({ repo: "https://example.com/other.git", sha }) } }), PIN, "another repo is ignored");
+  assert.equal(pinFor({ lemo: { pinFile: write({ repo: PIN.repo, sha: "abc" }) } }), PIN, "a bad sha is ignored");
+  assert.equal(pinFor({ lemo: { pinFile: join(d, "missing.json") } }), PIN);
+  assert.equal(pinFor(null), PIN);
 });

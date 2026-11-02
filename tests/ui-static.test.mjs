@@ -103,8 +103,8 @@ test("without a UI page GET / answers 503 and says to run setup", async () => {
 test("BUILTIN is unchanged: serving the UI adds no API path", () => {
   assert.deepEqual(BUILTIN, ["/", "/index.html", "/hf/runtime.js",
     "/api/projects", "/api/status", "/api/project", "/api/log", "/api/requests", "/api/agent", "/api/media/browse", "/api/media", "/api/jobs",
-    "/api/settings", "/api/files", "/api/sounds", "/api/gates", "/api/directions", "/api/library", "/api/cases", "/api/styles", "/api/events",
+    "/api/files", "/api/sounds", "/api/gates", "/api/directions", "/api/library", "/api/events",
     "/api/import", "/api/patch", "/api/undo", "/api/redo", "/api/director", "/api/projects/new", "/api/media/register", "/api/sounds/import",
     "/api/director/answer", "/api/director/cancel", "/api/jobs/cancel", "/api/export", "/api/bundle"]);
-  assert.equal(BUILTIN.length, 34);
+  assert.equal(BUILTIN.length, 31);
 });
