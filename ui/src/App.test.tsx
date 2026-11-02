@@ -18,7 +18,7 @@ describe("App", () => {
     renderUi(<App />);
     await act(() => boot());
     act(() => useStudio.getState().openDialog("export"));
-    expect(await screen.findByRole("dialog", { name: "Xuất bản" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Xuất" })).toBeInTheDocument();
     const seen = new Set(Array.from(document.querySelectorAll("[data-slot]"), (e) => e.getAttribute("data-slot")));
     act(() => useStudio.getState().openDialog("agent"));
     await screen.findByRole("dialog", { name: "Agent trên máy" });

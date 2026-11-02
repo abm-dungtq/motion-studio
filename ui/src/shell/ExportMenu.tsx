@@ -1,4 +1,4 @@
-// "Xuất bản" in the top bar: export the video, export the NLE layer bundle (public/panels.js:353-354),
+// "Xuất" in the top bar: export the video, export the NLE layer bundle (public/panels.js:353-354),
 // or open the export dialog with the gates and the exported files. The two exports need a project.
 import { ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -15,13 +15,13 @@ export function ExportMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={!m}>
-        <Button variant="primary" data-export-menu="" title={m ? undefined : "Mở một dự án để xuất"}>Xuất bản<ChevronDown /></Button>
+        <Button variant="primary" data-export-menu="" title={m ? undefined : "Mở một dự án để xuất"}>Xuất<ChevronDown /></Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem disabled={!m} onSelect={() => { void actions.exportVideo(); }}>Xuất video</DropdownMenuItem>
         <DropdownMenuItem disabled={!m} title={BUNDLE_TITLE} onSelect={() => { void actions.exportBundle(); }}>Xuất bộ lớp dựng</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => useStudio.getState().openDialog("export")}>Cổng & tệp đã xuất…</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => useStudio.getState().openDialog("export")}>Cổng & file đã xuất…</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

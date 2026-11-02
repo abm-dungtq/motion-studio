@@ -10,7 +10,7 @@ import { useStudio } from "@/store/studio.ts";
 import { Button } from "./controls.tsx";
 
 const ACTOR: Record<string, string> = {
-  human: "bạn sửa", user: "bạn sửa", studio: "Studio", director: "đạo diễn AI", tool: "công cụ", import: "nhập từ dự án cũ",
+  human: "bạn sửa", user: "bạn sửa", studio: "Studio", director: "đạo diễn", tool: "công cụ", import: "nhập từ dự án cũ",
 };
 const actorLabel = (a?: string): string => (a ? ACTOR[a] ?? a : "");
 const TIME = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });

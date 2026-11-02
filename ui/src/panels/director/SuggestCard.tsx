@@ -9,8 +9,10 @@
 // command, never by this card. What the provider can do (save the mode, build a pitch) is read from
 // the answers, so a newer provider changes the sentences without a change here. When the provider
 // suggests reference cases (CASES.md), they sit above the directions with a link and a reason each;
-// a "Jev không chạy" warning in that file is shown in red, never hidden.
-import { useEffect, useRef, useState } from "react";
+// a "Jev không chạy" warning in that file is shown in red, never hidden. The card speaks the user's
+// words: "Xếp hạng bằng AI" and "Xếp theo từ khoá" for the two sources (their own names stay in
+// title and data-source), and the workflow steps in Vietnamese.
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { queryClient } from "@/api/client.ts";
 import * as Q from "@/api/queries.ts";
 import type { SuggestCases, SuggestChooseResult, SuggestItem, SuggestPick, SuggestRecord, SuggestResponse, SuggestSide } from "@/api/types.ts";
@@ -21,6 +23,18 @@ import { useStudio } from "@/store/studio.ts";
 const TITLE = "Gợi ý cho dự án";
 const SELECT = "h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50";
 const MAX_ITEMS = 3;
+// The workflow steps in the user's words; "choose" is part of picking the direction. A step not
+// listed here shows its own name.
+export const STEP_LABEL: Record<string, string | null> = {
+  pitch: "chọn hướng", choose: null, recipe: "công thức", timing: "mốc thời gian", demo: "clip nháp",
+  wordSync: "khớp chữ", preflight: "kiểm trước khi xuất", render: "xuất", beatGrid: "đo nhịp nhạc",
+};
+const stepLabel = (step: string): string | null => (step in STEP_LABEL ? STEP_LABEL[step]! : step);
+
+// `name` in a reason becomes code, the way the provider writes file and command names.
+export function withCode(text: string): ReactNode {
+  return text.split(/`([^`]+)`/).map((part, i) => (i % 2 ? <code key={i} className="rounded-sm bg-panel-2 px-1 font-mono text-[0.95em]">{part}</code> : <Fragment key={i}>{part}</Fragment>));
+}
 
 type ColumnKey = "jev" | "det";
 interface Column { key: ColumnKey; side: SuggestSide }
@@ -46,6 +60,7 @@ function Option({ item, role, checked, onPick, disabled }: { item: SuggestItem; 
       data-role={role}
       data-source={item.source}
       data-id={item.id}
+      title={item.id}
       disabled={disabled}
       onClick={onPick}
       className={cn(
@@ -53,29 +68,34 @@ function Option({ item, role, checked, onPick, disabled }: { item: SuggestItem; 
         checked ? "border-primary bg-panel-2" : "border-border bg-panel hover:bg-panel-2",
       )}
     >
-      <span className="flex items-center justify-between gap-2">
-        <span className="font-semibold">{item.label} <span className="text-xs text-muted-foreground">({item.id})</span></span>
+      {/* Below 400 px of card the score goes under the name instead of beside it. */}
+      <span className="flex flex-col items-start gap-1 @min-[400px]:flex-row @min-[400px]:items-center @min-[400px]:justify-between @min-[400px]:gap-2">
+        <span className="font-semibold">{item.label}</span>
         <ScoreBar score={item.score} />
       </span>
-      <span className="text-xs whitespace-normal text-muted-foreground">{item.reason}</span>
+      <span className="text-xs whitespace-normal text-muted-foreground">{withCode(item.reason)}</span>
     </button>
   );
 }
 
-const sourceLabel = (k: ColumnKey) => (k === "jev" ? "Jev" : "Tất định");
+const sourceLabel = (k: ColumnKey) => (k === "jev" ? "Xếp hạng bằng AI" : "Xếp theo từ khoá");
+const sourceName = (k: ColumnKey) => (k === "jev" ? "Jev" : "Tất định");
 // The header chip names the card's source. While observing it names both sources evenly, so the
 // header does not lean towards either column before a default source has been decided.
-const sourceChip = (r: SuggestRecord) =>
-  r.source === "observe" && r.jev ? "Jev và tất định, chưa chọn nguồn mặc định" : r.shown === "jev" && r.jev ? "Jev" : "Tất định";
+const chipKey = (r: SuggestRecord): ColumnKey | "both" => (r.source === "observe" && r.jev ? "both" : r.shown === "jev" && r.jev ? "jev" : "det");
+const sourceChip = (r: SuggestRecord): { text: string; title: string } => {
+  const k = chipKey(r);
+  return k === "both" ? { text: "Hai cách gợi ý", title: "Jev và tất định, chưa chọn nguồn mặc định" } : { text: sourceLabel(k), title: sourceName(k) };
+};
 
 function chooseNotice(d: SuggestChooseResult): Notice {
   const extra = d.mode && d.mode.saved === false && d.mode.reason ? d.mode.reason : null;
   if (d.outcome === "chosen") {
     const text = d.initialized
       ? `Đã tạo pitch với hướng ${d.direction} đứng đầu và chọn hướng này. BRIEF.md đã được cập nhật.`
-      : `Đã chọn hướng ${d.direction} với style ${d.style ?? "mặc định của hướng"}. BRIEF.md đã được cập nhật.`;
+      : `Đã chọn hướng ${d.direction} với phong cách ${d.style ?? "mặc định của hướng"}. BRIEF.md đã được cập nhật.`;
     const kept = d.requested_style
-      ? `Bạn chọn style ${d.requested_style}, nhưng lệnh chọn hướng của plugin giữ style ${d.style ?? "mặc định"} trong BRIEF.md.`
+      ? `Bạn chọn phong cách ${d.requested_style}, nhưng lệnh chọn hướng của plugin giữ phong cách ${d.style ?? "mặc định"} trong BRIEF.md.`
       : null;
     return { kind: "ok", text, extra: [kept, extra].filter(Boolean).join(" ") || null, picks: null };
   }
@@ -89,9 +109,10 @@ function Cases({ cases, stale }: { cases: SuggestCases; stale: boolean }) {
   return (
     <div className="flex flex-col gap-1.5" data-role="suggest-cases">
       <b className="text-xs font-medium text-muted-foreground">Case mẫu từ thư viện</b>
-      {stale ? <p role="status" data-role="suggest-cases-stale" className="m-0 text-xs font-semibold">Brief đã đổi sau lần gợi ý case này. Bấm Gợi ý lại để xếp hạng case theo brief mới.</p> : null}
+      {stale ? <p role="status" data-role="suggest-cases-stale" className="m-0 text-xs font-semibold text-warn"><span aria-hidden="true">! </span>Brief đã đổi sau lần gợi ý case này. Bấm Gợi ý lại để xếp hạng case theo brief mới.</p> : null}
       {cases.warning ? <p role="alert" data-role="suggest-cases-warning" className="m-0 rounded-sm bg-danger-fill px-2 py-1.5 text-xs font-semibold text-primary-foreground">{cases.warning}</p> : null}
       {cases.notes.map((n) => <p key={n} className="m-0 text-xs text-muted-foreground">{n}</p>)}
+      <div className={cn("flex flex-col gap-1.5", stale && "opacity-60")}>
       {cases.items.length ? cases.items.map((c) => (
         <div key={c.id} data-role="suggest-case" data-id={c.id} className="flex flex-col gap-0.5 rounded-md border border-border bg-panel p-2 text-sm">
           {/* Numbered so "theo case 2" in the note below names a card; the corpus id stays in the title. */}
@@ -101,10 +122,11 @@ function Cases({ cases, stale }: { cases: SuggestCases; stale: boolean }) {
             <span className="text-xs font-normal text-muted-foreground">{` · @${c.author} · ${c.category}`}</span>
           </span>
           <span className="text-xs whitespace-normal">{c.summary}</span>
-          {c.why ? <span className="text-xs whitespace-normal text-muted-foreground">{`Vì sao: ${c.why}`}</span> : null}
+          {c.why ? <span className="text-xs whitespace-normal text-muted-foreground">Vì sao: {withCode(c.why)}</span> : null}
           {c.demo && c.demo !== c.url ? <a href={c.demo} target="_blank" rel="noreferrer noopener" data-role="suggest-case-demo" className="text-xs underline">Xem video demo</a> : null}
         </div>
       )) : <pre className="m-0 text-xs whitespace-pre-wrap">{cases.text}</pre>}
+      </div>
       {cases.items.length ? <p className="m-0 text-xs text-muted-foreground">Muốn làm theo một case? Nhắn đạo diễn, ví dụ "theo case 2": đạo diễn viết prompt chuyển thể cho video này, giải thích vì sao và gửi lại link video demo.</p> : null}
     </div>
   );
@@ -163,7 +185,7 @@ function Choices({ name, resp, record }: { name: string; resp: SuggestResponse; 
         <div data-role={observe ? "suggest-columns" : undefined} className={cn("gap-2", observe ? "grid grid-cols-2" : "flex flex-col")}>
           {columns.map((c) => (
             <div key={c.key} role="radiogroup" aria-label={`Hướng theo ${sourceLabel(c.key)}`} className="flex min-w-0 flex-col gap-1.5">
-              {observe ? <strong className="text-xs">{sourceLabel(c.key)}</strong> : null}
+              {observe ? <strong className="text-xs" title={sourceName(c.key)}>{sourceLabel(c.key)}</strong> : null}
               {c.side.directions.slice(0, MAX_ITEMS).map((d) => (
                 <Option key={d.id} item={d} role="suggest-direction" checked={d.id === dirSel} disabled={busy} onPick={() => pickDirection(d.id)} />
               ))}
@@ -171,18 +193,22 @@ function Choices({ name, resp, record }: { name: string; resp: SuggestResponse; 
           ))}
         </div>
         {observe && detTop && jevTop ? (
-          <p className="m-0 text-xs text-muted-foreground" data-role="suggest-compare">
-            {`Gợi ý tất định: ${detTop.label}. ${detTop.id === jevTop.id ? "Trùng" : "Khác"} với Jev ở hạng 1.`}
+          <p
+            className="m-0 text-xs text-muted-foreground"
+            data-role="suggest-compare"
+            title={`Gợi ý tất định: ${detTop.label} (${detTop.id}). ${detTop.id === jevTop.id ? "Trùng" : "Khác"} với Jev ở hạng 1 (${jevTop.id}).`}
+          >
+            {`Hạng 1 theo từ khoá: ${detTop.label}. ${detTop.id === jevTop.id ? "Trùng" : "Khác"} với hạng 1 của AI.`}
           </p>
         ) : null}
       </div>
 
       {dirSel !== null ? (
-        <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Style">
-          <b className="text-xs font-medium text-muted-foreground">Style</b>
+        <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Phong cách">
+          <b className="text-xs font-medium text-muted-foreground">Phong cách</b>
           {styles.length ? styles.map((s) => (
             <Option key={s.id} item={s} role="suggest-style" checked={s.id === styleSel} disabled={busy} onPick={() => setStyleOverride(s.id)} />
-          )) : <p className="m-0 text-xs text-muted-foreground">Chưa có style hợp với hướng này. Lệnh chọn hướng sẽ dùng style mặc định của hướng.</p>}
+          )) : <p className="m-0 text-xs text-muted-foreground">Chưa có phong cách hợp với hướng này. Lệnh chọn hướng sẽ dùng phong cách mặc định của hướng.</p>}
         </div>
       ) : null}
 
@@ -195,9 +221,9 @@ function Choices({ name, resp, record }: { name: string; resp: SuggestResponse; 
         {resp.can_save_mode ? null : <p className="m-0 text-xs text-muted-foreground">Chế độ này đi kèm lời yêu cầu gửi đạo diễn, chưa lưu vào project.json.</p>}
         {workflow ? (
           <>
-            {workflow.steps.length ? <p className="m-0 text-xs" data-role="suggest-steps">{workflow.steps.join(" → ")}</p> : null}
-            {workflow.skip.map((s) => <p key={s.step} className="m-0 text-xs text-muted-foreground">{`Bỏ qua: ${s.step} (${s.reason})`}</p>)}
-            <p className="m-0 text-xs text-muted-foreground">{workflow.reason}</p>
+            {workflow.steps.length ? <p className="m-0 text-xs" data-role="suggest-steps" title={workflow.steps.join(" → ")}>{workflow.steps.map(stepLabel).filter(Boolean).join(" → ")}</p> : null}
+            {workflow.skip.map((s) => <p key={s.step} className="m-0 text-xs text-muted-foreground">Bỏ qua: {stepLabel(s.step) ?? s.step} ({withCode(s.reason)})</p>)}
+            <p className="m-0 text-xs text-muted-foreground">{withCode(workflow.reason)}</p>
           </>
         ) : null}
       </div>
@@ -258,21 +284,22 @@ function Card({ name }: { name: string }) {
   };
 
   return (
-    <section data-role="suggest-card" aria-label={TITLE} className="flex flex-col gap-2 rounded-md border border-border bg-panel p-3">
+    <section data-role="suggest-card" aria-label={TITLE} className="@container flex flex-col gap-2 rounded-md border border-border bg-panel p-3">
       <div className="flex flex-wrap items-center gap-2" data-role="suggest-header">
         <strong className="text-sm whitespace-nowrap">{TITLE}</strong>
         {record ? (
-          <span data-role="suggest-source" className="min-w-0 rounded-sm bg-panel-2 px-1.5 py-0.5 text-xs text-muted-foreground">
-            {sourceChip(record)}
+          <span data-role="suggest-source" title={sourceChip(record).title} className="min-w-0 rounded-sm bg-panel-2 px-1.5 py-0.5 text-xs text-muted-foreground">
+            {sourceChip(record).text}
           </span>
         ) : null}
-        <Button className="ml-auto shrink-0 whitespace-nowrap" data-role="suggest-run" disabled={running || !resp} onClick={() => { void run(); }}>{record ? "Gợi ý lại" : "Gợi ý"}</Button>
+        <Button className="ml-auto shrink-0 whitespace-nowrap" data-role="suggest-run" aria-describedby={record ? "suggest-run-note" : undefined} disabled={running || !resp} onClick={() => { void run(); }}>{record ? "Gợi ý lại" : "Gợi ý"}</Button>
+        {record ? <p id="suggest-run-note" className="m-0 w-full text-right text-xs text-muted-foreground">Gọi Jev, ghi lại CASES.md</p> : null}
       </div>
       {suggest.error ? <p role="alert" className="m-0 text-sm text-muted-foreground">{`Chưa đọc được gợi ý: ${suggest.error.message}`}</p> : null}
       {runErr ? <p role="alert" data-role="suggest-run-err" className="m-0 rounded-sm bg-danger-fill px-2 py-1.5 text-sm font-semibold text-primary-foreground">{runErr}</p> : null}
       {record?.error ? <p role="status" className="m-0 text-xs text-muted-foreground">{record.error.message}</p> : null}
       {resp?.cases ? <Cases cases={resp.cases} stale={Boolean(resp.cases_stale)} /> : null}
-      {resp && !record ? <p className="m-0 text-sm text-muted-foreground">{`Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, style và quy trình${resp.can_suggest_cases && !resp.cases ? ", và tìm case mẫu trong thư viện" : ""} cho dự án này.`}</p> : null}
+      {resp && !record ? <p className="m-0 text-sm text-muted-foreground">{`Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, phong cách và quy trình${resp.can_suggest_cases && !resp.cases ? ", và tìm case mẫu trong thư viện" : ""} cho dự án này.`}</p> : null}
       {resp && record ? <Choices key={`${record.hash}:${record.at}`} name={name} resp={resp} record={record} /> : null}
     </section>
   );

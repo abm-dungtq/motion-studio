@@ -27,7 +27,7 @@ describe("VersionSelect", () => {
     await userEvent.click(button);
     const list = await screen.findByRole("list", { name: "Các phiên bản" });
     expect(within(list).getAllByRole("listitem").map((o) => o.textContent)).toEqual([
-      `v3 · đạo diễn AI · ${time} · hiện tại`, `v2 · bạn sửa · ${time}`, "v1 · nhập từ dự án cũ",
+      `v3 · đạo diễn · ${time} · hiện tại`, `v2 · bạn sửa · ${time}`, "v1 · nhập từ dự án cũ",
     ]);
     expect(screen.getByText("Quay lại bản trước bằng nút Hoàn tác")).toBeInTheDocument();
     expect(screen.queryAllByRole("menuitem")).toHaveLength(0);
@@ -37,6 +37,6 @@ describe("VersionSelect", () => {
     expect(versionTime(AT)).toMatch(/^\d\d:\d\d \d\d[-/]\d\d$/);
     expect(versionTime(undefined)).toBe("");
     expect(versionTime("not a date")).toBe("");
-    expect(versionLine({ v: 12, actor: "director", at: AT }, false)).toBe(`v12 · đạo diễn AI · ${time}`);
+    expect(versionLine({ v: 12, actor: "director", at: AT }, false)).toBe(`v12 · đạo diễn · ${time}`);
   });
 });

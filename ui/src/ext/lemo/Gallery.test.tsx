@@ -38,12 +38,48 @@ describe("Gallery", () => {
     expect(screen.getByTestId("lemo-count")).toHaveTextContent("3 / 3 phong cách");
     expect(screen.getByPlaceholderText("Tìm: truyện tranh, thuỷ màu, tin tức…")).toBeInTheDocument();
     const group = screen.getByLabelText("Nhóm phong cách");
-    expect([...group.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Mọi nhóm (3)", "Hội hoạ (2)", "Truyền thống Đông Á (1)", "Tin tức (1)"]);
+    expect([...group.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Mọi nhóm (3)", "Hội hoạ (1)", "Truyền thống Đông Á (1)", "Tin tức (1)", "Chưa phân nhóm (0)"]);
+    expect(group.querySelector('option[value="_none"]')).toBeDisabled();
+    expect(screen.getByTestId("lemo-filters")).toHaveClass("sticky");
+    expect(screen.getByTestId("lemo-count")).toHaveAttribute("role", "status");
     expect(screen.getByTestId("lemo-credit")).toHaveTextContent("Ảnh và phim mẫu: LemoLab, CC BY 4.0, github.com/lemomo-ai/lemo-opuscar. Mã và tài liệu: MIT.");
     expect(screen.getAllByRole("link", { name: "Xem phim mẫu ↗" })).toHaveLength(3);
     const first = screen.getAllByTestId("lemo-card")[0];
     expect(within(first).getByText("Lớp canvas")).toBeInTheDocument();
-    await waitFor(() => expect(within(first).getByRole("button", { name: "Áp cho dự án" })).toBeEnabled());
+    await waitFor(() => expect(within(first).getByRole("button", { name: "Áp Thuỷ màu cho dự án" })).toBeEnabled());
+  });
+
+  it("Phong cách riêng sits above the grid", async () => {
+    setup();
+    const mine = await screen.findByTestId("lemo-mine");
+    const grid = await screen.findByTestId("lemo-grid");
+    expect(mine.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("the source filter keeps ready-made, lemo or own styles, and the group counts follow it", async () => {
+    setup(stylesRoute({ withProfiles: true }));
+    await waitFor(() => expect(titles()).toHaveLength(4));
+    const groupNames = () => [...screen.getByLabelText("Nhóm phong cách").querySelectorAll("option")].map((o) => o.textContent);
+    expect([...screen.getByLabelText("Nguồn phong cách").querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Mọi nguồn (4)", "Dựng sẵn (1)", "lemo (3)", "Của bạn (0)"]);
+    expect(groupNames()).toContain("Chưa phân nhóm (1)");
+    await userEvent.selectOptions(screen.getByLabelText("Nguồn phong cách"), "profile");
+    await waitFor(() => expect(titles()).toEqual(["Truyện tranh đa vũ trụ"]));
+    expect(groupNames()).toEqual(["Mọi nhóm (1)", "Hội hoạ (0)", "Truyền thống Đông Á (0)", "Tin tức (0)", "Chưa phân nhóm (1)"]);
+    expect(window.location.search).toContain("source=profile");
+    await userEvent.selectOptions(screen.getByLabelText("Nguồn phong cách"), "library");
+    await waitFor(() => expect(titles()).toEqual(LIBRARY.map((r) => r.ten)));
+    await userEvent.selectOptions(screen.getByLabelText("Nguồn phong cách"), "");
+    expect(window.location.search).not.toContain("source=");
+  });
+
+  it("Của bạn with no own style says so and offers to make one", async () => {
+    setup();
+    await waitFor(() => expect(titles()).toHaveLength(3));
+    useLemo.getState().setSource("mine");
+    expect(await screen.findByText("Bạn chưa có phong cách riêng.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Tạo phong cách riêng" }));
+    expect(screen.getByTestId("lemo-mine").querySelector("details")).toHaveProperty("open", true);
+    useLemo.getState().setSource("");
   });
 
   it("search narrows the cards after the debounce and keeps the focus", async () => {
@@ -89,16 +125,6 @@ describe("Gallery", () => {
     expect(tags).toEqual(["Dựng sẵn", "Lớp canvas", "Tham khảo", "Tham khảo"]);
   });
 
-  it("the type filter asks for that type", async () => {
-    const fetch = setup(stylesRoute({ withProfiles: true }));
-    await waitFor(() => expect(titles()).toHaveLength(4));
-    await userEvent.selectOptions(screen.getByLabelText("Loại phong cách"), "ready");
-    await waitFor(() => expect(titles()).toEqual(["Truyện tranh đa vũ trụ", "Thuỷ màu"]));
-    expect(fetch.mock.calls.map(([u]) => String(u)).filter((u) => u.startsWith("/api/lemo/styles")).at(-1)).toContain("type=ready");
-    await userEvent.selectOptions(screen.getByLabelText("Loại phong cách"), "ref");
-    await waitFor(() => expect(titles()).toEqual(["Tranh khắc gỗ", "Bàn tin tức"]));
-  });
-
   it("a profile: Xem hồ sơ shows its text, and apply writes style_profile after the question", async () => {
     setup(stylesRoute({ withProfiles: true }), { "/api/lemo/guide": { slug: "comic-multiverse", source: "profile", text: "comic-multiverse — Truyện tranh đa vũ trụ" } });
     await waitFor(() => expect(titles()).toHaveLength(4));
@@ -109,9 +135,11 @@ describe("Gallery", () => {
     expect(screen.queryByText(/Văn bản của bên thứ ba/)).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Đóng" }));
     vi.mocked(lemoApply).mockResolvedValue({ status: 200, data: { runner: "cli" } });
-    await waitFor(() => expect(within(card).getByRole("button", { name: "Áp cho dự án" })).toBeEnabled());
-    await userEvent.click(within(card).getByRole("button", { name: "Áp cho dự án" }));
-    expect(await answerConfirm(true)).toBe('Áp "Truyện tranh đa vũ trụ" cho cả dự án: ghi style_profile vào BRIEF.md và nhờ đạo diễn dựng lại theo style profile?');
+    const apply = within(card).getByRole("button", { name: "Áp Truyện tranh đa vũ trụ cho dự án" });
+    await waitFor(() => expect(apply).toBeEnabled());
+    await userEvent.click(apply);
+    expect(screen.getByRole("button", { name: "Áp và dựng lại 2 shot" })).toBeInTheDocument();
+    expect(await answerConfirm(true)).toBe('Áp "Truyện tranh đa vũ trụ" cho cả dự án: ghi style_profile vào BRIEF.md và nhờ đạo diễn dựng lại theo phong cách dựng sẵn?');
     await waitFor(() => expect(lemoApply).toHaveBeenCalledWith({ name: NAME, slug: PROFILES[0].slug, source: "profile", mode: "profile", shot: null }));
   });
 
@@ -134,9 +162,9 @@ describe("Gallery", () => {
 
   it("apply to the project: Huỷ sends nothing", async () => {
     setup();
-    await waitFor(() => expect(screen.getAllByRole("button", { name: "Áp cho dự án" })[0]).toBeEnabled());
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /^Áp .+ cho dự án$/ })[0]).toBeEnabled());
     const native = vi.spyOn(window, "confirm");
-    await userEvent.click(screen.getAllByRole("button", { name: "Áp cho dự án" })[1]);
+    await userEvent.click(screen.getAllByRole("button", { name: /^Áp .+ cho dự án$/ })[1]);
     expect(await answerConfirm(false)).toBe('Áp "Tranh khắc gỗ" cho cả dự án: nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)?');
     expect(lemoApply).not.toHaveBeenCalled();
     expect(native).not.toHaveBeenCalled();
@@ -144,11 +172,11 @@ describe("Gallery", () => {
 
   it("apply a canvas layer: 409 exists asks to replace, then says it was applied", async () => {
     setup();
-    await waitFor(() => expect(screen.getAllByRole("button", { name: "Áp cho dự án" })[0]).toBeEnabled());
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /^Áp .+ cho dự án$/ })[0]).toBeEnabled());
     vi.mocked(lemoApply)
       .mockResolvedValueOnce({ status: 409, error: "đã có lớp", data: { code: "exists" } })
       .mockResolvedValueOnce({ status: 200, data: { runner: "mcp" } });
-    await userEvent.click(screen.getAllByRole("button", { name: "Áp cho dự án" })[0]);
+    await userEvent.click(screen.getAllByRole("button", { name: /^Áp .+ cho dự án$/ })[0]);
     const asked = [await answerConfirm(true), await answerConfirm(true)];
     await waitFor(() => expect(lemoApply).toHaveBeenCalledTimes(2));
     expect(vi.mocked(lemoApply).mock.calls[0][0]).toEqual({ name: NAME, slug: "watercolor", source: "library", mode: "layer", shot: null });

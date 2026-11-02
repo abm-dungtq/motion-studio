@@ -27,3 +27,7 @@ export const when = (iso: unknown): string => {
 export const fileUrl = (name: string, path: string): string => `/p/${encodeURIComponent(name)}/${path.split("/").map(encodeURIComponent).join("/")}`;
 
 export const nfmt = (n: unknown): string => (Number(n) >= 1000 ? `${(Number(n) / 1000).toFixed(Number(n) >= 10000 ? 0 : 1)}k` : String(n));
+
+// A voice block's label: the delivery tags at the start of a line ("[laughs] Rót hai cốc") are for
+// the voice, not the reader. The block's title keeps the full line.
+export const stripVoiceTags = (text: string): string => text.replace(/^(\s*\[[^\]]+\]\s*)+/, "");

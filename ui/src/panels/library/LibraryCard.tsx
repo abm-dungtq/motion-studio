@@ -63,7 +63,7 @@ function Actions({ kind, row, url }: { kind: LibKind; row: LibRow; url?: string 
   const href = safeUrl(url);
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button disabled={!m} title={m ? "Gửi cho đạo diễn của dự án đang mở" : "Mở một dự án trước"} onClick={() => { void actions.direct({ scope: "project", text: src.use(row) }); }}>Dùng cho dự án</Button>
+      <Button disabled={!m} title={m ? "Gửi cho đạo diễn của dự án đang mở" : "Mở một dự án trước"} onClick={() => { void actions.direct({ scope: "project", text: src.use(row) }); }}>Áp cho dự án</Button>
       {copy ? <Button onClick={() => { void copyText(copy); }}>{src.copyLabel}</Button> : null}
       {href ? <a className={`${LINK} text-sm`} href={href} target="_blank" rel="noopener noreferrer" title={href}>Xem bản gốc</a> : null}
     </div>

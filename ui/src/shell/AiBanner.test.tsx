@@ -38,19 +38,19 @@ function stubPosts(answers: [number, unknown][], gets: Record<string, unknown> =
 describe("AiBanner", () => {
   it("says how many files the turn changed and between which versions", () => {
     setup([turn()]);
-    expect(screen.getByRole("status")).toHaveTextContent("AI đã sửa 3 file, v3 → v5");
-    expect(screen.getByRole("button", { name: "Hoàn tác" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Đạo diễn đã sửa 3 file, v3 → v5");
+    expect(screen.getByRole("button", { name: "Hoàn tác lượt đạo diễn" })).toBeInTheDocument();
   });
 
   it("names overwritten media in the headline", () => {
-    expect(headline(turn({ overwritten: ["assets/voice/01.mp3"] }))).toBe("AI đã sửa 3 file, v3 → v5 · 1 file media bị ghi đè, không hoàn tác được");
+    expect(headline(turn({ overwritten: ["assets/voice/01.mp3"] }))).toBe("Đạo diễn đã sửa 3 file, v3 → v5 · 1 file media bị ghi đè, không hoàn tác được");
   });
 
   it("shows nothing without a finished turn, and no undo without the gateway restore", () => {
     const { container } = setup([{ ...turn(), state: "kept" }]);
     expect(container.querySelector("[data-banner]")).toBeNull();
     queryClient.setQueryData(keys.snapshots("p1"), { snapshots: [turn()], can_restore: false });
-    expect(screen.queryByRole("button", { name: "Hoàn tác" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Hoàn tác lượt đạo diễn" })).toBeNull();
   });
 
   it("Giữ posts keep for the turn", async () => {
@@ -67,8 +67,8 @@ describe("AiBanner", () => {
       [200, { version: 7, files: 3, overwritten: [], created: [], lines: [] }],
     ], { "/api/snapshots": { snapshots: [], can_restore: true } });
     setup([turn()]);
-    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
-    expect(await answerConfirm(true)).toMatch(/Hoàn tác thay đổi của AI/);
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác lượt đạo diễn" }));
+    expect(await answerConfirm(true)).toMatch(/Hoàn tác lượt đạo diễn/);
     expect(await answerConfirm(true)).toMatch(/v5 → v6/);
     await waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[1].body).toEqual({ name: "p1", id: ID, force: true });
@@ -78,8 +78,8 @@ describe("AiBanner", () => {
     const posts = stubPosts([[200, { version: 7, files: 3, overwritten: [], created: [], lines: [] }]], { "/api/snapshots": { snapshots: [], can_restore: true } });
     setup([turn()]);
     expect(screen.getByRole("button", { name: "Giữ" })).toHaveClass("bg-primary");
-    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
-    expect(await answerConfirm(false)).toMatch(/Hoàn tác thay đổi của AI/);
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác lượt đạo diễn" }));
+    expect(await answerConfirm(false)).toMatch(/Hoàn tác lượt đạo diễn/);
     expect(posts).toHaveLength(0);
   });
 
@@ -87,7 +87,7 @@ describe("AiBanner", () => {
     stubPosts([[200, { version: 6, files: 3, overwritten: ["assets/voice/01.mp3"], created: [], lines: [{ id: "l1", text: "Xin chào" }] }]],
       { "/api/snapshots": { snapshots: [], can_restore: true } });
     setup([turn({ overwritten: ["assets/voice/01.mp3"] })]);
-    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác lượt đạo diễn" }));
     await answerConfirm(true);
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("1 file đã bị ghi đè, không lấy lại được: assets/voice/01.mp3");

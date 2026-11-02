@@ -21,7 +21,7 @@ export function Composer() {
       <Textarea
         value={draft}
         rows={3}
-        aria-label="Việc giao cho AI"
+        aria-label="Việc giao cho đạo diễn"
         placeholder="Ví dụ: shot 2 chậm lại, chữ to hơn, thêm logo cuối video…"
         onChange={(e) => useStudio.getState().setDirectorDraft(e.target.value)}
         onKeyDown={(e) => {

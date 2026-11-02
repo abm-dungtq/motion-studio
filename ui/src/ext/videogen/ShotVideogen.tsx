@@ -1,4 +1,4 @@
-// The shot inspector's "AI (Google Flow)" section: one AI image or one AI clip for the shot through
+// The shot inspector's "Flow (Google)" section: one AI image or one AI clip for the shot through
 // gflow-cli (routes/videogen.mjs, docs/videogen.md). Every send may cost Flow credits or quota, so
 // only these buttons start one, after a confirm; an unknown earlier result of the same request needs
 // a second confirm, and a clip Flow already made is downloaded (free) instead of made again. The
@@ -48,7 +48,7 @@ function blocked(st: VgStatus | undefined, kind: VgKind): string | null {
   if (st.waf_until) return `Flow đang chặn vì gửi quá nhiều; chờ tới ${hhmm(st.waf_until)}`;
   if (kind === "video" && st.today >= st.cap) return `Đã đủ ${st.cap} clip hôm nay`;
   if (kind === "image" && st.images_today >= st.image_cap) return `Đã đủ ${st.image_cap} ảnh hôm nay`;
-  if (st.job) return "Đang có một lượt tạo AI khác";
+  if (st.job) return "Đang có một lượt Flow khác";
   return null;
 }
 
@@ -101,8 +101,8 @@ function VgPanel({ name, shot, m }: { name: string; shot: Shot; m: Manifest }) {
   const n = m.shots.findIndex((s) => s.id === shot.id) + 1;
 
   return (
-    <section className="flex flex-col gap-2" aria-label="AI (Google Flow)">
-      <h3 className="m-0 text-sm font-semibold">AI (Google Flow)</h3>
+    <section className="flex flex-col gap-2" aria-label="Flow (Google)">
+      <h3 className="m-0 text-sm font-semibold">Flow (Google)</h3>
       {/* The shot this form sends for stays in view while the form scrolls. */}
       <p data-testid="vg-shot" className="sticky top-0 z-10 m-0 bg-panel py-1 text-sm font-medium">{`Shot ${n} · ${shot.name || shot.id}`}</p>
       <div className="flex gap-2">
@@ -161,7 +161,7 @@ function ImageForm({ name, shot, m, st, images }: FormProps) {
       <Pick label="Model ảnh" value={model} options={opts(IMAGE_MODELS)} onChange={setModel} />
       <Pick label="Khung ảnh" value={aspect} options={opts(IMAGE_ASPECTS)} onChange={setAspect} />
       <div className="flex items-center gap-2">
-        <Button variant="primary" aria-describedby={why ? "vg-why-image" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo ảnh AI</Button>
+        <Button variant="primary" aria-describedby={why ? "vg-why-image" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo ảnh bằng Flow</Button>
         {st && <span className="text-sm text-muted-foreground">{`Còn ${Math.max(0, st.image_cap - st.images_today)} ảnh hôm nay`}</span>}
       </div>
       {why && <p id="vg-why-image" className="m-0 text-sm text-muted-foreground">{why}</p>}
@@ -210,7 +210,7 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
       {omni && <Pick label="Chất lượng" value={resolution} options={RESOLUTIONS} onChange={setResolution} />}
       <Pick label="Khung" value={aspect} options={opts(["16:9", "9:16"])} onChange={setAspect} />
       <div className="flex items-center gap-2">
-        <Button variant="primary" aria-describedby={why ? "vg-why-video" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo clip AI</Button>
+        <Button variant="primary" aria-describedby={why ? "vg-why-video" : undefined} disabled={Boolean(why) || sending} onClick={() => void create()}>Tạo clip bằng Flow</Button>
         {st && <span className="text-sm text-muted-foreground">{`Còn ${Math.max(0, st.cap - st.today)} clip hôm nay`}</span>}
       </div>
       {why && <p id="vg-why-video" className="m-0 text-sm text-muted-foreground">{why}</p>}
@@ -238,10 +238,10 @@ function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   };
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span>Đang tạo {image ? "ảnh" : "clip"} AI…</span>
+      <span>Đang tạo {image ? "ảnh" : "clip"} bằng Flow…</span>
       {item?.phase === "sent"
-        ? <Button aria-label="Ngừng chờ lượt AI đang tạo" onClick={() => void stop()}>Ngừng chờ</Button>
-        : <Button aria-label="Huỷ lượt AI đang tạo" onClick={() => void stop()}>Huỷ</Button>}
+        ? <Button aria-label="Ngừng chờ lượt Flow đang tạo" onClick={() => void stop()}>Ngừng chờ</Button>
+        : <Button aria-label="Huỷ lượt Flow đang tạo" onClick={() => void stop()}>Huỷ</Button>}
     </div>
   );
 }
@@ -254,7 +254,7 @@ function Items({ name, m, items, busyHere, idle }: { name: string; m: Manifest; 
     if (path?.trim()) void act(vgImport(name, it.id, m.version, path.trim()));
   };
   return (
-    <ul aria-label="Các lần tạo AI" className="m-0 flex list-none flex-col gap-2 p-0">
+    <ul aria-label="Các lần tạo bằng Flow" className="m-0 flex list-none flex-col gap-2 p-0">
       {items.map((it) => {
         const image = kindOf(it) === "image";
         // While this project's job runs, its unfinished item is that job's: no actions on it.

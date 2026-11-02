@@ -101,13 +101,13 @@ export function createMarkers(ctx: MarkersCtx, { onChange }: { onChange: () => v
   }
 
   // The timing job of this project ended: reload the player and the markers. A word-sync check
-  // ended: count its PASS / WARN / FAIL lines (the log is in the Xuất bản tab).
+  // ended: count its PASS / WARN / FAIL lines (the log is in the Xuất dialog).
   ctx.on("jobs", (e: any) => { // loose: an SSE jobs event as the server sends it
     if (e?.type !== "exit" || e.job?.name !== ctx.state.name) return;
     if (e.job.kind === "word-sync") {
       const n: Record<string, number> = { PASS: 0, WARN: 0, FAIL: 0 };
       for (const l of ctx.state.logs.get(e.job.id) ?? []) { const k = /^(PASS|WARN|FAIL)\b/.exec(l)?.[1]; if (k) n[k]++; }
-      return ctx.toast(`Khớp lời: ${n.PASS} đạt, ${n.WARN} cảnh báo, ${n.FAIL} lệch (log ở tab Xuất bản)`, n.FAIL > 0 || (e.job.code !== 0 && e.job.code !== 1));
+      return ctx.toast(`Khớp lời: ${n.PASS} đạt, ${n.WARN} cảnh báo, ${n.FAIL} lệch (log ở hộp Xuất)`, n.FAIL > 0 || (e.job.code !== 0 && e.job.code !== 1));
     }
     if (e.job.kind !== "timing") return;
     if (e.job.code === 0) {

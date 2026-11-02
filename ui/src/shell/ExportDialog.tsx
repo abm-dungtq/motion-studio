@@ -1,4 +1,4 @@
-// The export dialog ("Cổng & tệp đã xuất…", the old Xuất bản tab of public/panels.js:19): its
+// The export dialog ("Cổng & file đã xuất…", the old Xuất bản tab of public/panels.js:19): its
 // sections come from registerSection("export", …).
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,7 +7,7 @@ import { SectionHost } from "./SectionHost.tsx";
 
 export const EXPORT_LEAD = "Xuất MP4 bản giao (render rồi nén), bộ lớp dựng cho phần mềm dựng, và tải file đã xuất.";
 
-// The dialog opens through the store, from the Xuất bản menu: give focus back to that button.
+// The dialog opens through the store, from the Xuất menu: give focus back to that button.
 const menuFocus = (e: Event) => { e.preventDefault(); document.querySelector<HTMLElement>("[data-export-menu]")?.focus(); };
 
 export function ExportDialog() {
@@ -16,7 +16,7 @@ export function ExportDialog() {
     <Dialog open={open} onOpenChange={(o) => { if (!o) useStudio.getState().openDialog(null); }}>
       <DialogContent className="max-w-3xl sm:max-w-3xl" onCloseAutoFocus={menuFocus}>
         <DialogHeader>
-          <DialogTitle>Xuất bản</DialogTitle>
+          <DialogTitle>Xuất</DialogTitle>
           <DialogDescription>{EXPORT_LEAD}</DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh]">

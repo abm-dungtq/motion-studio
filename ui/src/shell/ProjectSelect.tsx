@@ -16,8 +16,8 @@ export function ProjectSelect() {
   const name = useStudio((s) => s.name);
   return (
     <Select value={name ?? NONE} onValueChange={(v) => { void actions.open(v === NONE ? "" : v); }}>
-      <SelectTrigger id={PROJECT_SELECT_ID} aria-label="Dự án" size="sm" className="h-8 max-w-56 border-border bg-panel-2">
-        <SelectValue placeholder="— chọn dự án —" />
+      <SelectTrigger id={PROJECT_SELECT_ID} aria-label="Dự án" size="sm" title={name ?? undefined} className="h-8 max-w-56 min-w-0 border-border bg-panel-2">
+        <SelectValue placeholder="— chọn dự án —" className="min-w-0 truncate" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={NONE}>— chọn dự án —</SelectItem>

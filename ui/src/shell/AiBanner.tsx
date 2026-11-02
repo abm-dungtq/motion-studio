@@ -1,5 +1,5 @@
 // The strip under the top bar after an AI turn that changed the project (routes/snapshots.mjs):
-// "AI đã sửa N file, vX → vY" with Giữ (the main button), Xem thay đổi and Hoàn tác. Hoàn tác asks
+// "Đạo diễn đã sửa N file, vX → vY" with Giữ (the main button), Xem thay đổi and Hoàn tác. Hoàn tác asks
 // first, then puts the text files back and project.json as a new version; when project.json
 // changed after the turn it asks a second time.
 // Media the director wrote over cannot come back: the strip that follows the undo names them and
@@ -24,7 +24,7 @@ export function headline(s: Snapshot): string {
   const sum = s.summary;
   const versions = sum && sum.from != null && sum.to != null && sum.from !== sum.to ? `, v${sum.from} → v${sum.to}` : "";
   const media = sum?.overwritten.length ? ` · ${sum.overwritten.length} file media bị ghi đè, không hoàn tác được` : "";
-  return `AI đã sửa ${touched(s)} file${versions}${media}`;
+  return `Đạo diễn đã sửa ${touched(s)} file${versions}${media}`;
 }
 
 export function AiBanner() {
@@ -43,7 +43,7 @@ export function AiBanner() {
   }
 
   async function confirmUndo(): Promise<void> {
-    if (await ask("Hoàn tác thay đổi của AI? Các file AI vừa sửa sẽ trở về như trước.", { ok: "Hoàn tác", danger: true })) await undo();
+    if (await ask("Hoàn tác lượt đạo diễn? Các file đạo diễn vừa sửa sẽ trở về như trước.", { ok: "Hoàn tác lượt đạo diễn", danger: true })) await undo();
   }
 
   async function undo(force = false): Promise<void> {
@@ -59,7 +59,7 @@ export function AiBanner() {
     const res = r.data as RestoreResult;
     actions.transport.reload();
     if (res.overwritten.length) setAfter(res);
-    else say(`Đã hoàn tác lượt AI: ${res.files} file${res.version != null ? `, v${res.version}` : ""}`);
+    else say(`Đã hoàn tác lượt đạo diễn: ${res.files} file${res.version != null ? `, v${res.version}` : ""}`);
   }
 
   return (
@@ -77,11 +77,11 @@ export function AiBanner() {
         <div role="status" data-banner="ai-turn" className={`${STRIP} border-primary/40 bg-primary/10`}>
           <span className="min-w-0 flex-1 truncate">
             {headline(s)}
-            {s.late && <span className="text-muted-foreground"> · chụp sau khi AI đã bắt đầu, có thể thiếu</span>}
+            {s.late && <span className="text-muted-foreground"> · chụp sau khi đạo diễn đã bắt đầu, có thể thiếu</span>}
           </span>
           <Button className="h-7" disabled={busy} variant="primary" onClick={() => { void keep(); }}>Giữ</Button>
           <Button className="h-7" onClick={() => setView(s.id)}>Xem thay đổi</Button>
-          {data?.can_restore && <Button className="h-7" variant="ghost" disabled={busy} onClick={() => { void confirmUndo(); }}>{busy ? "Đang hoàn tác…" : "Hoàn tác"}</Button>}
+          {data?.can_restore && <Button className="h-7" variant="ghost" disabled={busy} onClick={() => { void confirmUndo(); }}>{busy ? "Đang hoàn tác…" : "Hoàn tác lượt đạo diễn"}</Button>}
         </div>
       )}
       <ChangesDialog name={name} id={view} onClose={() => setView(null)} />
@@ -99,7 +99,7 @@ function ChangesDialog({ name, id, onClose }: { name: string | null; id: string 
     <Dialog open={id !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Thay đổi của lượt AI</DialogTitle>
+          <DialogTitle>Thay đổi của lượt đạo diễn</DialogTitle>
           <DialogDescription>Chỉ xem. So với lúc trước khi đạo diễn bắt đầu{data?.from != null ? ` (v${data.from})` : ""}.</DialogDescription>
         </DialogHeader>
         {isLoading && <p className="text-sm text-muted-foreground">Đang tải…</p>}
@@ -116,7 +116,7 @@ function ChangesDialog({ name, id, onClose }: { name: string | null; id: string 
           </details>
         ))}
         {data && data.overwritten.length > 0 && <p className="text-sm">Media bị ghi đè (không hoàn tác được): {data.overwritten.join(", ")}</p>}
-        {data && data.created.length > 0 && <p className="text-sm text-muted-foreground">Media mới (Hoàn tác để nguyên): {data.created.join(", ")}</p>}
+        {data && data.created.length > 0 && <p className="text-sm text-muted-foreground">Media mới (Hoàn tác lượt đạo diễn để nguyên): {data.created.join(", ")}</p>}
       </DialogContent>
     </Dialog>
   );

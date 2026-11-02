@@ -30,10 +30,10 @@ function pickShot(id: string, over: Parameters<typeof stylesRoute>[0] = {}) {
 }
 
 describe("register", () => {
-  it("adds the Phong cách tab, the own-style section and the shot section", () => {
+  it("adds the Phong cách tab and the shot section; the own styles are part of the tab", () => {
     const tab = getTabs().find((t) => t.id === "styles-code");
     expect(tab).toMatchObject({ label: "Phong cách", group: "assets", order: 20, lead: LEAD });
-    expect(getSections("styles-code").map((s) => [s.id, s.order])).toEqual([["lemo-mine", 10]]);
+    expect(getSections("styles-code").map((s) => [s.id, s.order])).toEqual([]);
     expect(getInspectorSections("shot").map((s) => s.id)).toContain("lemo");
     expect(getInspectorSections("line").map((s) => s.id)).not.toContain("lemo");
   });

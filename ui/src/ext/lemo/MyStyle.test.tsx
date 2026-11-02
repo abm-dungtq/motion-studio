@@ -57,6 +57,21 @@ describe("MyStyle", () => {
     await waitFor(() => expect(say).toHaveBeenCalledWith("Đã gửi yêu cầu tạo phong cách riêng cho đạo diễn"));
   });
 
+  it("a double click sends one request, and the fields clear after it", async () => {
+    setup();
+    await screen.findByText("Tạo phong cách riêng");
+    let done: (v: { status: number; data: { ok: boolean } }) => void = () => {};
+    vi.mocked(lemoDraft).mockImplementation(() => new Promise((res) => { done = res; }));
+    const title = screen.getByPlaceholderText("Tên phong cách (tuỳ chọn)");
+    await userEvent.type(title, "Hai lần");
+    const btn = screen.getByRole("button", { name: "Nhờ đạo diễn tạo" });
+    await userEvent.dblClick(btn);
+    expect(lemoDraft).toHaveBeenCalledTimes(1);
+    done({ status: 200, data: { ok: true } });
+    await waitFor(() => expect(title).toHaveValue(""));
+    expect(lemoDraft).toHaveBeenCalledTimes(1);
+  });
+
   it("a draft shows its frame and CHANGES.md as text; Giữ phong cách keeps it once", async () => {
     setup({ project: { vertical: false, draft: DRAFT } });
     expect(await screen.findByText("Bản nháp: My Ink (my-ink)")).toBeInTheDocument();
@@ -76,7 +91,7 @@ describe("MyStyle", () => {
     setup({ project: { vertical: false, draft: { ...DRAFT, has_guide: false } } });
     const btn = await screen.findByRole("button", { name: "Giữ phong cách" });
     expect(btn).toBeDisabled();
-    expect(btn).toHaveAttribute("title", "Cần lemo-style/STYLE.md");
+    expect(btn).toHaveAccessibleDescription("Cần lemo-style/STYLE.md.");
     expect(lemoKeep).not.toHaveBeenCalled();
   });
 });

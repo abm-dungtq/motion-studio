@@ -19,8 +19,9 @@ export const safeUrl = (u: unknown): u is string => /^https:\/\//.test(String(u 
 
 // GET /api/lemo/styles (routes/lemo.mjs), the fields the UI reads.
 export type StyleMode = "layer" | "grammar" | "profile";
-// "" every style · ready: a style profile or a canvas layer · ref: a library STYLE.md · mine
-export type StyleType = "" | "ready" | "ref" | "mine";
+// The source filter: "" every source · profile: the ready-made styles · library: lemo-opuscar · mine
+export type StyleSource = "" | "profile" | "library" | "mine";
+export const SOURCES: StyleSource[] = ["", "profile", "library", "mine"];
 export interface LemoStyle {
   slug: string;
   source: "library" | "mine" | "profile" | string;
@@ -28,6 +29,7 @@ export interface LemoStyle {
   en?: string | null;
   cn?: string | null;
   nhom?: string | null;
+  group_en?: string | null;
   based_on?: string | null;
   base_ten?: string | null;
   line?: string | null;
@@ -73,35 +75,73 @@ export interface LemoStyles {
 
 export interface Viewing { style: LemoStyle; text: string }
 
+// The group filter holds genres only. Ready-made profiles and own styles have no genre of their
+// own, so they sit in "Chưa phân nhóm" rather than in a made-up one.
+export const NO_GROUP = "_none";
+export const groupKey = (r: LemoStyle): string => (r.source === "library" && r.group_en ? r.group_en : NO_GROUP);
+export interface StyleFilters { group: string; source: StyleSource }
+const passes = (r: LemoStyle, f: StyleFilters, skip?: keyof StyleFilters): boolean =>
+  (skip === "group" || !f.group || groupKey(r) === f.group) && (skip === "source" || !f.source || r.source === f.source);
+export const filterStyles = (rows: LemoStyle[], f: StyleFilters): LemoStyle[] => rows.filter((r) => passes(r, f));
+// How many styles each value of one filter would show, the other filter kept as it is.
+export function countBy(rows: LemoStyle[], f: StyleFilters, axis: keyof StyleFilters): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const r of rows) {
+    if (!passes(r, f, axis)) continue;
+    const k = axis === "group" ? groupKey(r) : r.source;
+    out.set(k, (out.get(k) ?? 0) + 1);
+  }
+  return out;
+}
+
+// The filters live in the URL too (?q=&group=&source=), like ?tab=: a reload or a shared link
+// opens the same view.
+const URL_KEYS = { q: "q", group: "group", source: "source" } as const;
+function fromUrl(): { q: string; group: string; source: StyleSource } {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const source = p.get(URL_KEYS.source) ?? "";
+    return { q: p.get(URL_KEYS.q) ?? "", group: p.get(URL_KEYS.group) ?? "", source: (SOURCES as string[]).includes(source) ? source as StyleSource : "" };
+  } catch { return { q: "", group: "", source: "" }; }
+}
+function toUrl(key: keyof typeof URL_KEYS, value: string): void {
+  try {
+    const url = new URL(window.location.href);
+    if (value) url.searchParams.set(URL_KEYS[key], value); else url.searchParams.delete(URL_KEYS[key]);
+    window.history.replaceState(window.history.state, "", url);
+  } catch { /* no history (tests) */ }
+}
+
 interface LemoState {
   q: string;               // the search text the list was asked for (after the debounce)
   group: string;           // the group filter, "" for every group
-  type: StyleType;         // the type filter
+  source: StyleSource;     // the source filter
   busy: boolean;           // an apply is in flight
   fetching: boolean;       // the library download is running
   viewing: Viewing | null; // the STYLE.md shown in the dialog
   setQ(q: string): void;
   setGroup(g: string): void;
-  setType(t: StyleType): void;
+  setSource(t: StyleSource): void;
   setViewing(v: Viewing | null): void;
 }
 
 export const useLemo = create<LemoState>()((set) => ({
-  q: "", group: "", type: "", busy: false, fetching: false, viewing: null,
-  setQ: (q) => set({ q }),
-  setGroup: (group) => set({ group }),
-  setType: (type) => set({ type }),
+  ...fromUrl(), busy: false, fetching: false, viewing: null,
+  setQ: (q) => { set({ q }); toUrl("q", q); },
+  setGroup: (group) => { set({ group }); toUrl("group", group); },
+  setSource: (source) => { set({ source }); toUrl("source", source); },
   setViewing: (viewing) => set({ viewing }),
 }));
 
-const stylesParams = (name: string | null, q = "", group = "", type: StyleType = "") => ({ q, group, type, name: name ?? "" });
+const stylesParams = (name: string | null, q = "") => ({ q, group: "", type: "", name: name ?? "" });
 
-// The list the gallery shows (search and group applied). The key carries the project name, so
-// opening another project loads it again (the old ctx.on("project")). The previous answer stays
-// on screen while a new search loads.
+// The list the gallery shows: the server applies the search; the group and source filters run here
+// (filterStyles), so each filter can count what the other would leave. The key carries the
+// project name, so opening another project loads it again (the old ctx.on("project")). The
+// previous answer stays on screen while a new search loads.
 export function useGalleryStyles(name: string | null) {
-  const q = useLemo((s) => s.q), group = useLemo((s) => s.group), type = useLemo((s) => s.type);
-  return useQuery({ ...lemoStylesQuery(stylesParams(name, q, group, type)), placeholderData: keepPreviousData, select: (d) => d as LemoStyles });
+  const q = useLemo((s) => s.q);
+  return useQuery({ ...lemoStylesQuery(stylesParams(name, q)), placeholderData: keepPreviousData, select: (d) => d as LemoStyles });
 }
 
 // The whole list (no search, no group): the old store.allRows, for the shot and own-style sections.
@@ -147,13 +187,13 @@ export async function fetchLibrary(): Promise<void> {
 // POST /api/lemo/apply, with the follow-ups the answer asks for: replace an existing layer, or
 // ask the director to insert the markers first (lemo-gallery.js:52-73).
 // ask: the in-page confirm of the caller (lemo/confirm.tsx).
-export async function applyStyle({ name, hasManifest, style, mode, shot = null, ask }: { name: string | null; hasManifest: boolean; style: LemoStyle; mode: StyleMode; shot?: string | null; ask: (text: string, opts?: AskOptions) => Promise<boolean> }): Promise<void> {
+export async function applyStyle({ name, hasManifest, style, mode, shot = null, shots = 0, ask }: { name: string | null; hasManifest: boolean; style: LemoStyle; mode: StyleMode; shot?: string | null; shots?: number; ask: (text: string, opts?: AskOptions) => Promise<boolean> }): Promise<void> {
   if (!name || !hasManifest) { say("Mở một dự án trước", true); return; }
   const where = shot ? `shot ${shot}` : "cả dự án";
   const how = mode === "layer" ? "thêm lớp canvas (sửa index.html, ghi lemo_style vào BRIEF.md)"
-    : mode === "profile" ? (shot ? "nhờ đạo diễn dựng lại shot theo style profile (BRIEF.md giữ nguyên)" : "ghi style_profile vào BRIEF.md và nhờ đạo diễn dựng lại theo style profile")
+    : mode === "profile" ? (shot ? "nhờ đạo diễn dựng lại shot theo phong cách dựng sẵn (BRIEF.md giữ nguyên)" : "ghi style_profile vào BRIEF.md và nhờ đạo diễn dựng lại theo phong cách dựng sẵn")
     : "nhờ đạo diễn dựng theo ngữ pháp của STYLE.md (BRIEF.md giữ nguyên)";
-  if (!(await ask(`Áp "${style.ten}" cho ${where}: ${how}?`, { ok: "Áp phong cách" }))) return;
+  if (!(await ask(`Áp "${style.ten}" cho ${where}: ${how}?`, { ok: !shot && shots > 0 ? `Áp và dựng lại ${shots} shot` : "Áp phong cách" }))) return;
   const body = { name, slug: style.slug, source: style.source, mode, shot };
   useLemo.setState({ busy: true });
   try {
@@ -193,7 +233,7 @@ export const modeOf = (s: LemoStyle): StyleMode => (s.source === "profile" ? "pr
 // The card's tag and its tooltip.
 export function tagOf(s: LemoStyle): { text: string; title: string; ready: boolean } {
   if (s.source === "mine") return { text: "Của bạn", title: "Phong cách riêng, đạo diễn dựng theo STYLE.md", ready: false };
-  if (s.source === "profile") return { text: "Dựng sẵn", title: "Style profile: màu, chữ, chuyển cảnh và nhịp có sẵn, dựng được ngay bằng HyperFrames", ready: true };
+  if (s.source === "profile") return { text: "Dựng sẵn", title: "Phong cách dựng sẵn: màu, chữ, chuyển cảnh và nhịp có sẵn, dựng được ngay bằng HyperFrames", ready: true };
   if (s.layer) return { text: "Lớp canvas", title: "Studio thêm được thành lớp canvas", ready: true };
   return { text: "Tham khảo", title: "Chỉ có STYLE.md: đạo diễn đọc rồi tự dựng theo ngữ pháp, kết quả không giống hệt phim mẫu", ready: false };
 }

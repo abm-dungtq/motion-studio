@@ -1,9 +1,9 @@
 // Port of public/lemo-mystyle.js; behaviour unchanged.
-// "Phong cách riêng" at the end of the Phong cách tab, after lemo-opuscar's MY-STYLES.md
+// "Phong cách riêng" at the top of the Phong cách tab, above the filters, after lemo-opuscar's MY-STYLES.md
 // (github.com/lemomo-ai/lemo-opuscar, MIT): ask the director to draft a style in the project's
 // lemo-style/ (from a library style or a blank page), see its style frame and CHANGES.md, and keep
 // it in the own-styles folder. Only the "Giữ phong cách" button keeps a style.
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { lemoDraft, lemoKeep, useProject } from "@/api/queries.ts";
 import { say } from "@/api/client.ts";
 import { Button, Input, Textarea } from "@/shell/controls.tsx";
@@ -11,6 +11,16 @@ import { useStudio } from "@/store/studio.ts";
 import { SELECT } from "./Gallery.tsx";
 import { reloadStyles, useAllStyles, useLemo } from "./store.ts";
 import { tabConfirm } from "./confirm.tsx";
+
+// Scroll to the section and open its form (the "Của bạn" filter's empty text).
+export function openMyStyle(): void {
+  const el = document.querySelector<HTMLElement>('[data-testid="lemo-mine"]');
+  if (!el) return;
+  el.scrollIntoView?.({ block: "start" });
+  const form = el.querySelector<HTMLDetailsElement>("details[data-mine-form]");
+  if (form) form.open = true;
+  el.querySelector<HTMLElement>("select, input")?.focus();
+}
 
 const fileUrl = (name: string, rel: string) => `/p/${encodeURIComponent(name)}/${rel.split("/").map(encodeURIComponent).join("/")}`;
 
@@ -22,6 +32,7 @@ export function MyStyle() {
   const base = useRef<HTMLSelectElement>(null);
   const title = useRef<HTMLInputElement>(null);
   const desc = useRef<HTMLTextAreaElement>(null);
+  const [sending, setSending] = useState(false);
   if (!d) return null;
 
   const head = <h3 className="m-0 text-sm font-semibold">Phong cách riêng</h3>;
@@ -45,10 +56,18 @@ export function MyStyle() {
     await reloadStyles();
   };
   const ask = async () => {
+    if (sending) return;
     const v = base.current?.value ?? "";
     const [source, slug] = v ? v.split(":") : [null, null];
-    const r = await lemoDraft({ name, base: slug, source, title: title.current?.value ?? "", description: desc.current?.value ?? "" });
-    if (r.status === 200) say("Đã gửi yêu cầu tạo phong cách riêng cho đạo diễn"); else say(r.error ?? `Lỗi ${r.status}`, true);
+    setSending(true);
+    try {
+      const r = await lemoDraft({ name, base: slug, source, title: title.current?.value ?? "", description: desc.current?.value ?? "" });
+      if (r.status === 200) {
+        say("Đã gửi yêu cầu tạo phong cách riêng cho đạo diễn");
+        if (title.current) title.current.value = "";
+        if (desc.current) desc.current.value = "";
+      } else say(r.error ?? `Lỗi ${r.status}`, true);
+    } finally { setSending(false); }
   };
   const rows = d.rows.filter((r) => r.guide);
 
@@ -71,13 +90,14 @@ export function MyStyle() {
             </details>
           ) : null}
           <div className="flex gap-1.5">
-            <Button variant="primary" disabled={!draft.valid || !draft.has_guide || busy} title={draft.has_guide ? "" : "Cần lemo-style/STYLE.md"} onClick={() => { void keep(); }}>
+            <Button variant="primary" disabled={!draft.valid || !draft.has_guide || busy} aria-describedby={draft.has_guide ? undefined : "lemo-keep-why"} onClick={() => { void keep(); }}>
               Giữ phong cách
             </Button>
           </div>
+          {draft.has_guide ? null : <p id="lemo-keep-why" className="m-0 text-xs text-muted-foreground">Cần lemo-style/STYLE.md.</p>}
         </div>
       ) : null}
-      <details open={!draft}>
+      <details data-mine-form>
         <summary className="cursor-pointer text-sm">{draft ? "Tạo bản nháp khác" : "Tạo phong cách riêng"}</summary>
         <div className="mt-2 flex flex-col gap-2">
           <p className="m-0 text-sm text-muted-foreground">Đạo diễn hỏi bạn từng câu bằng thẻ, viết STYLE.md, CHANGES.md và khung phong cách trong lemo-style/ của dự án. Bấm Giữ phong cách khi đã ưng.</p>
@@ -88,8 +108,9 @@ export function MyStyle() {
           <Input ref={title} placeholder="Tên phong cách (tuỳ chọn)" maxLength={120} aria-label="Tên phong cách" />
           <Textarea ref={desc} placeholder="Muốn phong cách trông thế nào, dùng cho phim gì…" maxLength={2000} aria-label="Mô tả phong cách" className="min-h-[72px]" />
           <div>
-            <Button disabled={!d.fetched} title={d.fetched ? "" : "Tải thư viện trước"} onClick={() => { void ask(); }}>Nhờ đạo diễn tạo</Button>
+            <Button disabled={!d.fetched || sending} aria-describedby={d.fetched ? undefined : "lemo-ask-why"} onClick={() => { void ask(); }}>{sending ? "Đang gửi…" : "Nhờ đạo diễn tạo"}</Button>
           </div>
+          {d.fetched ? null : <p id="lemo-ask-why" className="m-0 text-xs text-muted-foreground">Tải thư viện trước.</p>}
         </div>
       </details>
     </div>

@@ -6,13 +6,11 @@
 import { Palette } from "lucide-react";
 import type { Studio } from "@/ext/registry.ts";
 import { Gallery } from "./Gallery.tsx";
-import { MyStyle } from "./MyStyle.tsx";
 import { ShotStyle } from "./ShotStyle.tsx";
 
-export const LEAD = "Style profile dựng sẵn, 59 phong cách tham khảo của lemo-opuscar và phong cách riêng của bạn. Áp cho dự án hoặc một shot.";
+export const LEAD = "Phong cách dựng sẵn, 59 phong cách tham khảo của lemo-opuscar và phong cách riêng của bạn. Áp cho dự án hoặc một shot.";
 
 export function register(studio: Studio): void {
   studio.registerTab({ id: "styles-code", label: "Phong cách", icon: Palette, group: "assets", order: 20, lead: LEAD, component: Gallery });
-  studio.registerSection("styles-code", { id: "lemo-mine", order: 10, component: MyStyle });
   studio.registerInspectorSection({ id: "lemo", kinds: ["shot"], order: 50, component: ShotStyle });
 }

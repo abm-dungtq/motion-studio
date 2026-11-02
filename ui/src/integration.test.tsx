@@ -132,7 +132,7 @@ describe("integration: every panel and extension through the real loader", () =>
     look();
 
     act(() => useStudio.getState().openDialog("export"));
-    await screen.findByRole("dialog", { name: "Xuất bản" });
+    await screen.findByRole("dialog", { name: "Xuất" });
     await waitFor(() => expect(filled(slot("export"))).toBe(true));
     look();
     act(() => useStudio.getState().openDialog(null));

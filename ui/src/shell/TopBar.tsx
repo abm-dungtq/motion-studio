@@ -1,5 +1,5 @@
 // The top bar (public/index.html:13-25), 44 px: brand, project picker, "Dự án mới", project title,
-// then on the right the agent chip, versions, undo/redo, the gate chip and "Xuất bản".
+// then on the right the agent chip, versions, undo/redo, the gate chip and "Xuất".
 import { Plus, Redo2, Undo2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { actions } from "@/api/actions.ts";
