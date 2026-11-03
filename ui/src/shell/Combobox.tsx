@@ -1,4 +1,4 @@
-// A select that can be searched and read by a screen reader, in place of the native <select>: a
+// A select that can be searched and read by a screen reader, in place of the native select element: a
 // button (role="combobox") opens a popover with a search field (when there are more than 8 options)
 // and a listbox. Arrows, Home and End move the active option, Enter or a click chooses it, Escape
 // closes and gives focus back to the button. Moving through the list never calls onChange.

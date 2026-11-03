@@ -87,7 +87,7 @@ afterEach(() => {
 });
 
 // The Combobox of shell/Combobox.tsx: the labels of its options (opened, then closed again), and a
-// choice by label, as userEvent.selectOptions did for a native <select>.
+// choice by label, as userEvent.selectOptions did for a native select element.
 const comboLabel = (o: Element) => o.querySelector("span")?.textContent ?? "";
 export function comboOptions(name: string | RegExp): string[] {
   fireEvent.click(screen.getByRole("combobox", { name }));
