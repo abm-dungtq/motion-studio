@@ -62,6 +62,16 @@ node bin/motion-studio.mjs start --background --root <folder that holds your pro
 
 Each project is a sub-folder with a `project.json`. Studio picks the projects folder from `--root`, then `MOTION_STUDIO_ROOT`, then the folder of the previous run.
 
+### Install as an app
+
+```bash
+node bin/motion-studio.mjs stop          # if a Studio started with start --background is running
+node bin/motion-studio.mjs install-app   # starts Studio at login (a LaunchAgent), port 4317
+node bin/motion-studio.mjs uninstall-app # removes it
+```
+
+`install-app` writes `~/Library/LaunchAgents/com.motion-studio.server.plist`, which runs `start` in the foreground at login and again if it stops with an error (at most every 30 s). It refuses while a Studio answers on the port. Options: `--port`, `--state`, `--root` and `--label`, for a second Studio beside the first. Then open `http://127.0.0.1:4317` in Chrome and click the install icon in the address bar: Studio gets its own window and a Dock icon. It still needs the server; there is no offline mode.
+
 ### Upgrading from 1.x
 
 Version 2.0 rewrote the interface in React, TypeScript, Tailwind and shadcn/ui with a dark, NLE-style layout. Run `npm run setup` once after you pull. The `public/` folder is gone, so interface extensions now live in `ui/src/ext/<name>/index.ts` (see [docs/extensions.md](docs/extensions.md)). Node.js 22.18 or later is required.

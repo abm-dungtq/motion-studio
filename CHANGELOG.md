@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Cài Studio như app: trang có manifest và biểu tượng nên Chrome hiện nút cài (cửa sổ riêng, biểu tượng trên Dock). Lệnh `install-app` ghi một LaunchAgent bật server khi đăng nhập và chạy lại khi nó dừng vì lỗi; `uninstall-app` gỡ ra. Lệnh cài từ chối khi đang có Studio chạy ở cổng đó.
+
 - Khay việc và các ô theo dõi việc (B-roll, hiệu ứng, Anime, giao bản, cảnh, bảng ảnh, giọng thử, thẻ cần trợ giúp, ảnh và clip AI) cập nhật theo sự kiện của server khi việc bắt đầu và kết thúc, thay vì hỏi lại mỗi 1–2 giây. Trong lúc việc chạy trang chỉ hỏi dự phòng mỗi 30 giây; khi luồng sự kiện của dự án chưa mở (dự án không có `project.json`, đang nối lại) hoặc việc không thuộc dự án đang mở (quét B-roll cả workspace, kiểm agent), trang vẫn hỏi như cũ. a-02 lúc phân tích B-roll: 17 request trong 10 giây còn 1; khi nghỉ: 5 còn 0. Khay chuyển sang xong ngay khi việc kết thúc.
 
 - Server không còn đứng chờ ffmpeg hay CLI trong route: "Giữ phong cách" đổi khung PNG sang JPEG bằng ffmpeg chạy nền (30 giây tối đa), và trạng thái Google Flow đọc `gflow --version` chạy nền (10 giây tối đa, vẫn giữ theo mtime của file gflow). Trong lúc đó các yêu cầu khác vẫn trả ngay (`/api/projects` khoảng 5 ms khi `gflow --version` mất 1,5 giây).

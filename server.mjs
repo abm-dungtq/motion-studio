@@ -58,6 +58,8 @@ import { createGateCache, gateSignature } from "./lib/gates-cache.mjs";
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const UI_DIST = join(HERE, "ui", "dist");
 const ASSET = /^[A-Za-z0-9._-]+$/;
+// Files at the top of the UI build, served like its assets (static files, not API paths).
+const UI_ROOT_FILES = new Set(["/manifest.webmanifest"]);
 const BUNDLE = join(HERE, "bundle.mjs");
 const RATIO = /^\d+x\d+$/;
 export const NAME = /^[A-Za-z0-9._-]+$/;
@@ -69,6 +71,7 @@ const TYPES = {
   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif",
   ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm",
   ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".otf": "font/otf",
+  ".webmanifest": "application/manifest+json",
 };
 const statusOf = (EXIT) => ({ [EXIT.conflict]: 409, [EXIT.viewOnly]: 423, [EXIT.invalid]: 422, [EXIT.nothingToUndo]: 422, [EXIT.nothingToRedo]: 422, [EXIT.busy]: 503, [EXIT.usage]: 400 });
 // Routes that work without a provider; every other /api route answers 503 when there is none.
@@ -339,13 +342,15 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         const html = readFileSync(page, "utf8").replace("__STUDIO_TOKEN__", token);
         return send(res, 200, html, { "content-type": TYPES[".html"] });
       }
-      // Files of the UI build (flat names; realpath must stay inside <ui>/assets).
-      if (p.startsWith("/assets/")) {
-        const name = p.slice("/assets/".length);
+      // Files of the UI build: <ui>/assets/*, the install manifest and its icons (flat names;
+      // realpath must stay inside the folder).
+      const uiSub = p.startsWith("/assets/") ? "assets" : p.startsWith("/icons/") ? "icons" : UI_ROOT_FILES.has(p) ? "" : null;
+      if (uiSub !== null) {
+        const name = p.slice(uiSub ? uiSub.length + 2 : 1);
         if (!ASSET.test(name) || name === "." || name === "..") return send(res, 404, "không có");
         let file;
         try {
-          const dir = realpathSync(join(ui, "assets"));
+          const dir = realpathSync(join(ui, uiSub));
           file = realpathSync(join(dir, name));
           if (!file.startsWith(dir + sep) || !statSync(file).isFile()) file = null;
         } catch { file = null; }

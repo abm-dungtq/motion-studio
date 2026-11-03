@@ -62,6 +62,16 @@ node bin/motion-studio.mjs start --background --root <thư mục chứa các d�
 
 Mỗi dự án là một thư mục con có `project.json`. Studio chọn thư mục chứa dự án theo thứ tự: `--root`, `MOTION_STUDIO_ROOT`, rồi thư mục của lần chạy trước.
 
+### Cài như app
+
+```bash
+node bin/motion-studio.mjs stop          # nếu đang có Studio chạy bằng start --background
+node bin/motion-studio.mjs install-app   # Studio tự bật khi đăng nhập (LaunchAgent), cổng 4317
+node bin/motion-studio.mjs uninstall-app # gỡ ra
+```
+
+`install-app` ghi `~/Library/LaunchAgents/com.motion-studio.server.plist`, chạy `start` ở foreground khi đăng nhập và chạy lại khi nó dừng vì lỗi (tối đa mỗi 30 giây). Lệnh từ chối khi đang có Studio trả lời ở cổng đó. Tuỳ chọn: `--port`, `--state`, `--root` và `--label`, cho một Studio thứ hai bên cạnh. Sau đó mở `http://127.0.0.1:4317` trong Chrome và bấm biểu tượng cài trên thanh địa chỉ: Studio có cửa sổ riêng và biểu tượng trên Dock. App vẫn cần server chạy, không có chế độ offline.
+
 ### Nâng cấp từ 1.x
 
 Bản 2.0 viết lại giao diện bằng React, TypeScript, Tailwind và shadcn/ui, theme tối theo kiểu phần mềm dựng. Sau khi pull, chạy `npm run setup` một lần. Thư mục `public/` đã bỏ, nên extension giao diện giờ nằm ở `ui/src/ext/<tên>/index.ts` (xem [docs/extensions.md](docs/extensions.md)). Cần Node.js 22.18 trở lên.
