@@ -9,7 +9,7 @@ import { queryOptions, useQuery, type QueryKey } from "@tanstack/react-query";
 import { api, projectText, queryClient, say, send, type SendResult } from "./client.ts";
 import type {
   AgentStatus, AgentsScan, DirectorRequest, FileEntry, Gates, Job, LogEntry, Manifest, MediaEntry,
-  ProjectEntry, SnapshotDiff, SnapshotsResponse, SoundsList, StatusResponse, SuggestChooseResult, SuggestResponse, TimelineMedia,
+  Note, ProjectEntry, SnapshotDiff, SnapshotsResponse, SoundsList, StatusResponse, SuggestChooseResult, SuggestResponse, TimelineMedia,
 } from "./types.ts";
 
 const enc = encodeURIComponent;
@@ -52,6 +52,7 @@ export const keys = {
   suggest: (name: string | null) => ["/api/suggest", name] as const,
   anime: (kind: AnimeKind, name: string | null) => ["/api/anime", kind, name] as const,
   snapshots: (name: string | null) => ["/api/snapshots", name] as const,
+  notes: (name: string | null) => ["/api/notes", name] as const,
   snapshotDiff: (name: string | null, id: string) => ["/api/snapshots/diff", name, id] as const,
   animeJob: (name: string | null, id: string) => ["/api/anime/job", name, id] as const,
 };
@@ -134,6 +135,17 @@ export function useSnapshots(name: string | null) {
   const entry = useProjectEntry(name);
   return useQuery({ ...snapshotsQuery(name), enabled: Boolean(name && entry?.has_manifest) });
 }
+// `/api/notes` — routes/notes.mjs: the notes pinned to the timeline.
+export const notesQuery = (name: string | null) => queryOptions({
+  queryKey: keys.notes(name),
+  queryFn: () => api<{ notes: Note[] }>(`/api/notes?name=${enc(name ?? "")}`),
+  staleTime: Infinity,
+});
+export function useNotes(name: string | null) {
+  const entry = useProjectEntry(name);
+  return useQuery({ ...notesQuery(name), enabled: Boolean(name && entry?.has_manifest) });
+}
+
 // `/api/snapshots/diff` — the text of every file one AI turn touched, before and now.
 export const snapshotDiffQuery = (name: string | null, id: string) => queryOptions({
   queryKey: keys.snapshotDiff(name, id),
@@ -376,6 +388,11 @@ export const directorCancel = (b: NameBody & { id: string }) => write(`/api/dire
 // `/api/snapshots/keep` and `/api/snapshots/restore` — routes/snapshots.mjs
 export const snapshotKeep = (b: NameBody & { id: string }) => write(`/api/snapshots/keep`, b, [keys.snapshots(b.name)]);
 export const snapshotRestore = (b: NameBody & { id: string; force?: boolean }) => write(`/api/snapshots/restore`, b, [keys.snapshots(b.name), ...edits(b.name)]);
+// `/api/notes/add`, `/update`, `/remove`, `/send` — routes/notes.mjs
+export const noteAdd = (b: NameBody & { t: number; text: string; shot: string | null }) => write(`/api/notes/add`, b, [keys.notes(b.name)]);
+export const noteUpdate = (b: NameBody & { id: string; text?: string; state?: Note["state"] }) => write(`/api/notes/update`, b, [keys.notes(b.name)]);
+export const noteRemove = (b: NameBody & { id: string }) => write(`/api/notes/remove`, b, [keys.notes(b.name)]);
+export const notesSend = (b: NameBody & { ids: string[] }) => write(`/api/notes/send`, b, [keys.notes(b.name), ...queue(b.name)]);
 // `/api/jobs/cancel` — public/app.js:164
 export const jobsCancel = (b: NameBody & { id: string }) => write(`/api/jobs/cancel`, b, [keys.jobs(b.name)]);
 // `/api/export` — public/app.js:170

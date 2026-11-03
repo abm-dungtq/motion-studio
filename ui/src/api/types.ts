@@ -151,6 +151,8 @@ export interface Snapshot {
   summary?: SnapshotSummary;
   restored?: { at: string; version: number | null };
 }
+// routes/notes.mjs: a note pinned to a moment of the timeline.
+export interface Note { id: string; t: number; text: string; shot: string | null; state: "open" | "sent" | "done"; created: string; request: string | null }
 export interface SnapshotsResponse { snapshots: Snapshot[]; can_restore: boolean }
 export interface SnapshotFile { path: string; kind: "changed" | "added" | "removed"; before: string | null; after: string | null }
 export interface SnapshotDiff { id: string; state: Snapshot["state"]; from: number | null; files: SnapshotFile[]; overwritten: string[]; created: string[] }

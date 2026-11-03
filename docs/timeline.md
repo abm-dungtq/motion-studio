@@ -29,6 +29,7 @@ Phím tắt không chạy khi con trỏ đang ở trong ô nhập, khi đang m�
 | Home / End | Về đầu / cuối video |
 | S | Cắt shot đang chọn tại playhead |
 | Delete / Backspace | Xoá SFX đang chọn (chỉ SFX thêm từ Studio) |
+| C | Ghim ghi chú tại playhead: ô gõ mở ngay đó, Enter lưu, Esc bỏ. Ghi chú hiện thành dấu trên thước và trong tab Đạo diễn |
 | N | Bật / tắt hít |
 | R | Đổi chế độ kéo mép shot: Ripple hoặc Roll |
 | = hoặc + / - | Phóng to / thu nhỏ timeline |

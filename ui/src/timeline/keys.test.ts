@@ -111,6 +111,20 @@ describe("timeline keys", () => {
     key({ key: "s", code: "KeyS" });
     expect(split).toHaveBeenCalledTimes(1);
   });
+
+  it("C stops the video and opens a note at the playhead; not while typing in a field", () => {
+    useStudio.setState({ noteAt: null });
+    tr.time.mockReturnValue(12.4);
+    key({ key: "c", code: "KeyC" });
+    expect(tr.pause).toHaveBeenCalledTimes(1);
+    expect(useStudio.getState().noteAt).toBe(12.4);
+    useStudio.setState({ noteAt: null });
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    key({ key: "c", code: "KeyC" }, input);
+    expect(useStudio.getState().noteAt).toBeNull();
+    input.remove();
+  });
 });
 
 describe("keys of a focused control stay with the control", () => {

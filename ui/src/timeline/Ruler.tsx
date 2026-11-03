@@ -1,10 +1,11 @@
 // Port of the ruler of public/timeline.js render() (:419-432) and its scrub (:324); behaviour
 // unchanged.
 // The ruler above the tracks: a tick every rulerStep seconds with its label, the beats (BeatLayer),
-// and a press-and-drag that seeks (startScrub). It sticks to the top while the tracks scroll.
+// the user's notes (NoteMarks), and a press-and-drag that seeks (startScrub). It sticks to the top while the tracks scroll.
 import { memo, useRef } from "react";
 import { rulerStep } from "@/core/timeline-geometry.ts";
 import type { Timing } from "@/core/timeline-edit.ts";
+import { NoteMarks } from "@/panels/notes/NoteMarks.tsx";
 import { BeatLayer } from "./markers/BeatLayer.tsx";
 import { startScrub } from "./useDrag.ts";
 import { useView } from "./view.ts";
@@ -37,6 +38,7 @@ export const Ruler = memo(function Ruler({ pps, total, lane, beatPicked, timing 
     >
       {ticks}
       <BeatLayer pps={pps} total={total} picked={beatPicked} timing={timing} />
+      <NoteMarks pps={pps} />
     </div>
   );
 });
