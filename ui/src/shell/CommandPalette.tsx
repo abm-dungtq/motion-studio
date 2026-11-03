@@ -42,6 +42,7 @@ function useCommands(): Command[] {
         undo: () => actions.undo(),
         redo: () => actions.redo(),
         exportVideo: () => s().openDialog("export"),
+        recheckGates: () => actions.recheckGates(),
         jobs: () => s().setTrayOpen(true),
         toggleQa: () => s().setQaLayer(!s().qaLayer),
         sendNotes: () => { if (!name) return; right("director"); return sendOpenNotes(name); },

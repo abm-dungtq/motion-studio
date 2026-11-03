@@ -11,7 +11,7 @@ function ctx(over: Partial<CommandContext> = {}): CommandContext {
     openNotes: 0,
     run: {
       open: vi.fn(), newProject: vi.fn(), leftTab: vi.fn(), rightTab: vi.fn(), shot: vi.fn(), undo: vi.fn(), redo: vi.fn(),
-      exportVideo: vi.fn(), jobs: vi.fn(), toggleQa: vi.fn(), sendNotes: vi.fn(),
+      exportVideo: vi.fn(), recheckGates: vi.fn(), jobs: vi.fn(), toggleQa: vi.fn(), sendNotes: vi.fn(),
     },
     ...over,
   };
@@ -29,6 +29,12 @@ describe("buildCommands", () => {
     const list = buildCommands(c);
     void find(list, "Tới shot 3 · s3").run();
     expect(c.run.shot).toHaveBeenCalledWith("s3", 9.5);
+  });
+
+  it("runs the export gate check again", () => {
+    const c = ctx();
+    void find(buildCommands(c), "Kiểm lại cổng xuất").run();
+    expect(c.run.recheckGates).toHaveBeenCalled();
   });
 
   it("lists the tabs from the registry and the right column, and opens the right one", () => {

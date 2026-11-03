@@ -72,6 +72,18 @@ async function refreshGates(): Promise<void> {
   await queryClient.fetchQuery({ ...Q.gatesQuery(name), ...fresh }).catch(() => {});
 }
 
+// "Kiểm lại": run the open project's final check whatever the server kept, for the chip and the
+// export dialog.
+async function recheckGates(): Promise<void> {
+  const { name, m } = current();
+  if (!name || !m) return;
+  say("Đang kiểm lại cổng xuất…");
+  const g = await Q.fetchGates(name, "fresh");
+  queryClient.setQueryData(Q.keys.gates(name), g);
+  void queryClient.invalidateQueries({ queryKey: [...Q.keys.gates(name), "cached"] });
+  say(!g ? "Không kiểm được cổng xuất" : g.pass ? "Đủ cổng xuất" : `Chưa đủ cổng xuất (${g.fails.length})`, !g);
+}
+
 async function answered(r: Q.WriteResult): Promise<AnswerOutcome> {
   const ok = r.status === 200;
   const message = ok ? null : answerFailure({ ...r, stderr: r.data?.stderr });
@@ -284,6 +296,7 @@ export const actions = {
 
   refreshQueue,
   refreshGates,
+  recheckGates,
   reload,
 
   // Show a block in the inspector; sel follows to the shot it belongs to (music keeps sel).

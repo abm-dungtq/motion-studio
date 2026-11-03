@@ -28,6 +28,7 @@ export interface CommandContext {
     undo(): void | Promise<void>;
     redo(): void | Promise<void>;
     exportVideo(): void;
+    recheckGates(): void | Promise<void>;
     jobs(): void;
     toggleQa(): void;
     sendNotes(): void | Promise<void>;
@@ -52,6 +53,7 @@ export function buildCommands(ctx: CommandContext): Command[] {
   out.push({ id: "qa", label: "Bật/tắt lớp QA", group: "Xem", run: r.toggleQa });
   out.push({ id: "jobs", label: "Mở khay việc", group: "Xem", run: r.jobs });
   out.push({ id: "export", label: "Xuất video", group: "Xuất", run: r.exportVideo });
+  out.push({ id: "gates:recheck", label: "Kiểm lại cổng xuất", group: "Xuất", run: r.recheckGates });
 
   out.push({ id: "new-project", label: "Dự án mới", group: "Dự án", run: r.newProject });
   const rank = (n: string) => { const i = ctx.recent.indexOf(n); return i < 0 ? Infinity : i; };

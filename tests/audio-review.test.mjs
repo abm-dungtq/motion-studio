@@ -84,10 +84,10 @@ after(() => {
 test("the gate says audio_changed only when the final preflight warns that the sound changed", async () => {
   const quiet = await http("GET", "/api/gates?name=ep");
   assert.equal(quiet.status, 200, quiet.text);
-  assert.deepEqual(quiet.json, { pass: true, fails: [], animatic: false, audio_changed: false });
+  assert.deepEqual(quiet.json, { pass: true, fails: [], animatic: false, audio_changed: false, cached: false });
   process.env.FAKE_AUDIO_CHANGED = "1";
   try {
-    const warned = await http("GET", "/api/gates?name=ep");
+    const warned = await http("GET", "/api/gates?name=ep&fresh=1"); // same files, other answer: bypass the cache
     assert.equal(warned.json.audio_changed, true);
     assert.equal(warned.json.pass, true, "a warning does not fail the gate");
   } finally { delete process.env.FAKE_AUDIO_CHANGED; }
