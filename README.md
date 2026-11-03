@@ -98,6 +98,7 @@ Shortcuts are off while you type in a field, while a dialog or menu is open, or 
 | Home / End | Start / end of the video |
 | S | Cut the selected shot at the playhead |
 | Delete / Backspace | Delete the selected SFX (Studio-added only) |
+| C | Pin a note at the playhead (listed in the director tab, sent to the director in one go) |
 | N | Snap on / off |
 | R | Shot edge mode: Ripple (the video gets longer or shorter) or Roll (only the cut point moves) |
 | Shift+drag a line | Move that line and the lines after it in the same shot |

@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Ghi chú theo mốc thời gian: đang xem, nhấn C để dừng video và gõ một ghi chú ngay tại playhead ("chữ ra muộn"); Enter lưu kèm shot ở mốc đó, Esc bỏ. Ghi chú hiện thành dấu trên thước ("!" chưa xử lý, "→" đã giao), bấm dấu thì tua tới đó và mở danh sách ở đầu tab Đạo diễn. Danh sách có Tới, Sửa, Xong, Xoá và nút "Giao đạo diễn sửa N ghi chú" gửi cả nhóm thành một yêu cầu (hỏi trước). Ghi chú lưu ở `.opus/notes.json` của dự án, không vào `project.json` nên không tạo phiên bản.
+
 - Khay việc: nút "Đang chạy N" (hoặc "Việc") trên thanh trên cùng mở danh sách việc dài của dự án (xuất, mốc thời gian, khớp chữ, đạo diễn, lượt Flow) với thời gian đã chạy, trạng thái bằng chữ, nút Huỷ (lượt Flow hỏi trước và nói đã tính lượt hay chưa), "Mở hộp Xuất" khi xuất xong, và dòng "Flow hôm nay" có cảnh báo "sắp hết lượt". Nút Gợi ý, nút tạo pitch, nút kiểm đăng nhập Flow và lượt Flow của shot nói đang làm gì. Để yên không có việc nào chạy thì Studio hỏi máy chủ ít hơn: trạng thái Flow, thẻ chờ duyệt và thẻ "Cần xử lý ngoài" hỏi mỗi 30 giây thay vì 2–5 giây (a-02 để yên 10 giây: 12 request còn 5).
 
 - Ô chọn dùng chung: mọi ô chọn gốc (11 ô trong 8 file) thành một Combobox có ô tìm khi trên 8 lựa chọn, tìm không phân biệt hoa thường và không cần dấu ("mau" ra "Mực màu", chữ đầu các từ: "dd" ra "Đường đua"), đi bằng ↑ ↓ Home End, Enter chọn, Escape đóng và trả tiêu điểm về nút, đọc được bằng trình đọc màn hình. Ô phong cách của shot (123 lựa chọn) chia nhóm Của bạn / Dựng sẵn / lemo. Lướt bằng mũi tên không ghi gì; chỉ Enter hoặc bấm chuột mới chọn, nên đổi người nói một câu ghi đúng một phiên bản.

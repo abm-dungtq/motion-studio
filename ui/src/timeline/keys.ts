@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { actions, current } from "@/api/actions.ts";
 import { say } from "@/api/client.ts";
 import { keyAction, PICTURE_LOCK_NOTE, pictureFromCode } from "@/core/timeline-edit.ts";
+import { useStudio } from "@/store/studio.ts";
 import { toggleMode, toggleSnap, zoomBy, ZOOM_STEP } from "./Toolbar.tsx";
 
 export function runKey(a: string, fit: () => void): void {
@@ -34,6 +35,12 @@ export function runKey(a: string, fit: () => void): void {
     case "fit": return fit();
     case "snap": return toggleSnap();
     case "mode": return toggleMode();
+    // C pins a note at the playhead: the video stops and a box opens there (NoteInput).
+    case "note": {
+      tr.pause();
+      useStudio.getState().setNoteAt(tr.time());
+      return;
+    }
   }
 }
 

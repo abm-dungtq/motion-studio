@@ -16,6 +16,7 @@ import { fitPps, LABEL, round3, TAIL, timelineTotal, trackLayout, zoomAround, ty
 import { sfxTiers } from "@/core/timeline-lanes.ts";
 import { useDecorators } from "@/ext/registry.ts";
 import { cn } from "@/lib/utils";
+import { NoteInput } from "@/panels/notes/NoteInput.tsx";
 import { NeedManifest } from "@/shell/states.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { sfxLaneMenu } from "./BlockMenu.ts";
@@ -127,6 +128,7 @@ function Tracks({ m, name, scroller }: { m: Manifest; name: string; scroller: Re
         </TrackRow>
         <SfxRow m={m} pps={pps} total={total} width={width} height={h("sfx")} deco={deco.sfx} pick={pickOf("event")} editable={editable} />
         <Playhead total={total} />
+        <NoteInput pps={pps} width={width} />
         <div ref={snap.ref} data-testid="snap-line" className="snap-line pointer-events-none absolute top-0 bottom-0 z-[5] -ml-px w-0.5 bg-primary" hidden />
       </div>
     </ViewContext.Provider>

@@ -158,7 +158,7 @@ export function keyAction(e: KeyLike, { inField = false }: { inField?: boolean }
   if (key === "Home") return "start";
   if (key === "End") return "end";
   if (key === "Delete" || key === "Backspace") return "delete";
-  return ({ j: "back1", k: "pause", l: "play", s: "split", n: "snap", r: "mode" } as Record<string, string>)[letter] ?? null;
+  return ({ j: "back1", k: "pause", l: "play", s: "split", n: "snap", r: "mode", c: "note" } as Record<string, string>)[letter] ?? null;
 }
 
 // Beat times of a TIMING block up to end: beat0 + k*beatLen when beatLen > 0, plus every kick,
