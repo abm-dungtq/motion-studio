@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- So sánh phiên bản theo shot: hộp "Xem thay đổi" của banner đạo diễn mở tab "Theo shot" trước, kể bằng lời người dựng ("Shot 3 dài 2,0 s → 3,5 s", "Thêm shot 7", "Câu vo-04: “…” → “…”", nhạc đổi gì), mỗi shot đổi có ảnh hiện tại; bấm một dòng thì đóng hộp, chọn shot đó và tua tới đầu shot. Có ghi số file media bị ghi đè. Diff chữ từng file vẫn ở tab "Theo file". Trong Lịch sử phiên bản, mỗi bản cũ có "So với hiện tại" mở cùng cách xem (bản đã dọn thì báo "Không còn bản vN để so"); đóng hộp thì tiêu điểm về nút phiên bản.
+
 - Ghi chú theo mốc thời gian: đang xem, nhấn C để dừng video và gõ một ghi chú ngay tại playhead ("chữ ra muộn"); Enter lưu kèm shot ở mốc đó, Esc bỏ. Ghi chú hiện thành dấu trên thước ("!" chưa xử lý, "→" đã giao), bấm dấu thì tua tới đó và mở danh sách ở đầu tab Đạo diễn. Danh sách có Tới, Sửa, Xong, Xoá và nút "Giao đạo diễn sửa N ghi chú" gửi cả nhóm thành một yêu cầu (hỏi trước). Ghi chú lưu ở `.opus/notes.json` của dự án, không vào `project.json` nên không tạo phiên bản.
 
 - Khay việc: nút "Đang chạy N" (hoặc "Việc") trên thanh trên cùng mở danh sách việc dài của dự án (xuất, mốc thời gian, khớp chữ, đạo diễn, lượt Flow) với thời gian đã chạy, trạng thái bằng chữ, nút Huỷ (lượt Flow hỏi trước và nói đã tính lượt hay chưa), "Mở hộp Xuất" khi xuất xong, và dòng "Flow hôm nay" có cảnh báo "sắp hết lượt". Nút Gợi ý, nút tạo pitch, nút kiểm đăng nhập Flow và lượt Flow của shot nói đang làm gì. Để yên không có việc nào chạy thì Studio hỏi máy chủ ít hơn: trạng thái Flow, thẻ chờ duyệt và thẻ "Cần xử lý ngoài" hỏi mỗi 30 giây thay vì 2–5 giây (a-02 để yên 10 giây: 12 request còn 5).
