@@ -2,7 +2,10 @@
 // Registers the Anime tab (motion comic) in the assets group of the rail.
 import { Sparkles } from "lucide-react";
 import type { Studio } from "@/ext/registry.ts";
-import { AnimeTab, LEAD, useJobEndsBadge } from "./AnimeTab.tsx";
+import { lazyNamed } from "@/ext/lazy.ts";
+import { LEAD, useJobEndsBadge } from "./badge.ts";
+
+const AnimeTab = lazyNamed(() => import("./AnimeTab.tsx"), "AnimeTab");
 
 export function register(studio: Studio): void {
   studio.registerTab({ id: "anime", label: "Anime", icon: Sparkles, group: "assets", order: 30, lead: LEAD, component: AnimeTab, badge: useJobEndsBadge });

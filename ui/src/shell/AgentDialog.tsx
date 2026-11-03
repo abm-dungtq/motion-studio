@@ -1,6 +1,8 @@
 // The agent dialog ("Agent trên máy", the old popover of public/agent.js). Its body is only the rows
 // registered with registerAgentRows, in registration order; each gets { data, error, reload } of
 // GET /api/agent and runs in its own ErrorBoundary ("Mục mở rộng lỗi: …", agent.js:65).
+import { Suspense } from "react";
+import { TabFallback } from "@/components/TabFallback.tsx";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAgent } from "@/api/queries.ts";
@@ -32,7 +34,9 @@ export function AgentDialog() {
           <div data-slot="agent" className="flex flex-col gap-2 pr-2 text-sm">
             {rows.length ? rows.map((r) => (
               <ErrorBoundary key={r.seq} what="agent rows" fallback={(e) => <p className="text-sm text-danger">{`Mục mở rộng lỗi: ${e.message}`}</p>}>
-                <r.component data={data} error={error ?? null} reload={reload} />
+                <Suspense fallback={<TabFallback compact />}>
+                  <r.component data={data} error={error ?? null} reload={reload} />
+                </Suspense>
               </ErrorBoundary>
             )) : <Loading />}
           </div>

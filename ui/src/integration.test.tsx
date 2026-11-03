@@ -12,7 +12,6 @@ import { say } from "@/api/client.ts";
 import type { ProjectEntry } from "@/api/types.ts";
 import { useAgentRows, useInspectorSections, useSections } from "@/ext/registry.ts";
 import { AgentTable } from "@/ext/agents/AgentTable.tsx";
-import { GflowRow } from "@/ext/videogen/GflowRow.tsx";
 import { AgentStatus } from "@/panels/agent/AgentStatus.tsx";
 import { manifest, NAME } from "@/panels/director/fixtures.ts";
 import { SLOTS } from "./slots.ts";
@@ -115,7 +114,9 @@ describe("integration: every panel and extension through the real loader", () =>
   it("has two agent rows, the built-in status before the agents table", async () => {
     await bootApp();
     const rows = renderHook(() => useAgentRows()).result.current;
-    expect(rows.map((r) => r.component)).toEqual([AgentStatus, AgentTable, GflowRow]);
+    expect(rows.slice(0, 2).map((r) => r.component)).toEqual([AgentStatus, AgentTable]);
+    // videogen's row loads when the dialog opens (ext/lazy.ts).
+    expect((rows[2]?.component as { $$typeof?: symbol }).$$typeof).toBe(Symbol.for("react.lazy"));
   });
 
   it("fills every slot when its place is open", async () => {

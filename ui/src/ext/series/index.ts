@@ -5,13 +5,16 @@
 // dialog; the "needs outside help" cards at the top of the director column.
 import { Images } from "lucide-react";
 import type { Studio } from "@/ext/registry.ts";
-import { AssetsTab, LEAD } from "./AssetsTab.tsx";
-import { AudioReview } from "./AudioReview.tsx";
-import { OpenConsentCards } from "./ConsentCards.tsx";
-import { DeliveryPanel } from "./DeliveryPanel.tsx";
-import { HandoffCard } from "./HandoffCard.tsx";
-import { ScenesCard } from "./ScenesCard.tsx";
-import { VoicePick } from "./VoicePick.tsx";
+import { lazyNamed } from "@/ext/lazy.ts";
+import { LEAD } from "./lead.ts";
+
+const AssetsTab = lazyNamed(() => import("./AssetsTab.tsx"), "AssetsTab");
+const AudioReview = lazyNamed(() => import("./AudioReview.tsx"), "AudioReview");
+const OpenConsentCards = lazyNamed(() => import("./ConsentCards.tsx"), "OpenConsentCards");
+const DeliveryPanel = lazyNamed(() => import("./DeliveryPanel.tsx"), "DeliveryPanel");
+const HandoffCard = lazyNamed(() => import("./HandoffCard.tsx"), "HandoffCard");
+const ScenesCard = lazyNamed(() => import("./ScenesCard.tsx"), "ScenesCard");
+const VoicePick = lazyNamed(() => import("./VoicePick.tsx"), "VoicePick");
 
 export function register(studio: Studio): void {
   studio.registerTab({ id: "series-assets", label: "Tài sản", icon: Images, group: "assets", order: 40, lead: LEAD, component: AssetsTab });
