@@ -7,9 +7,10 @@
 import { useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api, queryClient, say, send } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsLive } from "@/api/job-invalidate.ts";
 import { Button } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
-import { cardsInterval, useProjectBusy } from "./api.ts";
+import { cardsInterval, POLL_MS, useProjectBusy } from "./api.ts";
 
 export interface Handoff { step: string; file: string; text: string; paste: string }
 
@@ -48,8 +49,11 @@ function HandoffItem({ name, card }: { name: string; card: Handoff }) {
 
 export function HandoffCards({ name }: { name: string }) {
   const running = useProjectBusy(name);
-  // Every card here waits on the user.
-  const { data } = useQuery({ ...handoffQuery(name), refetchInterval: (q) => cardsInterval(Boolean(q.state.data?.length), running) });
+  const live = useEventsLive(name);
+  // Every card here waits on the user, who closes it outside Studio: asked every POLL_MS while one
+  // shows. A card is written when a tracked step fails, at the end of its job, so while a job runs
+  // the exit event reloads the list and the poll slows down to FALLBACK_POLL_MS.
+  const { data } = useQuery({ ...handoffQuery(name), refetchInterval: (q) => cardsInterval(Boolean(q.state.data?.length), running, live ? FALLBACK_POLL_MS : POLL_MS) });
   if (!data?.length) return null;
   return <>{data.map((c) => <HandoffItem key={c.step} name={name} card={c} />)}</>;
 }

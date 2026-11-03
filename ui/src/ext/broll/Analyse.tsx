@@ -8,6 +8,7 @@ import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { queryClient, say } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsLive } from "@/api/job-invalidate.ts";
 import { brollIndex, brollJobQuery, brollPlanQuery, keys } from "@/api/queries.ts";
 import type { Job } from "@/api/types.ts";
 import { Button } from "@/shell/controls.tsx";
@@ -52,7 +53,9 @@ export function Analyse() {
   const { scope, setScope } = useBroll();
   const scopeParams: Record<string, string> = scope === "project" && name ? { name, scope: "project" } : { scope: "workspace" };
   const plan = useQuery(brollPlanQuery(scopeParams));
-  const job = useQuery({ ...brollJobQuery(), refetchInterval: (q) => (isRunning(q.state.data?.job) ? POLL_MS : false) });
+  const live = useEventsLive(name);
+  // A workspace scan runs under its own owner, whose events reach no project stream.
+  const job = useQuery({ ...brollJobQuery(), refetchInterval: (q) => (isRunning(q.state.data?.job) ? (live && q.state.data?.job?.name === name ? FALLBACK_POLL_MS : POLL_MS) : false) });
   const j = job.data?.job ?? null;
   const running = isRunning(j);
 

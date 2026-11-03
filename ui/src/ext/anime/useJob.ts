@@ -1,10 +1,12 @@
 // Port of public/ext-anime.js; behaviour unchanged.
-// Following one anime job (the old A.follow): GET /api/anime/job every POLL_MS while it runs, for at
+// Following one anime job (the old A.follow): GET /api/anime/job every POLL_MS while it runs (every
+// FALLBACK_POLL_MS while the anime job events reach the page), for at
 // most JOB_MAX_MS. useFollow polls and runs onEnd once when the job ends; it is mounted by the tab,
 // so the end toast does not depend on which sub-tab is open. useJobView reads the same cache
 // without polling, for the views that show the log.
 import { useEffect, useRef } from "react";
 import { queryClient } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsLive } from "@/api/job-invalidate.ts";
 import { keys, useAnimeJob } from "@/api/queries.ts";
 import { useStudio } from "@/store/studio.ts";
 import { useAnimeStore, type JobRef, type Slot } from "./store.ts";
@@ -26,7 +28,8 @@ export function useFollow(slot: Slot, onEnd: (j: JobView, ref: JobRef) => void):
   const id = ref?.id ?? null;
   const cached = id ? queryClient.getQueryData<JobView>(keys.animeJob(name, id)) : undefined;
   const polling = Boolean(ref && !ref.ended && (!cached || isLive(cached.job)) && Date.now() - ref.t0 < JOB_MAX_MS);
-  const q = useAnimeJob(name, id, polling ? POLL_MS : false);
+  const live = useEventsLive(name);
+  const q = useAnimeJob(name, id, polling ? (live ? FALLBACK_POLL_MS : POLL_MS) : false);
   const data = q.data as JobView | undefined;
   const end = useRef(onEnd);
   end.current = onEnd;

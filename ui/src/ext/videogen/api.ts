@@ -1,6 +1,7 @@
 // The videogen routes (routes/videogen.mjs) as the shot inspector and the agent row read them.
 import { useQuery } from "@tanstack/react-query";
 import { api, send, type SendResult } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsStore } from "@/api/job-invalidate.ts";
 
 export interface VgStatus {
   bin: string; found: boolean; version: string | null; tested: boolean; profile: string | null;
@@ -30,10 +31,14 @@ export const SECONDS = [4, 6, 8, 10];
 export const pickSeconds = (d: number): number => SECONDS.find((s) => s >= Number(d) - 0.01) ?? 10;
 
 export const vgStatus = () => api<VgStatus>("/api/videogen/status");
-// One status query for every reader (the agent row, the shot inspector, the job tray): every 5 s
-// while a Flow run is going, every 30 s otherwise.
-export const statusInterval = (d: VgStatus | undefined) => (d?.job ? 5000 : 30000);
-export const useVgStatus = () => useQuery({ queryKey: ["videogen", "status"], queryFn: vgStatus, refetchInterval: (q) => statusInterval(q.state.data) });
+// One status query for every reader (the agent row, the shot inspector, the job tray): every
+// busyMs while a Flow run is going (5 s, or FALLBACK_POLL_MS when the run is of the project whose
+// events reach the page), every 30 s otherwise.
+export const statusInterval = (d: VgStatus | undefined, busyMs = 5000) => (d?.job ? busyMs : 30000);
+export function useVgStatus() {
+  const live = useEventsStore((s) => s.live);
+  return useQuery({ queryKey: ["videogen", "status"], queryFn: vgStatus, refetchInterval: (q) => statusInterval(q.state.data, live && q.state.data?.job?.name === live ? FALLBACK_POLL_MS : 5000) });
+}
 export const vgItems = (name: string) => api<{ items: VgItem[] }>(`/api/videogen/items?name=${encodeURIComponent(name)}`);
 export const vgCreate = (body: VgCreate): Promise<SendResult> => send("/api/videogen/shot", { ...body });
 export const vgImage = (body: VgImageCreate): Promise<SendResult> => send("/api/videogen/image", { ...body });

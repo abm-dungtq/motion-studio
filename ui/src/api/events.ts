@@ -11,6 +11,7 @@ import { bus } from "@/core/bus.ts";
 import { useStudio } from "@/store/studio.ts";
 import { actions } from "./actions.ts";
 import { queryClient, say } from "./client.ts";
+import { invalidateForJob, setEventsLive } from "./job-invalidate.ts";
 import { markers, notifyMarkers } from "./markers.ts";
 import { getJobLogs, keys, setJobLogs, setRequests, useProject, useProjectEntry } from "./queries.ts";
 import type { DirectorRequest, Job, JobEvent, Manifest } from "./types.ts";
@@ -32,6 +33,7 @@ export function applyJobEvent(name: string, e: JobEvent): void {
     else if (j.code === 0 && j.meta?.step === "bundle") say(`Đã xuất bộ lớp dựng ${j.meta.output}`);
     else if (j.code !== 0 && j.status !== "cancelled") say(`${j.meta?.step === "bundle" ? "Xuất bộ lớp dựng" : "Xuất video"} lỗi (exit ${j.code})`, true);
   }
+  invalidateForJob(queryClient, name, e);
   notifyMarkers("jobs", e);
 }
 
@@ -66,6 +68,15 @@ export function useProjectEvents(name: string | null): void {
     if (!live || !name) return;
     const es = new EventSource(`/api/events?name=${encodeURIComponent(name)}`);
     const mine = () => useStudio.getState().name === name;
+    // Readers poll slower while the stream is open; after a drop, the reconnect reads the jobs
+    // again, since events sent while it was down are lost.
+    let dropped = false;
+    es.addEventListener("open", () => {
+      setEventsLive(name);
+      if (dropped) void queryClient.invalidateQueries({ queryKey: keys.jobs(name) });
+      dropped = false;
+    });
+    es.addEventListener("error", () => { dropped = true; setEventsLive(null); });
     es.addEventListener("manifest", (e) => {
       const next = parse<{ version?: number }>((e as MessageEvent).data);
       const shownVersion = queryClient.getQueryData<Manifest>(keys.project(name))?.version;
@@ -82,7 +93,7 @@ export function useProjectEvents(name: string | null): void {
       const ev = parse<JobEvent>((e as MessageEvent).data);
       if (mine() && ev?.job) applyJobEvent(name, ev);
     });
-    return () => es.close();
+    return () => { es.close(); setEventsLive(null); };
   }, [live, name]);
 
   // A new manifest (or none): keep the pick valid, reload the markers, the gates 1.5 s later.

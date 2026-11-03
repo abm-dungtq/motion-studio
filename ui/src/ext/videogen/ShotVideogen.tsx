@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, say, type SendResult } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsLive } from "@/api/job-invalidate.ts";
 import type { Manifest } from "@/api/types.ts";
 import { mss, trayItems } from "@/core/job-tray.ts";
 import type { InspectorSectionProps } from "@/ext/registry.ts";
@@ -84,7 +85,8 @@ function VgPanel({ name, shot, m }: { name: string; shot: Shot; m: Manifest }) {
   const status = useVgStatus();
   const st = status.data;
   const busyHere = Boolean(st?.job && st.job.name === name);
-  const items = useQuery({ queryKey: ["videogen", "items", name], queryFn: () => vgItems(name), refetchInterval: busyHere ? 2000 : false });
+  const live = useEventsLive(name);
+  const items = useQuery({ queryKey: ["videogen", "items", name], queryFn: () => vgItems(name), refetchInterval: busyHere ? (live ? FALLBACK_POLL_MS : 2000) : false });
   // Image first: an image is free in quota, a clip costs Flow credits.
   const [kind, setKind] = useState<VgKind>("image");
   // The job's end settles its item (attached, indeterminate…): fetch the list once more.
