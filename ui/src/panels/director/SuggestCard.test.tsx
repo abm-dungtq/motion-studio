@@ -1,4 +1,4 @@
-import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { chooseCombo, comboOptions, mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -115,6 +115,16 @@ describe("SuggestCard", () => {
     expect(choose).toHaveBeenCalledWith({ name: NAME, direction: "A6", style: "data-editorial", mode: "dao-dien" });
     expect(card()).toHaveTextContent("Đã chọn hướng A6 với phong cách data-editorial. BRIEF.md đã được cập nhật.");
     expect(card()).toHaveTextContent(reason);
+  });
+
+  it("the mode picker lists the modes and sends the one chosen", async () => {
+    choose.mockResolvedValue({ status: 200, data: { outcome: "chosen", direction: "A6", pick: 2, style: "data-editorial", mode: { saved: false, reason: null } } });
+    show(detOnly());
+    expect(comboOptions("Chế độ vận hành")).toEqual(["Đạo diễn", "Nhanh", "Từ nhạc", "Timeline"]);
+    chooseCombo("Chế độ vận hành", "Nhanh");
+    expect(screen.getByRole("combobox", { name: "Chế độ vận hành" })).toHaveTextContent("Nhanh");
+    await act(async () => { fireEvent.click(chooseButton()); });
+    expect(choose).toHaveBeenCalledWith({ name: NAME, direction: "A6", style: "data-editorial", mode: "nhanh" });
   });
 
   it("queued and not_in_pitch show their sentences", async () => {
