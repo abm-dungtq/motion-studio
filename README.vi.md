@@ -93,7 +93,7 @@ Khi kéo, Studio chỉ xem trước tại chỗ. Thả chuột ra thì Studio g�
 - **Cắt shot:** chọn shot, đặt playhead bên trong rồi bấm S. Shot mới để trống, và Studio đưa nút "Nhờ đạo diễn dựng shot mới".
 - **Hít** (phím N hoặc nút "Hít") vào playhead, mép shot, câu thoại, SFX, phách nhạc và đầu từ.
 - **M/S** trên nhãn track tắt tiếng hoặc solo track đó, chỉ trong player.
-- **Chip cổng** cạnh menu Xuất bản báo "Cần duyệt lại animatic" hoặc "Chưa đủ cổng xuất". Bấm vào để mở thẻ duyệt hoặc danh sách lỗi.
+- **Chip cổng** cạnh menu Xuất bản báo "Cần duyệt lại animatic" hoặc "Chưa đủ cổng xuất". Bấm vào để mở thẻ duyệt hoặc danh sách lỗi. Kết quả cổng được giữ theo từng dự án (trong bộ nhớ và ở `.opus/gates-cache.json`) khi các file mà kiểm tra đọc chưa đổi, nên mở lại dự án là có ngay; nút "Kiểm lại" trong hộp Xuất hoặc lệnh "Kiểm lại cổng xuất" trong Cmd+K chạy lại bất kể cache.
 
 ### Phím tắt
 
