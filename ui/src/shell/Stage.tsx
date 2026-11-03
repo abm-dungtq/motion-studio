@@ -2,7 +2,8 @@
 // it (to start, play/pause, to end, clock), and a poster while the player has no composition to
 // show: a frame of the newest render (GET /api/timeline/media) at the playhead, or one line of text.
 // The clock is written straight into its element from useStudio.subscribe: playing never renders
-// the React tree. Stage sets actions.transport while mounted.
+// the React tree. Stage sets actions.transport while mounted. With no project open, the welcome
+// screen (Welcome.tsx) covers the stage; the player stays mounted under it.
 import { useEffect, useRef, useState } from "react";
 import { Pause, PanelRightOpen, Play, SkipBack, SkipForward } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import { thumbAt } from "@/core/thumbs.ts";
 import { fileUrl, when } from "@/core/ui-format.ts";
 import { useStudio } from "@/store/studio.ts";
 import { Button } from "./controls.tsx";
+import { Welcome } from "./Welcome.tsx";
 
 export function Stage() {
   const box = useRef<HTMLDivElement>(null);
@@ -133,10 +135,11 @@ export function Stage() {
         <Button variant="icon" aria-label="Tới cuối" onClick={() => actions.transport.seek(actions.transport.duration())}><SkipForward /></Button>
         <span ref={clock} data-testid="clock" className="ml-1 font-mono text-xs text-muted-foreground tabular-nums">0:00.0 / 0:00.0</span>
       </div>
+      {!name && providerOk ? <Welcome /> : null}
       {rightCollapsed ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="icon" aria-label="Mở cột phải" className="absolute top-1 right-1" onClick={() => useStudio.getState().toggleRight(true)}>
+            <Button variant="icon" aria-label="Mở cột phải" className="absolute top-1 right-1 z-20" onClick={() => useStudio.getState().toggleRight(true)}>
               <PanelRightOpen />
             </Button>
           </TooltipTrigger>

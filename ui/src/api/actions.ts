@@ -5,6 +5,7 @@
 // actions.transport is the player's control, set by shell/Stage.tsx; until a Stage mounts it is a
 // no-op transport whose time() is the store's playhead.
 import { answerFailure, ANSWER_TIMEOUT_MS } from "@/core/gate-cards.ts";
+import { rememberRecent } from "@/core/recent.ts";
 import { nextSfxId, splitOps } from "@/core/timeline-edit.ts";
 import type { AudioRule } from "@/core/player.ts";
 import { openPointMenu } from "@/shell/PointMenu.tsx";
@@ -247,7 +248,8 @@ export const actions = {
     await refreshQueue();
   },
 
-  // Open a project ("" or an unknown name: none). Resets what belonged to the last one.
+  // Open a project ("" or an unknown name: none). Resets what belonged to the last one; a known
+  // name goes first in the welcome screen's recent list.
   async open(name: string): Promise<void> {
     const entry = queryClient.getQueryData<ProjectEntry[]>(Q.keys.projects())?.find((p) => p.name === name) ?? null;
     const prev = useStudio.getState().name;
@@ -258,6 +260,7 @@ export const actions = {
       if (entry) url.searchParams.set("name", name); else url.searchParams.delete("name");
       window.history.replaceState(window.history.state, "", url);
     } catch { /* no history (tests) */ }
+    if (entry) rememberRecent(name);
     if (!entry?.has_manifest || useStudio.getState().providerStatus?.ok === false) return;
     await reload();
     await refreshQueue();

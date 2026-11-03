@@ -68,6 +68,8 @@ Version 2.0 rewrote the interface in React, TypeScript, Tailwind and shadcn/ui w
 
 ## Your first project
 
+With no project open, the middle of the window is a welcome screen: **Mở lại dự án** (open again) lists up to six projects you opened lately in this browser, each with its title, version and export gate state, next to **Dự án mới** (New project) and **Mở dự án khác** (Open another project, which opens the project picker).
+
 1. Click **Dự án mới** (New project) in the top bar. Enter a folder name, an aspect ratio (16:9, 9:16 or both), a topic and a duration, and pick a mode: **Làm từ đầu** (from scratch), **Dựng từ video có sẵn + B-roll** (edit existing video with B-roll), **Theo bài nhạc** (cut to music) or **Mẫu nhanh** (quick template). The optional field "Việc đầu tiên giao cho AI" (First task for the AI) gives the director its first job.
 2. Add footage in the **Chất liệu** (Materials) tab. Files from outside the projects folder are copied into `footage/raw/`.
 3. Talk to the director in the right-hand column. When it offers directions or an animatic, approve or reject them on the cards.
