@@ -6,5 +6,7 @@ describe("statusInterval", () => {
     expect(statusInterval({ job: { id: "1", name: "p" } } as VgStatus)).toBe(5000);
     expect(statusInterval({ job: null } as VgStatus)).toBe(30000);
     expect(statusInterval(undefined)).toBe(30000);
+    expect(statusInterval({ job: { id: "1", name: "p" } } as VgStatus, 30000)).toBe(30000);
+    expect(statusInterval({ job: null } as VgStatus, 30000)).toBe(30000);
   });
 });

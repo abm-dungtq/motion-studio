@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api, queryClient, say, send } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsLive } from "@/api/job-invalidate.ts";
 import type { Job } from "@/api/types.ts";
 import { Button, Checkbox } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
@@ -69,7 +70,8 @@ function SceneRow({ name, s, busy, can, picked, onPick, onRebuild }: {
 }
 
 export function ScenesList({ name }: { name: string }) {
-  const q = useQuery({ ...scenesQuery(name), refetchInterval: (x) => (x.state.data?.job ? POLL_MS : false) });
+  const live = useEventsLive(name);
+  const q = useQuery({ ...scenesQuery(name), refetchInterval: (x) => (x.state.data?.job ? (live ? FALLBACK_POLL_MS : POLL_MS) : false) });
   const [picked, setPicked] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const data = q.data;

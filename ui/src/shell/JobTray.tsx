@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { say, type SendResult } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsLive } from "@/api/job-invalidate.ts";
 import { jobsCancel, useJobs } from "@/api/queries.ts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { mss, trayItems, type TrayItem, type TrayStatus } from "@/core/job-tray.ts";
@@ -36,11 +37,12 @@ export function JobTray() {
   const { data: jobs } = useJobs(name);
   const { data: st } = useVgStatus();
   const busy = Boolean(st?.job && st.job.name === name);
+  const live = useEventsLive(name);
   const vgq = useQuery({
     queryKey: ["videogen", "items", name],
     queryFn: () => vgItems(name ?? ""),
     enabled: Boolean(name),
-    refetchInterval: busy ? 2000 : false,
+    refetchInterval: busy ? (live ? FALLBACK_POLL_MS : 2000) : false,
   });
   const vg = vgq.data?.items ?? [];
   const [now, setNow] = useState(() => Date.now());

@@ -9,6 +9,8 @@ describe("previewsInterval", () => {
   it("keeps asking while previews may come, or before the first answer", () => {
     expect(previewsInterval({ roles: [] } as never)).toBe(POLL_MS);
     expect(previewsInterval(undefined)).toBe(POLL_MS);
+    expect(previewsInterval(undefined, 30000)).toBe(30000);
+    expect(previewsInterval(null, 30000)).toBe(false);
   });
 });
 
@@ -17,6 +19,8 @@ describe("cardsInterval", () => {
     expect(cardsInterval(true, false)).toBe(POLL_MS);
     expect(cardsInterval(false, true)).toBe(POLL_MS);
     expect(cardsInterval(false, false)).toBe(IDLE_MS);
+    expect(cardsInterval(false, true, 30000)).toBe(30000);
+    expect(cardsInterval(true, true, 30000)).toBe(POLL_MS);
     expect(IDLE_MS).toBe(30000);
   });
   it("counts a job as running by its status or, without one, a missing exit code", () => {

@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api, ApiError, queryClient, say, send } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsLive } from "@/api/job-invalidate.ts";
 import { Button, Input } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { POLL_MS, projectSrc, useConsent } from "./api.ts";
@@ -57,7 +58,8 @@ export function rowText(row: DeliveryRow, folder: string): string {
 const SLOW_MS = 5 * 60000;
 
 export function DeliveryList({ name }: { name: string }) {
-  const q = useQuery({ ...deliveryQuery(name), refetchInterval: (x) => (x.state.data?.jobs.length ? POLL_MS : false) });
+  const live = useEventsLive(name);
+  const q = useQuery({ ...deliveryQuery(name), refetchInterval: (x) => (x.state.data?.jobs.length ? (live ? FALLBACK_POLL_MS : POLL_MS) : false) });
   const consent = useConsent(name, Boolean(q.data));
   const [busy, setBusy] = useState<RowKey | null>(null);
   const [line1, setLine1] = useState("");

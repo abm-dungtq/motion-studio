@@ -4,6 +4,7 @@
 // { status, data?, error? } and, on 200, reloads the assets, the waiting cards and the previews.
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api, ApiError, queryClient, send } from "@/api/client.ts";
+import { FALLBACK_POLL_MS, useEventsLive } from "@/api/job-invalidate.ts";
 import { useJobs } from "@/api/queries.ts";
 import type { Job } from "@/api/types.ts";
 import { jobStatus } from "@/core/job-tray.ts";
@@ -13,9 +14,10 @@ const enc = encodeURIComponent;
 export const POLL_MS = 2000;
 export const IDLE_MS = 30000;
 
-// Cards the director writes outside this page: asked every 2 s while a job of the project runs or a
-// card waits on the user, every 30 s otherwise.
-export const cardsInterval = (waiting: boolean, running: boolean): number => (waiting || running ? POLL_MS : IDLE_MS);
+// Cards the director writes outside this page: asked every 2 s while a card waits on the user,
+// every busyMs while a job of the project runs (2 s unless the reader follows the job's events),
+// every 30 s otherwise.
+export const cardsInterval = (waiting: boolean, running: boolean, busyMs = POLL_MS): number => (waiting ? POLL_MS : running ? busyMs : IDLE_MS);
 export const anyRunning = (jobs: readonly Job[] | undefined): boolean => Boolean(jobs?.some((j) => jobStatus(j) === "running"));
 export const useProjectBusy = (name: string | null): boolean => anyRunning(useJobs(name).data);
 
@@ -42,12 +44,16 @@ export const assetsQuery = (name: string | null) => queryOptions({
   queryKey: seriesKeys.assets(name),
   queryFn: () => api<AssetsList>(`/api/assets?name=${enc(name ?? "")}`),
 });
-// Polled while a batch runs, so the board follows the job and loads again when it ends.
-export const useAssets = (name: string | null, enabled: boolean) => useQuery({
-  ...assetsQuery(name),
-  enabled: Boolean(name && enabled),
-  refetchInterval: (q) => (q.state.data?.batches.some((b) => b.running || b.job) ? POLL_MS : false),
-});
+// Polled while a batch runs (slowly while the asset-batch events reach the page), so the board
+// follows the job and loads again when it ends.
+export function useAssets(name: string | null, enabled: boolean) {
+  const live = useEventsLive(name);
+  return useQuery({
+    ...assetsQuery(name),
+    enabled: Boolean(name && enabled),
+    refetchInterval: (q) => (q.state.data?.batches.some((b) => b.running || b.job) ? (live ? FALLBACK_POLL_MS : POLL_MS) : false),
+  });
+}
 
 // Every waiting consent card of the project, whatever step it is for (image batch, voices, upload).
 // Polled, since the director writes cards outside this page.
@@ -75,8 +81,12 @@ export const previewsQuery = (name: string | null) => queryOptions({
   },
 });
 // A project in no series answers 404 (data null): one ask is enough, the answer will not change.
-export const previewsInterval = (data: VoicePreviews | null | undefined): number | false => (data === null ? false : POLL_MS);
-export const usePreviews = (name: string | null, enabled = true) => useQuery({ ...previewsQuery(name), enabled: Boolean(name && enabled), refetchInterval: (q) => previewsInterval(q.state.data) });
+// Otherwise every ms: POLL_MS, or FALLBACK_POLL_MS while the voice-design events reach the page.
+export const previewsInterval = (data: VoicePreviews | null | undefined, ms = POLL_MS): number | false => (data === null ? false : ms);
+export function usePreviews(name: string | null, enabled = true) {
+  const live = useEventsLive(name);
+  return useQuery({ ...previewsQuery(name), enabled: Boolean(name && enabled), refetchInterval: (q) => previewsInterval(q.state.data, live ? FALLBACK_POLL_MS : POLL_MS) });
+}
 
 export interface WriteResult<T = Record<string, unknown>> { status: number; data?: T; error?: string }
 
