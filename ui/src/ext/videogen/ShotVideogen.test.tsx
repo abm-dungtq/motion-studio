@@ -1,4 +1,4 @@
-import { renderUi, resetAll } from "@/shell/test-utils.tsx";
+import { chooseCombo, comboOptions, renderUi, resetAll } from "@/shell/test-utils.tsx";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -75,7 +75,7 @@ describe("shot inspector AI clip section", () => {
     serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
     renderUi(<ShotVideogen pick={{ kind: "shot", id: "s1" }} m={M2([{ id: "s1", start: 0, end: 4, assets: ["footage/raw/a.mp4"] }])} />);
     fireEvent.click(screen.getByRole("button", { name: "Video" }));
-    fireEvent.change(screen.getByRole("combobox", { name: "Kiểu" }), { target: { value: "start" } });
+    chooseCombo("Kiểu", "Ảnh đầu");
     expect(screen.getByText("Shot chưa có ảnh; thêm ảnh vào shot hoặc dùng Chỉ chữ")).toBeInTheDocument();
   });
 
@@ -88,30 +88,30 @@ describe("shot inspector AI clip section", () => {
     }
     renderUi(<Host />);
     fireEvent.click(screen.getByRole("button", { name: "Video" }));
-    fireEvent.change(screen.getByRole("combobox", { name: "Kiểu" }), { target: { value: "start" } });
-    fireEvent.change(screen.getByRole("combobox", { name: "Ảnh đầu" }), { target: { value: "assets/a.png" } });
+    chooseCombo("Kiểu", "Ảnh đầu");
+    chooseCombo("Ảnh đầu", "a.png");
     fireEvent.change(screen.getByRole("textbox", { name: "Mô tả chuyển động" }), { target: { value: "cũ" } });
     fireEvent.click(screen.getByRole("button", { name: "sang s2" }));
     expect(screen.getByRole("button", { name: "Ảnh" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: "Video" }));
-    expect((screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).value).toBe("8");
-    expect((screen.getByRole("combobox", { name: "Kiểu" }) as HTMLSelectElement).value).toBe("t2v");
+    expect(screen.getByRole("combobox", { name: "Độ dài" })).toHaveTextContent("8 s");
+    expect(screen.getByRole("combobox", { name: "Kiểu" })).toHaveTextContent("Chỉ chữ");
     expect((screen.getByRole("textbox", { name: "Mô tả chuyển động" }) as HTMLTextAreaElement).value).toBe("");
   });
 
   it("picks the shortest clip that covers the shot; 10 s and quality only with omni-flash", () => {
     serve({ "/api/videogen/status": UP, "/api/videogen/items": { items: [] } });
     open();
-    const len = () => [...(screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).options].map((o) => o.value);
-    expect((screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).value).toBe("6");
-    expect(len()).not.toContain("10");
+    const len = () => comboOptions("Độ dài");
+    expect(screen.getByRole("combobox", { name: "Độ dài" })).toHaveTextContent("6 s");
+    expect(len()).not.toContain("10 s");
     expect(screen.queryByRole("combobox", { name: "Chất lượng" })).toBeNull();
-    fireEvent.change(screen.getByRole("combobox", { name: "Model" }), { target: { value: "omni-flash" } });
-    expect(len()).toContain("10");
-    fireEvent.change(screen.getByRole("combobox", { name: "Độ dài" }), { target: { value: "10" } });
-    expect([...(screen.getByRole("combobox", { name: "Chất lượng" }) as HTMLSelectElement).options].map((o) => o.value)).toEqual(["720p", "360p"]);
-    fireEvent.change(screen.getByRole("combobox", { name: "Model" }), { target: { value: "veo-fast" } });
-    expect((screen.getByRole("combobox", { name: "Độ dài" }) as HTMLSelectElement).value).toBe("8");
+    chooseCombo("Model", "omni-flash");
+    expect(len()).toContain("10 s");
+    chooseCombo("Độ dài", "10 s");
+    expect(comboOptions("Chất lượng")).toEqual(["720p", "360p nháp"]);
+    chooseCombo("Model", "veo-fast");
+    expect(screen.getByRole("combobox", { name: "Độ dài" })).toHaveTextContent("8 s");
   });
 
   it("Huỷ in the confirm sends nothing", async () => {
@@ -206,7 +206,7 @@ describe("shot inspector AI clip section", () => {
     expect(screen.getByRole("button", { name: "Ảnh" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("textbox", { name: "Mô tả chuyển động" })).toBeNull();
     fireEvent.change(screen.getByRole("textbox", { name: "Mô tả ảnh" }), { target: { value: "biển" } });
-    fireEvent.change(screen.getByRole("combobox", { name: "Khung ảnh" }), { target: { value: "1:1" } });
+    chooseCombo("Khung ảnh", "1:1");
     const b = screen.getByRole("button", { name: "Tạo ảnh bằng Flow" });
     await waitFor(() => expect(b).toBeEnabled());
     fireEvent.click(b);

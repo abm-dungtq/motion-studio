@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryClient, say, type SendResult } from "@/api/client.ts";
 import type { Manifest } from "@/api/types.ts";
 import type { InspectorSectionProps } from "@/ext/registry.ts";
+import { Combobox } from "@/shell/Combobox.tsx";
 import { Button, Textarea } from "@/shell/controls.tsx";
 import { makeConfirm } from "@/shell/confirm.tsx";
 import { useDraft } from "@/shell/useDraft.ts";
@@ -17,7 +18,6 @@ import {
   vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, vgReconcile, vgRecover, vgStatus, vgUsePart, type VgItem, type VgKind, type VgStatus,
 } from "./api.ts";
 
-const SELECT = "h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50";
 const IMAGE = /\.(png|jpe?g|webp)$/i;
 const VIDEO_MODES = [{ v: "t2v", label: "Chỉ chữ", refs: 0 }, { v: "start", label: "Ảnh đầu", refs: 1 }, { v: "start_end", label: "Ảnh đầu + cuối", refs: 2 }];
 const IMAGE_MODES = [{ v: "t2i", label: "Chỉ chữ", refs: 0 }, { v: "i2i", label: "Theo ảnh mẫu", refs: 1 }];
@@ -32,9 +32,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Pick({ label, value, options, onChange }: { label: string; value: string; options: { v: string; label: string }[]; onChange: (v: string) => void }) {
   return (
     <Field label={label}>
-      <select aria-label={label} className={SELECT} value={value} onChange={(e) => onChange(e.target.value)}>
-        {options.map((x) => <option key={x.v} value={x.v}>{x.label}</option>)}
-      </select>
+      <Combobox label={label} value={value} options={options.map((x) => ({ value: x.v, label: x.label }))} onChange={onChange} />
     </Field>
   );
 }
@@ -124,10 +122,13 @@ function Refs({ need, labels, images, refs, setRefs }: { need: number; labels: s
   if (!images.length) return <p className="m-0 text-sm text-warn">Shot chưa có ảnh; thêm ảnh vào shot hoặc dùng Chỉ chữ</p>;
   return <>{labels.slice(0, need).map((label, i) => (
     <Field key={label} label={label}>
-      <select aria-label={label} className={`${SELECT} min-w-0 flex-1`} value={refs[i]} onChange={(e) => setRefs((r) => r.map((x, j) => (j === i ? e.target.value : x)))}>
-        <option value="">—</option>
-        {images.map((a) => <option key={a} value={a}>{a.split("/").pop()}</option>)}
-      </select>
+      <Combobox
+        className="flex-1"
+        label={label}
+        value={refs[i] ?? ""}
+        options={[{ value: "", label: "—" }, ...images.map((a) => ({ value: a, label: a.split("/").pop() ?? a, hint: a.includes("/") ? a.slice(0, a.lastIndexOf("/")) : undefined }))]}
+        onChange={(v) => setRefs((r) => r.map((x, j) => (j === i ? v : x)))}
+      />
     </Field>
   ))}</>;
 }
@@ -202,9 +203,7 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
       <Refs need={need} labels={["Ảnh đầu", "Ảnh cuối"]} images={images} refs={refs} setRefs={setRefs} />
       <Pick label="Model" value={model} options={opts(VIDEO_MODELS)} onChange={setModel} />
       <Field label="Độ dài">
-        <select aria-label="Độ dài" className={SELECT} value={seconds} onChange={(e) => setSeconds(Number(e.target.value))}>
-          {SECONDS.filter((s) => s < 10 || omni).map((s) => <option key={s} value={s}>{s} s</option>)}
-        </select>
+        <Combobox label="Độ dài" value={String(seconds)} options={SECONDS.filter((s) => s < 10 || omni).map((s) => ({ value: String(s), label: `${s} s` }))} onChange={(v) => setSeconds(Number(v))} />
       </Field>
       {len > seconds && <p className="m-0 text-sm text-warn">Shot dài {len.toFixed(1)} s: clip chỉ phủ {seconds} s đầu{len > 10 ? ", nên tách shot" : ""}</p>}
       {omni && <Pick label="Chất lượng" value={resolution} options={RESOLUTIONS} onChange={setResolution} />}
