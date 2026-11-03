@@ -15,7 +15,7 @@ import { useDraft } from "@/shell/useDraft.ts";
 import { useStudio } from "@/store/studio.ts";
 import {
   DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL, hhmm, IMAGE_ASPECTS, IMAGE_MODELS, kindOf, pickSeconds, SECONDS, stateLabel, VIDEO_MODELS,
-  vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, vgReconcile, vgRecover, useVgStatus, vgUsePart, type VgItem, type VgKind, type VgStatus,
+  vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, stopText, vgReconcile, vgRecover, useVgStatus, vgUsePart, type VgItem, type VgKind, type VgStatus,
 } from "./api.ts";
 
 const IMAGE = /\.(png|jpe?g|webp)$/i;
@@ -217,15 +217,6 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
   );
 }
 
-// The run in progress: after the submit, stopping only stops waiting; Flow still makes it.
-function stopText(image: boolean, phase: VgItem["phase"] | undefined): string {
-  if (phase === "sent") return image
-    ? "Ngừng chờ? Flow vẫn tạo và vẫn tính quota. Ảnh không tải lại được; mở Flow và Nhập file."
-    : "Ngừng chờ? Flow vẫn tạo và vẫn tính credit. Tải về miễn phí sau bằng Tải về từ Flow.";
-  return phase === "typed"
-    ? "Huỷ? Prompt đã điền; nếu Flow kịp nhận lệnh thì vẫn tính credit."
-    : "Huỷ lượt đang tạo? Chưa gửi tới Flow nên không tốn credit.";
-}
 function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   const image = item ? kindOf(item) === "image" : false;
   // The list is polled every 2 s and the prompt may have been typed since: the question is

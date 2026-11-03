@@ -58,3 +58,13 @@ const LABEL: Record<VgState, string> = {
 export const stateLabel = (s: VgState): string => LABEL[s] ?? s;
 export const kindOf = (it: VgItem): VgKind => it.kind ?? "video";
 export const hhmm = (iso: string) => new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+
+// The run in progress: after the submit, stopping only stops waiting; Flow still makes it.
+export function stopText(image: boolean, phase: VgItem["phase"] | undefined): string {
+  if (phase === "sent") return image
+    ? "Ngừng chờ? Flow vẫn tạo và vẫn tính quota. Ảnh không tải lại được; mở Flow và Nhập file."
+    : "Ngừng chờ? Flow vẫn tạo và vẫn tính credit. Tải về miễn phí sau bằng Tải về từ Flow.";
+  return phase === "typed"
+    ? "Huỷ? Prompt đã điền; nếu Flow kịp nhận lệnh thì vẫn tính credit."
+    : "Huỷ lượt đang tạo? Chưa gửi tới Flow nên không tốn credit.";
+}
