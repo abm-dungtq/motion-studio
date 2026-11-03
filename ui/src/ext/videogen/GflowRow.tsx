@@ -26,8 +26,9 @@ export function GflowRow(_: AgentRowProps) {
       </div>
       {st?.found && st.profile && (
         <div className="flex items-center gap-2">
-          <Button disabled={checking || Boolean(st.job)} onClick={() => void check()}>Kiểm đăng nhập</Button>
-          {auth && <span>{auth}</span>}
+          <Button disabled={checking || Boolean(st.job)} onClick={() => void check()}>{checking ? "Đang kiểm…" : "Kiểm đăng nhập"}</Button>
+          {/* Always in the page, so a screen reader reads the result when it arrives. */}
+          <span role="status" data-testid="gflow-auth">{auth ?? ""}</span>
         </div>
       )}
       <div className="text-muted-foreground">Trần chỉ tính lượt gửi từ Studio; lượt tạo trên Flow hay script khác không tính.</div>

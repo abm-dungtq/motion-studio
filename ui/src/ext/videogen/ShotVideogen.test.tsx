@@ -222,6 +222,7 @@ describe("shot inspector AI clip section", () => {
   it("after the submit the running item offers Ngừng chờ, with what it still costs", async () => {
     const posts = serve({ "/api/videogen/status": { ...UP, job: { id: "j1", name: "ep" } }, "/api/videogen/items": { items: [item({ id: "r", state: "running", phase: "sent", files: [] })] } });
     open();
+    expect(await screen.findByTestId("vg-progress")).toHaveTextContent(/^Đã gửi, đã tính lượt · \d+:\d\d$/);
     fireEvent.click(await screen.findByRole("button", { name: "Ngừng chờ lượt Flow đang tạo" }));
     expect(await agree()).toMatch(/vẫn tính credit/);
     await waitFor(() => expect(posts).toHaveLength(1));
@@ -304,6 +305,7 @@ describe("agent row for gflow", () => {
     expect(posts).toHaveLength(0);
     fireEvent.click(screen.getByRole("button", { name: "Kiểm đăng nhập" }));
     expect(await screen.findByText("đăng nhập còn hạn")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("đăng nhập còn hạn");
     expect(posts).toEqual([{ path: "/api/videogen/auth", body: {} }]);
   });
 });

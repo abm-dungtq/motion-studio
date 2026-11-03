@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, say, type SendResult } from "@/api/client.ts";
 import type { Manifest } from "@/api/types.ts";
+import { mss, trayItems } from "@/core/job-tray.ts";
 import type { InspectorSectionProps } from "@/ext/registry.ts";
 import { Combobox } from "@/shell/Combobox.tsx";
 import { Button, Textarea } from "@/shell/controls.tsx";
@@ -219,6 +220,10 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
 
 function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   const image = item ? kindOf(item) === "image" : false;
+  // What the run reached and how long it has run, as the job tray says it, ticking each second.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+  const row = item ? trayItems([], [item], now)[0] : undefined;
   // The list is polled every 2 s and the prompt may have been typed since: the question is
   // worded from the item as it is now, so "không tốn credit" is never said after the typing.
   const stop = async () => {
@@ -229,6 +234,7 @@ function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   return (
     <div className="flex items-center gap-2 text-sm">
       <span>Đang tạo {image ? "ảnh" : "clip"} bằng Flow…</span>
+      {row ? <span className="text-xs text-muted-foreground" data-testid="vg-progress">{[row.detail, mss(row.elapsed)].filter(Boolean).join(" · ")}</span> : null}
       {item?.phase === "sent"
         ? <Button aria-label="Ngừng chờ lượt Flow đang tạo" onClick={() => void stop()}>Ngừng chờ</Button>
         : <Button aria-label="Huỷ lượt Flow đang tạo" onClick={() => void stop()}>Huỷ</Button>}
