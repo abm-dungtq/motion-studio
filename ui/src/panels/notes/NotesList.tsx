@@ -2,8 +2,8 @@
 // there, edit, close or delete it, and one button that sends the open ones to the director as a
 // single request (after asking).
 import { useState } from "react";
-import { say, type SendResult } from "@/api/client.ts";
-import { noteRemove, notesSend, noteUpdate, useNotes } from "@/api/queries.ts";
+import { queryClient, say, type SendResult } from "@/api/client.ts";
+import { keys, noteRemove, notesSend, noteUpdate, useNotes } from "@/api/queries.ts";
 import type { Note } from "@/api/types.ts";
 import { cn } from "@/lib/utils";
 import { makeConfirm } from "@/shell/confirm.tsx";
@@ -14,6 +14,16 @@ import { noteRowId, showNote } from "./NoteMarks.tsx";
 
 const { ask, ConfirmHost } = makeConfirm();
 const fail = (r: SendResult) => { if (r.status !== 200) say(r.error ?? `lỗi ${r.status}`, true); };
+
+// Sends the open notes of the project to the director as one request, after asking (the question
+// shows where <NotesList /> is mounted, in the director tab). Also the Cmd+K command.
+export async function sendOpenNotes(name: string, busy?: (on: boolean) => void): Promise<void> {
+  const notes = queryClient.getQueryData<{ notes: Note[] }>(keys.notes(name))?.notes ?? [];
+  const ids = notes.filter((n) => n.state === "open").map((n) => n.id);
+  if (!ids.length || !(await ask(`Giao ${ids.length} ghi chú cho đạo diễn?`, { ok: "Giao đạo diễn" }))) return;
+  busy?.(true);
+  try { fail(await notesSend({ name, ids })); } finally { busy?.(false); }
+}
 
 function Row({ name, n }: { name: string; n: Note }) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -63,12 +73,6 @@ export function NotesList() {
   const shown = data.notes.filter((n) => n.state !== "done").sort((a, b) => a.t - b.t);
   const open = shown.filter((n) => n.state === "open");
 
-  const send = async () => {
-    if (!(await ask(`Giao ${open.length} ghi chú cho đạo diễn?`, { ok: "Giao đạo diễn" }))) return;
-    setSending(true);
-    try { fail(await notesSend({ name, ids: open.map((n) => n.id) })); } finally { setSending(false); }
-  };
-
   return (
     <section aria-labelledby="notes-title" className="flex flex-col gap-1.5" data-testid="notes-list">
       <h3 id="notes-title" className="m-0 text-sm font-semibold">{`Ghi chú (${open.length} chưa xử lý)`}</h3>
@@ -78,7 +82,7 @@ export function NotesList() {
         </ul>
       ) : <p className="m-0 text-xs text-muted-foreground">Nhấn C khi xem để ghim ghi chú tại playhead.</p>}
       {open.length ? (
-        <Button variant="primary" disabled={sending} onClick={() => { void send(); }}>
+        <Button variant="primary" disabled={sending} onClick={() => { void sendOpenNotes(name, setSending); }}>
           {sending ? "Đang giao…" : `Giao đạo diễn sửa ${open.length} ghi chú`}
         </Button>
       ) : null}

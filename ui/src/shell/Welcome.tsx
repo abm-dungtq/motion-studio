@@ -66,7 +66,7 @@ export function Welcome() {
           <Button aria-haspopup="dialog" onClick={() => useStudio.getState().openDialog("new-project")}><Plus />Dự án mới</Button>
           <Button onClick={openProjectSelect}><FolderOpen />Mở dự án khác</Button>
         </div>
-        <p className="m-0 text-xs text-muted-foreground">Phím tắt: Space phát/dừng · J/K/L tua · ←/→ từng khung · C ghim ghi chú tại playhead · S cắt shot · Cmd+Z hoàn tác</p>
+        <p className="m-0 text-xs text-muted-foreground">Phím tắt: Space phát/dừng · J/K/L tua · ←/→ từng khung · C ghim ghi chú tại playhead · S cắt shot · Cmd+Z hoàn tác · Cmd+K bảng lệnh</p>
       </div>
     </div>
   );

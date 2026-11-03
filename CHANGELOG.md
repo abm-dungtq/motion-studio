@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Bảng lệnh: Cmd+K (Ctrl+K), cả khi đang gõ trong ô, mở một ô tìm lệnh: "Mở dự án: …" (dự án mở gần đây lên trước), "Dự án mới", "Đi tới tab …" (các tab trái, Đạo diễn, Shot), "Tới shot N · id" (chọn shot và tua tới đầu shot), "Hoàn tác" / "Làm lại" (khoá khi dự án chỉ đọc), "Bật/tắt lớp QA", "Mở khay việc", "Xuất video" và "Giao đạo diễn sửa N ghi chú" khi có ghi chú chưa giao (vẫn hỏi trước). Tìm không cần dấu, chia nhóm, đi bằng ↑ ↓ Home End, Enter chạy, Escape đóng và trả tiêu điểm về chỗ cũ. Màn hình chào, README và bảng phím tắt có thêm dòng Cmd+K.
+
 - Màn hình chào: chưa mở dự án nào thì giữa cửa sổ không còn dòng "Chọn một dự án" mà là "Mở lại dự án" với tối đa 6 dự án mở gần đây trong trình duyệt này (tên, tiêu đề, phiên bản hoặc "chưa có project.json", trạng thái cổng xuất), nút "Dự án mới", nút "Mở dự án khác" mở ô chọn dự án, và một dòng phím tắt chính. Danh sách lưu ở `localStorage` (`ms-recent`); dự án tạm vắng (ổ ngoài chưa cắm) chỉ bị ẩn, không bị quên.
 
 - Lớp chất lượng trên timeline: Studio đọc `QA.md` của dự án và vẽ mỗi cảnh báo, lỗi có mốc (FREEZE, SILENCE, SYNC, WORD…) thành dải vàng hoặc đỏ trên làn Shot, rê chuột thấy cả dòng. Nút "Lớp QA" trên thanh timeline tắt hoặc bật lớp này và được nhớ. Thanh trên cùng có chip "QA: N lỗi, M cảnh báo" hoặc "QA đạt" (ẩn khi chưa có `QA.md`); bấm chip mở kết quả mới nhất của từng phép kiểm, dòng có mốc có nút "Tới". Chỉ tính bản render hiện hành (tên có `final` trước, rồi bản mới nhất), nên cảnh báo đã sửa ở bản render sau không hiện lại. `QA.md` được đọc lại khi một việc kết thúc. Extension đặt được chip lên thanh trên cùng bằng `registerSection("topbar", …)`, và dải của decorator có thêm `title` cho chú thích.

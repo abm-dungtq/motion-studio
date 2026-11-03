@@ -15,6 +15,7 @@ import { loadAll } from "@/ext/load.ts";
 import { AgentDialog } from "@/shell/AgentDialog.tsx";
 import { AiBanner } from "@/shell/AiBanner.tsx";
 import { Banner } from "@/shell/Banner.tsx";
+import { CommandPalette } from "@/shell/CommandPalette.tsx";
 import { ErrorBoundary } from "@/shell/ErrorBoundary.tsx";
 import { ExportDialog } from "@/shell/ExportDialog.tsx";
 import { LeftPanel } from "@/shell/LeftPanel.tsx";
@@ -97,6 +98,7 @@ export default function App() {
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
       <TopBar />
       <NarrowNotice />
+      <CommandPalette />
       <Banner />
       <AiBanner />
       <div className="flex min-h-0 flex-1">
