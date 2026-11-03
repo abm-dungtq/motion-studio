@@ -7,6 +7,10 @@
 //   node bin/motion-studio.mjs stop                                   SIGTERM, then the pidfile is removed
 //   node bin/motion-studio.mjs setup [--yes] [--ref <ref>] [--host claude|codex|all]
 //                                    install or update the provider (lib/setup.mjs; npm run setup)
+//   node bin/motion-studio.mjs install-app [--label L] [--port P] [--state FILE] [--root DIR]
+//                                    a LaunchAgent (lib/launch-agent.mjs) that starts the server at
+//                                    login; refuses while a Studio answers on the port
+//   node bin/motion-studio.mjs uninstall-app [--label L]             removes that LaunchAgent
 //   node bin/motion-studio.mjs --help | -h
 // Root: --root, else $MOTION_STUDIO_ROOT, else the root of the last run (kept in the state file),
 // else /Volumes/2/Edit-Video (fallback until 2.0). Projects are its direct
@@ -36,6 +40,7 @@ import { fileURLToPath } from "node:url";
 import { logFile, migrateState, port, readState as readStateFile, rootDefault, settingsOf, stateFile } from "../lib/config.mjs";
 import { legacyStateFiles, providerStatus } from "../lib/provider.mjs";
 import { ensureUi, uiState } from "../lib/ui-build.mjs";
+import { DEFAULT_LABEL, install as installAgent, uninstall as uninstallAgent } from "../lib/launch-agent.mjs";
 
 export const PORT = port();
 export const HOST = "127.0.0.1";
@@ -171,6 +176,7 @@ export async function main(argv = process.argv.slice(2)) {
     if (!ui.ok) { console.error(ui.message); return 1; }
     return runSetup(so);
   }
+  if (cmd === "install-app" || cmd === "uninstall-app") return app(cmd, rest);
   const o = {};
   for (let i = 0; i < rest.length; i++) {
     if (rest[i] === "--background") o.background = true;
@@ -182,8 +188,40 @@ export async function main(argv = process.argv.slice(2)) {
   if (cmd === "start") return start(o);
   if (cmd === "status") return status();
   if (cmd === "stop") return stop();
-  console.error("usage: node bin/motion-studio.mjs start [--background] [--root <dir>] | status | stop | setup [--yes] [--ref <ref>] [--host claude|codex|all]");
+  console.error(USAGE);
   return 2;
+}
+
+const USAGE = "usage: node bin/motion-studio.mjs start [--background] [--root <dir>] | status | stop | setup [--yes] [--ref <ref>] [--host claude|codex|all] | install-app [--label <label>] [--port <port>] [--state <file>] [--root <dir>] | uninstall-app [--label <label>]";
+
+// install-app / uninstall-app: the login LaunchAgent. The plist starts this file in the
+// foreground with the port and state file given here (or in the environment).
+async function app(cmd, rest) {
+  const o = {};
+  const flags = cmd === "install-app" ? ["--label", "--port", "--state", "--root"] : ["--label"];
+  for (let i = 0; i < rest.length; i++) {
+    if (!flags.includes(rest[i]) || rest[i + 1] == null) { console.error(`studio: unknown argument ${rest[i]}`); console.error(USAGE); return 2; }
+    o[rest[i].slice(2)] = rest[++i];
+  }
+  const label = o.label ?? DEFAULT_LABEL;
+  if (cmd === "uninstall-app") {
+    const r = uninstallAgent({ label });
+    if (!r.ok) { console.error(`studio: ${r.error}`); return 2; }
+    console.log(r.removed ? `đã gỡ ${r.file}` : `không có ${r.file}; không còn gì để gỡ`);
+    return 0;
+  }
+  const appPort = o.port != null ? Number(o.port) : PORT;
+  if (!Number.isInteger(appPort) || appPort < 1 || appPort > 65535) { console.error(`studio: cổng không hợp lệ: ${o.port}`); return 2; }
+  const root = o.root ?? rootDefault();
+  if (!existsSync(root)) { console.error(`studio: không có thư mục ${root}`); return 2; }
+  const state = o.state ? resolve(o.state) : process.env.MOTION_STUDIO_STATE ? stateFile() : null;
+  const r = await installAgent({
+    label, node: process.execPath, bin: realpathSync(fileURLToPath(import.meta.url)), root: realpathSync(root), port: appPort, state,
+    logDir: dirname(state ?? stateFile()),
+  });
+  if (!r.ok) { console.error(`studio: ${r.error}`); return 3; }
+  console.log(`đã cài ${r.file}\nMotion Studio chạy ở http://127.0.0.1:${appPort}/ mỗi khi đăng nhập; mở trang đó trong Chrome rồi bấm biểu tượng cài trên thanh địa chỉ.`);
+  return 0;
 }
 
 if (process.argv[1] && realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))) {
