@@ -98,7 +98,7 @@ describe("DirectorChat", () => {
     openProject();
     const direct = vi.spyOn(actions, "direct").mockResolvedValue(true);
     renderUi(<DirectorChat />);
-    const box = screen.getByLabelText("Việc giao cho AI");
+    const box = screen.getByLabelText("Việc giao cho đạo diễn");
     expect(box).toHaveAttribute("placeholder", "Ví dụ: shot 2 chậm lại, chữ to hơn, thêm logo cuối video…");
     fireEvent.change(box, { target: { value: "shot 3 chậm lại" } });
     await act(async () => { fireEvent.keyDown(box, { key: "Enter", metaKey: true }); });
@@ -111,7 +111,7 @@ describe("DirectorChat", () => {
   it("refuses an empty box with the old toast", async () => {
     openProject({ editable: false });
     renderUi(<DirectorChat />);
-    const box = screen.getByLabelText("Việc giao cho AI");
+    const box = screen.getByLabelText("Việc giao cho đạo diễn");
     expect(box).toBeEnabled();
     await act(async () => { fireEvent.keyDown(box, { key: "Enter", ctrlKey: true }); });
     expect(say).toHaveBeenCalledWith("Viết yêu cầu cho đạo diễn trước", true);
@@ -121,10 +121,10 @@ describe("DirectorChat", () => {
   it("keeps the draft in the store across remounts", () => {
     openProject();
     const first = renderUi(<DirectorChat />);
-    fireEvent.change(screen.getByLabelText("Việc giao cho AI"), { target: { value: "shot 3 chậm lại" } });
+    fireEvent.change(screen.getByLabelText("Việc giao cho đạo diễn"), { target: { value: "shot 3 chậm lại" } });
     first.unmount();
     renderUi(<DirectorChat />);
-    expect(screen.getByLabelText("Việc giao cho AI")).toHaveValue("shot 3 chậm lại");
+    expect(screen.getByLabelText("Việc giao cho đạo diễn")).toHaveValue("shot 3 chậm lại");
   });
 
   describe("scrolling", () => {

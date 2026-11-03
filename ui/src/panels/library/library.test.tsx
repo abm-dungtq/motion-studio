@@ -48,7 +48,7 @@ describe("core/library", () => {
 });
 
 describe("LibraryTab", () => {
-  it("shows the card, Dùng cho dự án sends use(row), Chép copies copy(row)", async () => {
+  it("shows the card, Áp cho dự án sends use(row), Chép copies copy(row)", async () => {
     open({ "/api/library": PAGE });
     const writeText = vi.fn(async () => {});
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
@@ -58,7 +58,7 @@ describe("LibraryTab", () => {
     expect(document.querySelector("img.lib-thumb")).toHaveAttribute("loading", "lazy");
     expect(screen.getByRole("link", { name: "Xem bản gốc" })).toHaveAttribute("rel", "noopener noreferrer");
 
-    fireEvent.click(screen.getByRole("button", { name: "Dùng cho dự án" }));
+    fireEvent.click(screen.getByRole("button", { name: "Áp cho dự án" }));
     expect(direct).toHaveBeenCalledWith({ scope: "project", text: LIBRARY.videos.use(VIDEO) });
 
     fireEvent.click(screen.getByRole("button", { name: "Chép prompt" }));
@@ -75,11 +75,11 @@ describe("LibraryTab", () => {
     expect(document.querySelectorAll('[data-lib-card="videos"]')).toHaveLength(2);
   });
 
-  it("no match: the empty text with the query; without a project Dùng is off", async () => {
+  it("no match: the empty text with the query; without a project Áp is off", async () => {
     mockFetch({ "/api/library": { ...PAGE, items: [], total: 0 } });
     useLibraryStore.setState({ query: "zzzqqxx" });
     renderUi(<LibraryTab />);
-    expect(await screen.findByText("Không thấy video mẫu nào khớp \"zzzqqxx\". Thử từ khoá ngắn hơn, bỏ dấu, hoặc đổi loại mẫu.")).toBeInTheDocument();
+    expect(await screen.findByText("Không thấy video nào khớp \"zzzqqxx\". Thử từ khoá ngắn hơn, bỏ dấu, hoặc đổi loại mẫu.")).toBeInTheDocument();
     expect(screen.getByText("Chưa mở dự án: vẫn xem và chép prompt được. Mở một dự án để gửi mẫu cho đạo diễn.")).toBeInTheDocument();
   });
 

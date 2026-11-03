@@ -23,7 +23,7 @@ const side = (source: "jev" | "det", order: string[]): SuggestSide => ({
   directions: order.map((id, i) => dir(id, source, source === "jev" ? 4 - i : null)),
   styles: [style("data-editorial", "A6", source), style("swiss-kinetic-editorial", "A3", source)],
   workflow: {
-    mode: "dao-dien", label: "Đạo diễn", pitch: true, steps: ["pitch", "choose", "voice", "render"],
+    mode: "dao-dien", label: "Đạo diễn", pitch: true, steps: ["pitch", "choose", "voice", "timing", "render"],
     skip: [{ step: "cut", reason: "Dự án chưa có footage trong footage/raw hay assets/footage." }],
     reason: "BRIEF không có `mode` hay `creative_override` chỉ cách làm khác, nên dùng cách mặc định.", source,
   },
@@ -59,13 +59,17 @@ describe("SuggestCard", () => {
   it("lays the columns out in the order the server gives", () => {
     show(resp({ columns: ["det", "jev"] }));
     const heads = [...card().querySelectorAll('[data-role="suggest-columns"] > [role="radiogroup"]')].map((g) => g.getAttribute("aria-label"));
-    expect(heads).toEqual(["Hướng theo Tất định", "Hướng theo Jev"]);
+    expect(heads).toEqual(["Hướng theo Xếp theo từ khoá", "Hướng theo Xếp hạng bằng AI"]);
   });
 
   it("observe shows both columns, picks nothing, and compares rank one", () => {
     show(resp());
     expect(card().querySelector('[data-role="suggest-columns"]')).not.toBeNull();
-    expect(card().querySelector('[data-role="suggest-source"]')).toHaveTextContent(/^Jev và tất định, chưa chọn nguồn mặc định$/);
+    expect(card().querySelector('[data-role="suggest-source"]')).toHaveTextContent(/^Hai cách gợi ý$/);
+    expect(card().querySelector('[data-role="suggest-source"]')).toHaveAttribute("title", "Jev và tất định, chưa chọn nguồn mặc định");
+    expect(screen.getByText("Xếp hạng bằng AI", { selector: "strong" })).toHaveAttribute("title", "Jev");
+    expect(card().textContent).not.toContain("Tất định");
+    expect(card()).toHaveTextContent("Gọi Jev, ghi lại CASES.md");
     expect(dirs("jev")).toHaveLength(3);
     expect(dirs("det")).toHaveLength(3);
     expect(dirs("jev")[0]).toHaveAttribute("data-id", "A8");
@@ -73,7 +77,10 @@ describe("SuggestCard", () => {
     for (const b of [...dirs("jev"), ...dirs("det")]) expect(b).toHaveAttribute("aria-checked", "false");
     expect(chooseButton()).toBeDisabled();
     expect(card()).toHaveTextContent("Chọn một hướng ở một trong hai cột để tiếp tục.");
-    expect(card()).toHaveTextContent("Gợi ý tất định: Hướng A6. Khác với Jev ở hạng 1.");
+    expect(card()).toHaveTextContent("Hạng 1 theo từ khoá: Hướng A6. Khác với hạng 1 của AI.");
+    expect(card().querySelector('[data-role="suggest-compare"]')).toHaveAttribute("title", expect.stringContaining("Khác với Jev ở hạng 1 (A8)"));
+    expect(dirs("jev")[0]).toHaveAttribute("title", "A8");
+    expect(dirs("jev")[0].querySelector("code")).toHaveTextContent("category: explainer");
     fireEvent.click(dirs("jev")[0]);
     expect(chooseButton()).toBeEnabled();
     expect(dirs("jev")[0]).toHaveAttribute("aria-checked", "true");
@@ -82,12 +89,12 @@ describe("SuggestCard", () => {
 
   it("deterministic only shows no comparison line", () => {
     show(detOnly());
-    expect(screen.getByText("Tất định", { selector: '[data-role="suggest-source"]' })).toBeInTheDocument();
+    expect(screen.getByText("Xếp theo từ khoá", { selector: '[data-role="suggest-source"]' })).toHaveAttribute("title", "Tất định");
     expect(card().querySelector('[data-role="suggest-columns"]')).toBeNull();
-    expect(card()).not.toHaveTextContent("Jev ở hạng 1");
+    expect(card()).not.toHaveTextContent("hạng 1 của AI");
     expect(dirs("det")[0]).toHaveAttribute("aria-checked", "true");
     expect(card()).toHaveTextContent("Bỏ qua: cut (Dự án chưa có footage trong footage/raw hay assets/footage.)");
-    expect(card()).toHaveTextContent("pitch → choose → voice → render");
+    expect(card()).toHaveTextContent("chọn hướng → voice → mốc thời gian → xuất");
     expect(card()).toHaveTextContent("Chế độ này đi kèm lời yêu cầu gửi đạo diễn, chưa lưu vào project.json.");
   });
 
@@ -106,7 +113,7 @@ describe("SuggestCard", () => {
     await act(async () => { fireEvent.click(chooseButton()); });
     expect(choose).toHaveBeenCalledTimes(1);
     expect(choose).toHaveBeenCalledWith({ name: NAME, direction: "A6", style: "data-editorial", mode: "dao-dien" });
-    expect(card()).toHaveTextContent("Đã chọn hướng A6 với style data-editorial. BRIEF.md đã được cập nhật.");
+    expect(card()).toHaveTextContent("Đã chọn hướng A6 với phong cách data-editorial. BRIEF.md đã được cập nhật.");
     expect(card()).toHaveTextContent(reason);
   });
 
@@ -137,7 +144,7 @@ describe("SuggestCard", () => {
   it("no record shows the empty sentence and a Gợi ý button", async () => {
     run.mockResolvedValue({ status: 200, data: resp({ record: null }) });
     show(resp({ record: null }));
-    expect(card()).toHaveTextContent("Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, style và quy trình cho dự án này.");
+    expect(card()).toHaveTextContent("Chưa có gợi ý. Bấm Gợi ý để xếp hạng hướng, phong cách và quy trình cho dự án này.");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Gợi ý" })); });
     expect(run).toHaveBeenCalledWith({ name: NAME, refresh: false });
   });

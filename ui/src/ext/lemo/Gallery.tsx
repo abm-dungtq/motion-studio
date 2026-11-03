@@ -2,8 +2,8 @@
 // The "Phong cách" tab (galleryView, lemo-gallery.js:121-161): the user's own styles, the
 // provider's style profiles (built as they are), and the lemo-opuscar library (59 code-made film
 // styles, github.com/lemomo-ai/lemo-opuscar; frames and films CC BY 4.0 by LemoLab; a canvas layer
-// for the verified ones, a STYLE.md to read for the rest), searched, filtered by group and by type,
-// and applied to the open project. The profiles and own styles show before the library is fetched.
+// for the verified ones, a STYLE.md to read for the rest), searched, filtered by genre and by
+// source, and applied to the open project. The profiles and own styles show before the library is fetched.
 // STYLE.md is third-party text: the dialog shows it as plain text, never as HTML.
 import { useEffect, useRef, useState } from "react";
 import { useProject } from "@/api/queries.ts";
@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button, Input } from "@/shell/controls.tsx";
 import { Fail, Loading } from "@/shell/states.tsx";
 import { useStudio } from "@/store/studio.ts";
-import { DEBOUNCE_MS, fetchLibrary, safeUrl, useGalleryStyles, useLemo, type LemoCredit, type LemoStyles, type StyleType } from "./store.ts";
+import { DEBOUNCE_MS, NO_GROUP, countBy, fetchLibrary, filterStyles, safeUrl, useGalleryStyles, useLemo, type LemoCredit, type LemoStyles, type StyleSource } from "./store.ts";
+import { MyStyle, openMyStyle } from "./MyStyle.tsx";
 import { StyleCard } from "./StyleCard.tsx";
 import { tabConfirm } from "./confirm.tsx";
 
@@ -46,7 +47,7 @@ function GuideDialog() {
       {viewing ? (
         <DialogContent showCloseButton={false} onCloseAutoFocus={backToCard} aria-label={`STYLE.md của ${viewing.style.ten}`} className="max-w-[min(820px,92vw)] gap-2 p-3 sm:max-w-[min(820px,92vw)]">
           <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="text-sm font-semibold">{`STYLE.md · ${viewing.style.ten}`}</DialogTitle>
+            <DialogTitle className="text-sm font-semibold">{`${viewing.style.source === "profile" ? "Hồ sơ phong cách" : "STYLE.md"} · ${viewing.style.ten}`}</DialogTitle>
             <Button onClick={close}>Đóng</Button>
           </div>
           {viewing.style.source === "library" ? (
@@ -81,36 +82,48 @@ function SearchBox() {
   );
 }
 
-const TYPES: { id: StyleType; ten: string }[] = [
-  { id: "", ten: "Mọi loại" },
-  { id: "ready", ten: "Dựng được ngay" },
-  { id: "ref", ten: "Chỉ tham khảo" },
+const SOURCE_NAMES: { id: StyleSource; ten: string }[] = [
+  { id: "profile", ten: "Dựng sẵn" },
+  { id: "library", ten: "lemo" },
   { id: "mine", ten: "Của bạn" },
 ];
 
-function Library({ d, name, hasManifest }: { d: LemoStyles; name: string | null; hasManifest: boolean }) {
-  const q = useLemo((s) => s.q), group = useLemo((s) => s.group), type = useLemo((s) => s.type);
-  const rows = d.rows;
+// An option that would leave nothing is dimmed and disabled, unless it is the one chosen.
+const opt = (id: string, ten: string, n: number, chosen: string) => (
+  <option key={id} value={id} disabled={!n && id !== chosen}>{`${ten} (${n})`}</option>
+);
+
+function Library({ d, name, hasManifest, shots }: { d: LemoStyles; name: string | null; hasManifest: boolean; shots: number }) {
+  const q = useLemo((s) => s.q), group = useLemo((s) => s.group), source = useLemo((s) => s.source);
+  const filters = { group, source };
+  const rows = filterStyles(d.rows, filters);
+  const byGroup = countBy(d.rows, filters, "group"), bySource = countBy(d.rows, filters, "source");
+  const sum = (m: Map<string, number>) => [...m.values()].reduce((a, b) => a + b, 0);
+  // Genres only: the ready-made profiles and own styles are a source, not a genre.
+  const genres = d.groups.filter((g) => g.id !== "mine" && g.id !== "profile");
+  const noMine = source === "mine" && !d.rows.some((r) => r.source === "mine");
   const mine = rows.filter((r) => r.source === "mine"), prof = rows.filter((r) => r.source === "profile"), lib = rows.filter((r) => r.source === "library");
   const sections = [
     { key: "mine", title: "Của bạn", rows: mine, note: null },
-    { key: "profile", title: "Dựng sẵn", rows: prof, note: "Style profile có sẵn màu, chữ, chuyển cảnh và nhịp; áp là dựng được ngay, hợp video có lời và khổ 9:16." },
+    { key: "profile", title: "Dựng sẵn", rows: prof, note: "Phong cách dựng sẵn có sẵn màu, chữ, chuyển cảnh và nhịp; áp là dựng được ngay, hợp video có lời và khổ 9:16." },
     { key: "library", title: "Thư viện lemo-opuscar", rows: lib, note: "Lớp canvas dựng được ngay. Thẻ Tham khảo chỉ có STYLE.md: đạo diễn đọc rồi tự dựng theo, phim mẫu là phim 16:9 không lời." },
   ].filter((x) => x.rows.length);
-  const card = (r: (typeof rows)[number]) => <StyleCard key={`${r.source}:${r.slug}`} style={r} project={d.project} name={name} hasManifest={hasManifest} />;
+  const card = (r: (typeof rows)[number]) => <StyleCard key={`${r.source}:${r.slug}`} style={r} project={d.project} name={name} hasManifest={hasManifest} shots={shots} />;
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="sticky top-0 z-10 flex flex-wrap gap-2 bg-panel py-1" data-testid="lemo-filters">
         <SearchBox />
         <select className={`${SELECT} min-w-0 flex-[0_1_220px]`} aria-label="Nhóm phong cách" value={group} onChange={(e) => useLemo.getState().setGroup(e.target.value)}>
-          <option value="">{`Mọi nhóm (${d.groups.length})`}</option>
-          {d.groups.map((g) => <option key={g.id} value={g.id}>{`${g.ten} (${g.count})`}</option>)}
+          {opt("", "Mọi nhóm", sum(byGroup), group)}
+          {genres.map((g) => opt(g.id, g.ten, byGroup.get(g.id) ?? 0, group))}
+          {opt(NO_GROUP, "Chưa phân nhóm", byGroup.get(NO_GROUP) ?? 0, group)}
         </select>
-        <select className={`${SELECT} min-w-0 flex-[0_1_180px]`} aria-label="Loại phong cách" value={type} onChange={(e) => useLemo.getState().setType(e.target.value as StyleType)}>
-          {TYPES.map((t) => <option key={t.id} value={t.id}>{t.ten}</option>)}
+        <select className={`${SELECT} min-w-0 flex-[0_1_180px]`} aria-label="Nguồn phong cách" value={source} onChange={(e) => useLemo.getState().setSource(e.target.value as StyleSource)}>
+          {opt("", "Mọi nguồn", sum(bySource), source)}
+          {SOURCE_NAMES.map((t) => opt(t.id, t.ten, bySource.get(t.id) ?? 0, source))}
         </select>
       </div>
-      <p className="m-0 text-sm text-muted-foreground" data-testid="lemo-count">
+      <p className="m-0 text-sm text-muted-foreground" role="status" data-testid="lemo-count">
         {`${rows.length} / ${d.total} phong cách${d.fetched && !d.layer_available ? " · chưa có lệnh lớp canvas, phong cách thư viện chỉ để tham khảo" : ""}`}
       </p>
       {d.warnings?.length ? (
@@ -127,7 +140,12 @@ function Library({ d, name, hasManifest }: { d: LemoStyles; name: string | null;
           </div>,
           ...x.rows.map(card),
         ])}
-        {rows.length ? null : <p className="col-span-full m-0 text-sm text-muted-foreground">{q || group || type ? `Không có phong cách nào khớp${q ? ` "${q}"` : " bộ lọc này"}. Thử từ khoá ngắn hơn, bỏ dấu hoặc đổi bộ lọc.` : "Chưa có phong cách nào."}</p>}
+        {rows.length ? null : noMine ? (
+          <div className="col-span-full flex flex-col items-start gap-1.5" data-testid="lemo-empty-mine">
+            <p className="m-0 text-sm text-muted-foreground">Bạn chưa có phong cách riêng.</p>
+            <Button onClick={openMyStyle}>Tạo phong cách riêng</Button>
+          </div>
+        ) : <p className="col-span-full m-0 text-sm text-muted-foreground">{q || group || source ? `Không có phong cách nào khớp${q ? ` "${q}"` : " bộ lọc này"}. Thử từ khoá ngắn hơn, bỏ dấu hoặc đổi bộ lọc.` : "Chưa có phong cách nào."}</p>}
       </div>
       <Credit credit={d.credit} />
     </>
@@ -165,7 +183,8 @@ export function Gallery() {
             <Button disabled={fetching} onClick={() => { void fetchLibrary(); }}>{fetching ? "Đang tải…" : "Tải thư viện (≈ 5 MB)"}</Button>
           </div>
         )}
-        <Library d={d} name={name} hasManifest={hasManifest} />
+        <MyStyle />
+        <Library d={d} name={name} hasManifest={hasManifest} shots={m?.shots?.length ?? 0} />
       </>
     );
   }

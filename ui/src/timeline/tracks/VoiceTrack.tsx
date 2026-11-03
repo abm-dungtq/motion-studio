@@ -10,7 +10,7 @@ import type { FileStamp, Line, Manifest } from "@/api/types.ts";
 import { round1 } from "@/core/format.ts";
 import { rippleLineOps } from "@/core/timeline-edit.ts";
 import { CLICK, round3 } from "@/core/timeline-geometry.ts";
-import { fileUrl } from "@/core/ui-format.ts";
+import { fileUrl, stripVoiceTags } from "@/core/ui-format.ts";
 import { cn } from "@/lib/utils";
 import { lineMenu } from "../BlockMenu.ts";
 import { WordDots } from "../markers/WordDots.tsx";
@@ -75,7 +75,7 @@ export const VoiceBlock = memo(function VoiceBlock({ m, l, pps, sel, editable, n
       ref={ref}
       data-id={l.id}
       data-kind="line"
-      title={`${l.text ?? ""}\nShift+kéo: dời cả các câu sau trong shot`}
+      title={`${l.gate === "stale" ? "Lời đã đổi, cần lồng tiếng lại\n" : ""}${l.text ?? ""}\nShift+kéo: dời cả các câu sau trong shot`}
       className={cn(
         "blk voice isolate absolute top-1.5 bottom-1.5 flex items-center gap-1.5 overflow-hidden rounded-sm border px-2 text-xs font-semibold whitespace-nowrap select-none",
         editable ? "cursor-grab" : "cursor-pointer",
@@ -89,7 +89,7 @@ export const VoiceBlock = memo(function VoiceBlock({ m, l, pps, sel, editable, n
     >
       {l.file && dur > 0 ? <Wave url={fileUrl(name, l.file)} stamp={stamp} ready={mediaReady} from={0} to={dur} width={Math.max(0.2, dur) * pps} className="text-track-voice" /> : null}
       <span className="mic relative h-[11px] w-[7px] flex-none rounded-[4px] border-2 border-track-voice" />
-      <span className="truncate">{String(l.text ?? "").slice(0, 24)}</span>
+      <span className="truncate">{stripVoiceTags(String(l.text ?? "")).slice(0, 24)}</span>
       {pps >= 120 ? <WordDots lineId={l.id} start={l.start} duration={dur} pps={pps} picked={wordPick} viewOnly={viewWords} /> : null}
     </div>
   );

@@ -44,7 +44,7 @@ const agree = async (): Promise<string> => {
 };
 const create = async () => {
   fireEvent.change(screen.getByRole("textbox", { name: "Mô tả chuyển động" }), { target: { value: "sóng vỗ" } });
-  const b = screen.getByRole("button", { name: "Tạo clip AI" });
+  const b = screen.getByRole("button", { name: "Tạo clip bằng Flow" });
   await waitFor(() => expect(b).toBeEnabled());
   fireEvent.click(b);
 };
@@ -60,15 +60,15 @@ describe("shot inspector AI clip section", () => {
   it("says why it cannot send without gflow", async () => {
     serve({ "/api/videogen/status": { ...UP, found: false }, "/api/videogen/items": { items: [] } });
     open();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Tạo clip AI" })).toHaveAccessibleDescription("Chưa có gflow ở /u/.local/bin/gflow"));
-    expect(screen.getByRole("button", { name: "Tạo clip AI" })).toBeDisabled();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Tạo clip bằng Flow" })).toHaveAccessibleDescription("Chưa có gflow ở /u/.local/bin/gflow"));
+    expect(screen.getByRole("button", { name: "Tạo clip bằng Flow" })).toBeDisabled();
   });
 
   it("says when today's cap is reached", async () => {
     serve({ "/api/videogen/status": { ...UP, today: 20 }, "/api/videogen/items": { items: [] } });
     open();
     expect(await screen.findByText("Đã đủ 20 clip hôm nay")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Tạo clip AI" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Tạo clip bằng Flow" })).toBeDisabled();
   });
 
   it("asks for an image when the shot has none", () => {
@@ -170,7 +170,7 @@ describe("shot inspector AI clip section", () => {
     expect(screen.getByRole("textbox", { name: "Mô tả ảnh" })).toHaveValue("");
     other.unmount();
     const sent = renderUi(<ShotVideogen pick={{ kind: "shot", id: "a" }} m={m} />);
-    const b = screen.getByRole("button", { name: "Tạo ảnh AI" });
+    const b = screen.getByRole("button", { name: "Tạo ảnh bằng Flow" });
     await waitFor(() => expect(b).toBeEnabled());
     fireEvent.click(b);
     await agree();
@@ -207,7 +207,7 @@ describe("shot inspector AI clip section", () => {
     expect(screen.queryByRole("textbox", { name: "Mô tả chuyển động" })).toBeNull();
     fireEvent.change(screen.getByRole("textbox", { name: "Mô tả ảnh" }), { target: { value: "biển" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Khung ảnh" }), { target: { value: "1:1" } });
-    const b = screen.getByRole("button", { name: "Tạo ảnh AI" });
+    const b = screen.getByRole("button", { name: "Tạo ảnh bằng Flow" });
     await waitFor(() => expect(b).toBeEnabled());
     fireEvent.click(b);
     expect(await agree()).toMatch(/Tạo một ảnh nano2 1:1/);
@@ -222,7 +222,7 @@ describe("shot inspector AI clip section", () => {
   it("after the submit the running item offers Ngừng chờ, with what it still costs", async () => {
     const posts = serve({ "/api/videogen/status": { ...UP, job: { id: "j1", name: "ep" } }, "/api/videogen/items": { items: [item({ id: "r", state: "running", phase: "sent", files: [] })] } });
     open();
-    fireEvent.click(await screen.findByRole("button", { name: "Ngừng chờ lượt AI đang tạo" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ngừng chờ lượt Flow đang tạo" }));
     expect(await agree()).toMatch(/vẫn tính credit/);
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toEqual({ path: "/api/videogen/cancel", body: { name: "ep" } });
@@ -232,7 +232,7 @@ describe("shot inspector AI clip section", () => {
     const run = item({ id: "r", state: "running", phase: "spawned", files: [] });
     serve({ "/api/videogen/status": { ...UP, job: { id: "j1", name: "ep" } }, "/api/videogen/items": { items: [run] } });
     open();
-    const b = await screen.findByRole("button", { name: "Huỷ lượt AI đang tạo" });
+    const b = await screen.findByRole("button", { name: "Huỷ lượt Flow đang tạo" });
     run.phase = "typed"; // typed after the last poll
     fireEvent.click(b);
     expect(await agree()).toMatch(/Prompt đã điền/);

@@ -85,13 +85,13 @@ export interface LibSection {
 
 export const LIBRARY: Record<LibKind, LibSection> = {
   videos: {
-    label: "Video mẫu", placeholder: "Từ khoá: logo, biểu đồ, ra mắt, 3D…", copyLabel: "Chép prompt",
+    label: "Video", placeholder: "Từ khoá: logo, biểu đồ, ra mắt, 3D…", copyLabel: "Chép prompt",
     title: (v) => v.title_vi ?? v.titles?.en ?? v.titles?.zh ?? v.id,
     copy: (v) => v.prompt,
     use: (v) => `Lấy cảm hứng từ video mẫu "${LIBRARY.videos.title(v)}" (@${v.author ?? "?"}, ${v.url ?? ""}) cho dự án này. ${v.vi ? `Học theo: ${v.vi.why} ${v.vi.how}` : ""} Giữ nội dung, lời và nhịp của dự án.${promptExcerpt(v.prompt)}`,
   },
   scenes: {
-    label: "Cảnh mẫu", placeholder: "Từ khoá: chữ động, HUD, biến hình…", copyLabel: "Chép gợi ý",
+    label: "Cảnh", placeholder: "Từ khoá: chữ động, HUD, biến hình…", copyLabel: "Chép gợi ý",
     title: (t) => t.name ?? t.id,
     copy: (t) => t.prompt_hint,
     use: (t) => t.source !== "library"
@@ -99,7 +99,7 @@ export const LIBRARY: Record<LibKind, LibSection> = {
       : `Áp kỹ thuật cảnh "${t.name}" vào những shot hợp của dự án này: ${t.what} Gợi ý cho prompt: ${t.prompt_hint ?? ""}. Giữ nội dung, lời và nhịp.`,
   },
   styles: {
-    label: "Phong cách", placeholder: "Ví dụ: tối giản, neon, pixel, 3D…", copyLabel: "Chép công thức",
+    label: "Họ phong cách", placeholder: "Ví dụ: tối giản, neon, pixel, 3D…", copyLabel: "Chép công thức",
     title: (s) => s.name ?? s.id,
     copy: (s) => s.recipe ?? s.what,
     use: (s) => s.source !== "library"
@@ -107,7 +107,7 @@ export const LIBRARY: Record<LibKind, LibSection> = {
       : `Áp phong cách "${s.name}" cho dự án này: đổi màu, chữ và chuyển động theo công thức sau, giữ nội dung, lời và nhịp.\n${s.recipe}`,
   },
   prompts: {
-    label: "Prompt mẫu", placeholder: "Từ khoá: mẫu điền, ra mắt, beat…", copyLabel: "Chép prompt",
+    label: "Prompt", placeholder: "Từ khoá: mẫu điền, ra mắt, beat…", copyLabel: "Chép prompt",
     title: (p) => p.title ?? p.id,
     copy: (p) => p.prompt,
     use: (p) => `Viết lại yêu cầu cho dự án này theo cấu trúc của prompt mẫu "${p.title}": ${p.structure} Giữ nội dung, lời và nhịp của dự án.${promptExcerpt(p.prompt)}`,

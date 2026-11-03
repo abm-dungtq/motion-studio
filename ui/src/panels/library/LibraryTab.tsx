@@ -66,14 +66,14 @@ export function LibraryTab() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="group" aria-label="Loại mẫu" className="grid grid-cols-4 gap-1 rounded-md bg-background p-1">
+      <div role="group" aria-label="Loại mẫu" className="flex gap-0.5 overflow-x-auto rounded-md bg-background p-1">
         {LIB_KINDS.map((k) => (
           <button
             key={k}
             type="button"
             aria-pressed={k === mode}
             onClick={() => setMode(k)}
-            className={cn("rounded-sm px-1.5 py-1 text-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none", k === mode ? "bg-panel-2 text-foreground" : "text-muted-foreground hover:text-foreground")}
+            className={cn("flex-1 rounded-sm px-1 py-1 text-xs whitespace-nowrap focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none", k === mode ? "bg-panel-2 text-foreground" : "text-muted-foreground hover:text-foreground")}
           >
             {LIBRARY[k].label}
           </button>
