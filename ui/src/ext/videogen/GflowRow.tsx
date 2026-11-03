@@ -1,13 +1,12 @@
 // The agent dialog's gflow row: binary and version, profile, images and clips sent today against
 // their caps, a WAF block, and a sign-in check that runs only when pressed (it opens no browser).
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import type { AgentRowProps } from "@/ext/registry.ts";
 import { Button } from "@/shell/controls.tsx";
-import { hhmm, vgAuth, vgStatus } from "./api.ts";
+import { hhmm, useVgStatus, vgAuth } from "./api.ts";
 
 export function GflowRow(_: AgentRowProps) {
-  const { data: st } = useQuery({ queryKey: ["videogen", "status"], queryFn: vgStatus, refetchInterval: 5000 });
+  const { data: st } = useVgStatus();
   const [auth, setAuth] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const check = async () => {

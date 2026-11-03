@@ -1,4 +1,5 @@
 // The videogen routes (routes/videogen.mjs) as the shot inspector and the agent row read them.
+import { useQuery } from "@tanstack/react-query";
 import { api, send, type SendResult } from "@/api/client.ts";
 
 export interface VgStatus {
@@ -29,6 +30,10 @@ export const SECONDS = [4, 6, 8, 10];
 export const pickSeconds = (d: number): number => SECONDS.find((s) => s >= Number(d) - 0.01) ?? 10;
 
 export const vgStatus = () => api<VgStatus>("/api/videogen/status");
+// One status query for every reader (the agent row, the shot inspector, the job tray): every 5 s
+// while a Flow run is going, every 30 s otherwise.
+export const statusInterval = (d: VgStatus | undefined) => (d?.job ? 5000 : 30000);
+export const useVgStatus = () => useQuery({ queryKey: ["videogen", "status"], queryFn: vgStatus, refetchInterval: (q) => statusInterval(q.state.data) });
 export const vgItems = (name: string) => api<{ items: VgItem[] }>(`/api/videogen/items?name=${encodeURIComponent(name)}`);
 export const vgCreate = (body: VgCreate): Promise<SendResult> => send("/api/videogen/shot", { ...body });
 export const vgImage = (body: VgImageCreate): Promise<SendResult> => send("/api/videogen/image", { ...body });

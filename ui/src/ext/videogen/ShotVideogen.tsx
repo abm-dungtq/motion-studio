@@ -15,7 +15,7 @@ import { useDraft } from "@/shell/useDraft.ts";
 import { useStudio } from "@/store/studio.ts";
 import {
   DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL, hhmm, IMAGE_ASPECTS, IMAGE_MODELS, kindOf, pickSeconds, SECONDS, stateLabel, VIDEO_MODELS,
-  vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, vgReconcile, vgRecover, vgStatus, vgUsePart, type VgItem, type VgKind, type VgStatus,
+  vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, vgReconcile, vgRecover, useVgStatus, vgUsePart, type VgItem, type VgKind, type VgStatus,
 } from "./api.ts";
 
 const IMAGE = /\.(png|jpe?g|webp)$/i;
@@ -80,7 +80,7 @@ export function ShotVideogen({ pick, m }: InspectorSectionProps) {
 }
 
 function VgPanel({ name, shot, m }: { name: string; shot: Shot; m: Manifest }) {
-  const status = useQuery({ queryKey: ["videogen", "status"], queryFn: vgStatus, refetchInterval: 5000 });
+  const status = useVgStatus();
   const st = status.data;
   const busyHere = Boolean(st?.job && st.job.name === name);
   const items = useQuery({ queryKey: ["videogen", "items", name], queryFn: () => vgItems(name), refetchInterval: busyHere ? 2000 : false });
