@@ -2,13 +2,14 @@
 // that failed twice in a row with the same code (a series tool, an image batch, voicing, a scene, a
 // delivery step) wrote .opus/handoff/<step>.md. The card shows the text to paste into Claude Code
 // in a terminal with "Chép", and "Đã xử lý" (POST /api/handoff/resolve, a resolved: line in the
-// file). A resolved: line written by hand or by Claude Code closes the card too. Polled.
+// file). A resolved: line written by hand or by Claude Code closes the card too. Polled, slowly
+// when nothing runs and no card is open.
 import { useState } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api, queryClient, say, send } from "@/api/client.ts";
 import { Button } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
-import { POLL_MS } from "./api.ts";
+import { cardsInterval, useProjectBusy } from "./api.ts";
 
 export interface Handoff { step: string; file: string; text: string; paste: string }
 
@@ -46,7 +47,9 @@ function HandoffItem({ name, card }: { name: string; card: Handoff }) {
 }
 
 export function HandoffCards({ name }: { name: string }) {
-  const { data } = useQuery({ ...handoffQuery(name), refetchInterval: POLL_MS });
+  const running = useProjectBusy(name);
+  // Every card here waits on the user.
+  const { data } = useQuery({ ...handoffQuery(name), refetchInterval: (q) => cardsInterval(Boolean(q.state.data?.length), running) });
   if (!data?.length) return null;
   return <>{data.map((c) => <HandoffItem key={c.step} name={name} card={c} />)}</>;
 }
