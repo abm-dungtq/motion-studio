@@ -82,7 +82,7 @@ function SearchBox() {
   );
 }
 
-const SOURCE_NAMES: { id: StyleSource; ten: string }[] = [
+export const SOURCE_NAMES: { id: StyleSource; ten: string }[] = [
   { id: "profile", ten: "Dựng sẵn" },
   { id: "library", ten: "lemo" },
   { id: "mine", ten: "Của bạn" },

@@ -1,12 +1,12 @@
 import { answerConfirm, mockFetch, renderUi } from "@/shell/test-utils.tsx";
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { lemoApply } from "@/api/queries.ts";
 import { createStudio, getInspectorSections, getSections, getTabs } from "@/ext/registry.ts";
 import { InspectorHost } from "@/shell/InspectorHost.tsx";
 import { useStudio } from "@/store/studio.ts";
-import { MANIFEST, NAME, PROJECTS, stylesRoute } from "./fixtures.ts";
+import { LIBRARY, MANIFEST, MINE, NAME, PROFILES, PROJECTS, stylesRoute } from "./fixtures.ts";
 import { LEAD, register } from "./index.ts";
 import { useLemo } from "./store.ts";
 
@@ -45,15 +45,30 @@ describe("ShotStyle", () => {
     expect(await screen.findByRole("heading", { name: "Phong cách" })).toBeInTheDocument();
     expect(await screen.findByText("Dự án: Thuỷ màu (lớp canvas)")).toBeInTheDocument();
     expect(screen.getByText("Shot s2: Tranh khắc gỗ (tham khảo STYLE.md)")).toBeInTheDocument();
-    const sel = screen.getByLabelText("Phong cách cho shot này");
-    expect([...sel.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Thuỷ màu · lớp canvas", "Tranh khắc gỗ · tham khảo", "Bàn tin tức · tham khảo"]);
+    fireEvent.click(screen.getByRole("combobox", { name: "Phong cách cho shot này" }));
+    const names = screen.getAllByRole("option").map((o) => [...o.querySelectorAll("span")].map((x) => x.textContent).join(" · "));
+    expect(names).toEqual(["Thuỷ màu · lớp canvas", "Tranh khắc gỗ · tham khảo", "Bàn tin tức · tham khảo"]);
+  });
+
+  it("groups the styles by source and narrows a long list by search", async () => {
+    const extra = Array.from({ length: 8 }, (_, i) => ({ ...LIBRARY[2]!, slug: `x${i}`, ten: `Kiểu ${i}` }));
+    pickShot("s2", { rows: [...MINE, ...PROFILES, ...LIBRARY, ...extra] as never });
+    await userEvent.click(await screen.findByText("Áp phong cách cho shot này"));
+    fireEvent.click(screen.getByRole("combobox", { name: "Phong cách cho shot này" }));
+    expect(within(screen.getByRole("listbox")).getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["Của bạn", "Dựng sẵn", "lemo"]);
+    const all = screen.getAllByRole("option").length;
+    expect(all).toBe(13);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "truyen tranh" } });
+    expect(screen.getAllByRole("option").length).toBeLessThan(all);
+    expect(screen.getByRole("option", { name: /Truyện tranh đa vũ trụ/ })).toBeInTheDocument();
   });
 
   it("applies the chosen style to the shot after the question", async () => {
     pickShot("s2");
     expect(await screen.findByText("Dự án chưa áp phong cách nào.")).toBeInTheDocument();
     await userEvent.click(screen.getByText("Áp phong cách cho shot này"));
-    await userEvent.selectOptions(screen.getByLabelText("Phong cách cho shot này"), "library:news-desk");
+    await userEvent.click(screen.getByRole("combobox", { name: "Phong cách cho shot này" }));
+    await userEvent.click(screen.getByRole("option", { name: /Bàn tin tức/ }));
     vi.mocked(lemoApply).mockResolvedValue({ status: 200, data: { runner: "mcp" } });
     await waitFor(() => expect(screen.getByRole("button", { name: "Áp" })).toBeEnabled());
     await userEvent.click(screen.getByRole("button", { name: "Áp" }));
