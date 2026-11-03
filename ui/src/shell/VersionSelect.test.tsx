@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { queryClient } from "@/api/client.ts";
@@ -48,6 +48,9 @@ describe("VersionSelect", () => {
     expect(await within(d).findByText("Thêm shot 2")).toBeInTheDocument();
     expect(within(d).getByText("Câu vo-01: “cũ” → “mới”")).toBeInTheDocument();
     expect(fetch.mock.calls.map(([u]) => String(u))).toContain("/p/demo/.opus/versions/v10.json");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByRole("button", { name: "Lịch sử phiên bản" })).toHaveFocus();
   });
 
   it("says the version is gone when its file was cleaned up", async () => {

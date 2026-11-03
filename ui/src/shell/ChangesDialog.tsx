@@ -5,6 +5,7 @@
 // .opus/versions/v<N>.json, against the project now; shots and lines only.
 // A changed or added shot shows its current frame; a click on it closes the dialog, selects the
 // shot and moves the playhead to its start.
+import type { RefObject } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -118,13 +119,14 @@ export function TurnChanges({ name, id, onClose }: { name: string | null; id: st
 
 export const versionPath = (v: number): string => `.opus/versions/v${v}.json`;
 
-export function VersionCompare({ name, v, onClose }: { name: string | null; v: number | null; onClose: () => void }) {
+// back: where focus goes when the dialog closes (the menu item that opened it is gone by then).
+export function VersionCompare({ name, v, onClose, back }: { name: string | null; v: number | null; onClose: () => void; back?: RefObject<HTMLElement | null> }) {
   const { data: m } = Q.useProject(name);
   const old = useQuery({ ...Q.projectTextQuery(name, versionPath(v ?? 0)), enabled: Boolean(name && v != null) });
   const before = ((): ManifestLike | null => { try { return old.data ? JSON.parse(old.data) as ManifestLike : null; } catch { return null; } })();
   return (
     <Dialog open={v !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
+      <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto" onCloseAutoFocus={(e) => { if (back?.current) { e.preventDefault(); back.current.focus(); } }}>
         <DialogHeader>
           <DialogTitle>{`So v${v ?? ""} với hiện tại`}</DialogTitle>
           <DialogDescription>{`Chỉ xem. Những gì khác giữa v${v ?? ""} và bản đang mở${m ? ` (v${m.version})` : ""}.`}</DialogDescription>

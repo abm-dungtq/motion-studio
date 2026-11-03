@@ -3,7 +3,7 @@
 // words and the current one marked; every older one can be compared with the current one
 // (ChangesDialog VersionCompare). Going back is the Hoàn tác button's job, and the list says so.
 // Disabled without a project.
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLog, useProject } from "@/api/queries.ts";
@@ -34,11 +34,12 @@ export function VersionSelect() {
   const { data: log } = useLog(name);
   const versions: Pick<LogEntry, "v" | "actor" | "at">[] = m ? (log?.length ? [...log].reverse() : [{ v: m.version }]) : [];
   const [compare, setCompare] = useState<number | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild disabled={!m}>
-          <Button aria-label="Lịch sử phiên bản" className="h-8 bg-panel-2">{m ? `v${m.version}` : "—"}<ChevronDown /></Button>
+          <Button ref={trigger} aria-label="Lịch sử phiên bản" className="h-8 bg-panel-2">{m ? `v${m.version}` : "—"}<ChevronDown /></Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="max-h-80 w-72 overflow-y-auto">
           <DropdownMenuLabel>Lịch sử phiên bản</DropdownMenuLabel>
@@ -56,7 +57,7 @@ export function VersionSelect() {
           <p className="m-0 px-2 py-1 text-xs text-muted-foreground">Quay lại bản trước bằng nút Hoàn tác</p>
         </DropdownMenuContent>
       </DropdownMenu>
-      <VersionCompare name={name} v={compare} onClose={() => setCompare(null)} />
+      <VersionCompare name={name} v={compare} onClose={() => setCompare(null)} back={trigger} />
     </>
   );
 }
