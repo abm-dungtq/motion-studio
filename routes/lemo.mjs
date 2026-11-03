@@ -335,7 +335,7 @@ export const ROUTES = [
       try {
         const lib = libraryStyles(cacheHome(), { pin: pinFor(c.P) });
         const librarySlugs = [...new Set([...PIN.slugs, ...lib.rows.map((r) => r.slug)])];
-        const r = keepStyle({ projectDir: pd.dir, myDir: myStylesDir(), librarySlugs });
+        const r = await keepStyle({ projectDir: pd.dir, myDir: myStylesDir(), librarySlugs });
         return { ok: true, slug: r.slug, dir: r.dir, files: r.files, bytes: r.bytes, frame: r.frame, warnings: r.warnings };
       } catch (e) { return answer(c, e); } finally { busy.delete(b.name); }
     },
