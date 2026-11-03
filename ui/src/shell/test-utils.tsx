@@ -85,3 +85,22 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+
+// The Combobox of shell/Combobox.tsx: the labels of its options (opened, then closed again), and a
+// choice by label, as userEvent.selectOptions did for a native <select>.
+const comboLabel = (o: Element) => o.querySelector("span")?.textContent ?? "";
+export function comboOptions(name: string | RegExp): string[] {
+  fireEvent.click(screen.getByRole("combobox", { name }));
+  const out = within(screen.getByRole("listbox")).getAllByRole("option").map(comboLabel);
+  fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+  return out;
+}
+export function comboOption(name: string | RegExp, label: string): HTMLElement {
+  fireEvent.click(screen.getByRole("combobox", { name }));
+  const o = within(screen.getByRole("listbox")).getAllByRole("option").find((x) => comboLabel(x) === label);
+  if (!o) throw new Error(`no option "${label}" in ${String(name)}`);
+  return o;
+}
+export function chooseCombo(name: string | RegExp, label: string): void {
+  fireEvent.click(comboOption(name, label));
+}

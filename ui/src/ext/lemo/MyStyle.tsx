@@ -6,9 +6,10 @@
 import { useRef, useState } from "react";
 import { lemoDraft, lemoKeep, useProject } from "@/api/queries.ts";
 import { say } from "@/api/client.ts";
+import { Combobox } from "@/shell/Combobox.tsx";
 import { Button, Input, Textarea } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
-import { SELECT } from "./Gallery.tsx";
+import { SOURCE_NAMES } from "./Gallery.tsx";
 import { reloadStyles, useAllStyles, useLemo } from "./store.ts";
 import { tabConfirm } from "./confirm.tsx";
 
@@ -29,7 +30,7 @@ export function MyStyle() {
   const { data: m } = useProject(name);
   const busy = useLemo((s) => s.busy);
   const { data: d, dataUpdatedAt } = useAllStyles(name);
-  const base = useRef<HTMLSelectElement>(null);
+  const [base, setBase] = useState("");
   const title = useRef<HTMLInputElement>(null);
   const desc = useRef<HTMLTextAreaElement>(null);
   const [sending, setSending] = useState(false);
@@ -57,8 +58,7 @@ export function MyStyle() {
   };
   const ask = async () => {
     if (sending) return;
-    const v = base.current?.value ?? "";
-    const [source, slug] = v ? v.split(":") : [null, null];
+    const [source, slug] = base ? base.split(":") : [null, null];
     setSending(true);
     try {
       const r = await lemoDraft({ name, base: slug, source, title: title.current?.value ?? "", description: desc.current?.value ?? "" });
@@ -101,10 +101,13 @@ export function MyStyle() {
         <summary className="cursor-pointer text-sm">{draft ? "Tạo bản nháp khác" : "Tạo phong cách riêng"}</summary>
         <div className="mt-2 flex flex-col gap-2">
           <p className="m-0 text-sm text-muted-foreground">Đạo diễn hỏi bạn từng câu bằng thẻ, viết STYLE.md, CHANGES.md và khung phong cách trong lemo-style/ của dự án. Bấm Giữ phong cách khi đã ưng.</p>
-          <select ref={base} className={`${SELECT} w-full`} aria-label="Phong cách gốc" defaultValue="">
-            <option value="">Từ trang trắng</option>
-            {rows.map((r) => <option key={`${r.source}:${r.slug}`} value={`${r.source}:${r.slug}`}>{`${r.source === "mine" ? "★ " : ""}${r.ten}`}</option>)}
-          </select>
+          <Combobox
+            className="w-full"
+            label="Phong cách gốc"
+            value={base}
+            onChange={setBase}
+            options={[{ value: "", label: "Từ trang trắng" }, ...rows.map((r) => ({ value: `${r.source}:${r.slug}`, label: r.ten, group: SOURCE_NAMES.find((x) => x.id === r.source)?.ten }))]}
+          />
           <Input ref={title} placeholder="Tên phong cách (tuỳ chọn)" maxLength={120} aria-label="Tên phong cách" />
           <Textarea ref={desc} placeholder="Muốn phong cách trông thế nào, dùng cho phim gì…" maxLength={2000} aria-label="Mô tả phong cách" className="min-h-[72px]" />
           <div>

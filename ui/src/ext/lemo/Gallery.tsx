@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useProject } from "@/api/queries.ts";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Combobox } from "@/shell/Combobox.tsx";
 import { Button, Input } from "@/shell/controls.tsx";
 import { Fail, Loading } from "@/shell/states.tsx";
 import { useStudio } from "@/store/studio.ts";
@@ -89,9 +90,7 @@ export const SOURCE_NAMES: { id: StyleSource; ten: string }[] = [
 ];
 
 // An option that would leave nothing is dimmed and disabled, unless it is the one chosen.
-const opt = (id: string, ten: string, n: number, chosen: string) => (
-  <option key={id} value={id} disabled={!n && id !== chosen}>{`${ten} (${n})`}</option>
-);
+const opt = (id: string, ten: string, n: number, chosen: string) => ({ value: id, label: `${ten} (${n})`, disabled: !n && id !== chosen });
 
 function Library({ d, name, hasManifest, shots }: { d: LemoStyles; name: string | null; hasManifest: boolean; shots: number }) {
   const q = useLemo((s) => s.q), group = useLemo((s) => s.group), source = useLemo((s) => s.source);
@@ -113,15 +112,20 @@ function Library({ d, name, hasManifest, shots }: { d: LemoStyles; name: string 
     <>
       <div className="sticky top-0 z-10 flex flex-wrap gap-2 bg-panel py-1" data-testid="lemo-filters">
         <SearchBox />
-        <select className={`${SELECT} min-w-0 flex-[0_1_220px]`} aria-label="Nhóm phong cách" value={group} onChange={(e) => useLemo.getState().setGroup(e.target.value)}>
-          {opt("", "Mọi nhóm", sum(byGroup), group)}
-          {genres.map((g) => opt(g.id, g.ten, byGroup.get(g.id) ?? 0, group))}
-          {opt(NO_GROUP, "Chưa phân nhóm", byGroup.get(NO_GROUP) ?? 0, group)}
-        </select>
-        <select className={`${SELECT} min-w-0 flex-[0_1_180px]`} aria-label="Nguồn phong cách" value={source} onChange={(e) => useLemo.getState().setSource(e.target.value as StyleSource)}>
-          {opt("", "Mọi nguồn", sum(bySource), source)}
-          {SOURCE_NAMES.map((t) => opt(t.id, t.ten, bySource.get(t.id) ?? 0, source))}
-        </select>
+        <Combobox
+          className="flex-[0_1_220px]"
+          label="Nhóm phong cách"
+          value={group}
+          onChange={(v) => useLemo.getState().setGroup(v)}
+          options={[opt("", "Mọi nhóm", sum(byGroup), group), ...genres.map((g) => opt(g.id, g.ten, byGroup.get(g.id) ?? 0, group)), opt(NO_GROUP, "Chưa phân nhóm", byGroup.get(NO_GROUP) ?? 0, group)]}
+        />
+        <Combobox
+          className="flex-[0_1_180px]"
+          label="Nguồn phong cách"
+          value={source}
+          onChange={(v) => useLemo.getState().setSource(v as StyleSource)}
+          options={[opt("", "Mọi nguồn", sum(bySource), source), ...SOURCE_NAMES.map((t) => opt(t.id, t.ten, bySource.get(t.id) ?? 0, source))]}
+        />
       </div>
       <p className="m-0 text-sm text-muted-foreground" role="status" data-testid="lemo-count">
         {`${rows.length} / ${d.total} phong cách${d.fetched && !d.layer_available ? " · chưa có lệnh lớp canvas, phong cách thư viện chỉ để tham khảo" : ""}`}
