@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Màn hình chào: chưa mở dự án nào thì giữa cửa sổ không còn dòng "Chọn một dự án" mà là "Mở lại dự án" với tối đa 6 dự án mở gần đây trong trình duyệt này (tên, tiêu đề, phiên bản hoặc "chưa có project.json", trạng thái cổng xuất), nút "Dự án mới", nút "Mở dự án khác" mở ô chọn dự án, và một dòng phím tắt chính. Danh sách lưu ở `localStorage` (`ms-recent`); dự án tạm vắng (ổ ngoài chưa cắm) chỉ bị ẩn, không bị quên.
+
 - Lớp chất lượng trên timeline: Studio đọc `QA.md` của dự án và vẽ mỗi cảnh báo, lỗi có mốc (FREEZE, SILENCE, SYNC, WORD…) thành dải vàng hoặc đỏ trên làn Shot, rê chuột thấy cả dòng. Nút "Lớp QA" trên thanh timeline tắt hoặc bật lớp này và được nhớ. Thanh trên cùng có chip "QA: N lỗi, M cảnh báo" hoặc "QA đạt" (ẩn khi chưa có `QA.md`); bấm chip mở kết quả mới nhất của từng phép kiểm, dòng có mốc có nút "Tới". Chỉ tính bản render hiện hành (tên có `final` trước, rồi bản mới nhất), nên cảnh báo đã sửa ở bản render sau không hiện lại. `QA.md` được đọc lại khi một việc kết thúc. Extension đặt được chip lên thanh trên cùng bằng `registerSection("topbar", …)`, và dải của decorator có thêm `title` cho chú thích.
 
 - So sánh phiên bản theo shot: hộp "Xem thay đổi" của banner đạo diễn mở tab "Theo shot" trước, kể bằng lời người dựng ("Shot 3 dài 2,0 s → 3,5 s", "Thêm shot 7", "Câu vo-04: “…” → “…”", nhạc đổi gì), mỗi shot đổi có ảnh hiện tại; bấm một dòng thì đóng hộp, chọn shot đó và tua tới đầu shot. Có ghi số file media bị ghi đè. Diff chữ từng file vẫn ở tab "Theo file". Trong Lịch sử phiên bản, mỗi bản cũ có "So với hiện tại" mở cùng cách xem (bản đã dọn thì báo "Không còn bản vN để so"); đóng hộp thì tiêu điểm về nút phiên bản.
