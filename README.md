@@ -109,6 +109,7 @@ Shortcuts are off while you type in a field, while a dialog or menu is open, or 
 | Shift+Z | Fit to view |
 | Cmd/Ctrl+Z | Undo |
 | Cmd/Ctrl+Shift+Z, Ctrl+Y | Redo |
+| Cmd/Ctrl+K | Command palette: open a project, go to a tab or a shot, undo, export… (works while typing too) |
 
 More in [docs/timeline.md](docs/timeline.md).
 

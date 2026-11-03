@@ -36,6 +36,7 @@ Phím tắt không chạy khi con trỏ đang ở trong ô nhập, khi đang m�
 | Shift+Z | Vừa khung |
 | Cmd/Ctrl+Z | Hoàn tác |
 | Cmd/Ctrl+Shift+Z, Ctrl+Y | Làm lại |
+| Cmd/Ctrl+K | Bảng lệnh: mở dự án, tới tab hay shot, hoàn tác, xuất… (cả khi đang gõ) |
 
 Thao tác chuột:
 

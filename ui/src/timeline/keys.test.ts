@@ -58,6 +58,13 @@ describe("timeline keys", () => {
     key({ key: "z", code: "KeyZ", metaKey: true, shiftKey: true }); key({ key: "y", code: "KeyY", ctrlKey: true }); expect(redo).toHaveBeenCalledTimes(2);
   });
 
+  it("Cmd+K and Ctrl+K are not timeline keys (they open the command palette)", () => {
+    key({ key: "k", code: "KeyK", metaKey: true });
+    key({ key: "k", code: "KeyK", ctrlKey: true });
+    expect(tr.pause).not.toHaveBeenCalled();
+    expect(tr.step).not.toHaveBeenCalled();
+  });
+
   it("view keys: N, R, Shift+Z, = and + zoom in, - zooms out", () => {
     key({ key: "n", code: "KeyN" });
     expect(useStudio.getState().snap).toBe(false);

@@ -31,6 +31,7 @@ const AGENT = { claude: { found: true, version: "2.1.0", logged_in: true }, prov
 const routes = {
   "/api/status": { ok: true },
   "/api/projects": PROJECTS,
+  "/api/notes": { notes: [] },
   "/api/project": m,
   "/api/log": [],
   "/api/requests": [],
