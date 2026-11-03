@@ -1,8 +1,8 @@
 // The job tray's rows: the project's long jobs (export, timing, director…) and its Flow runs, in
 // one list with a label, the time they ran and a status in four words. Running rows and rows that
 // ended in the last 10 minutes only, newest first.
-import type { Job } from "@/api/types.ts";
-import type { VgItem, VgState } from "@/ext/videogen/api.ts";
+import type { Job } from "../api/types.ts";
+import type { VgItem, VgState } from "../ext/videogen/api.ts";
 
 export type TrayStatus = "running" | "done" | "failed" | "cancelled";
 export interface TrayItem {
