@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Server không còn đứng chờ ffmpeg hay CLI trong route: "Giữ phong cách" đổi khung PNG sang JPEG bằng ffmpeg chạy nền (30 giây tối đa), và trạng thái Google Flow đọc `gflow --version` chạy nền (10 giây tối đa, vẫn giữ theo mtime của file gflow). Trong lúc đó các yêu cầu khác vẫn trả ngay (`/api/projects` khoảng 5 ms khi `gflow --version` mất 1,5 giây).
+
 - Mở trang nhẹ hơn: tab và mục của các extension (Anime, Phong cách, Chuyển cảnh & hiệu ứng, Tài sản của series, B-roll, ảnh và clip AI) cùng cột Đạo diễn chỉ tải mã khi được mở, chỗ đó hiện "Đang tải…" trong lúc chờ. React và TanStack Query nằm ở hai file riêng. JS nạp lúc mở trang giảm từ 893 KB còn 762 KB.
 
 - Cổng xuất nhanh hơn: kết quả `check-preflight --stage final` được giữ theo từng dự án (trong bộ nhớ và ở `.opus/gates-cache.json`) khi các file mà kiểm tra đọc chưa đổi, nên lần mở sau trả ngay thay vì chạy lại (a-02: 20 giây xuống 16 mili giây). Màn hình chào chỉ đọc kết quả đã có, không khởi chạy kiểm tra hay ffmpeg nào. Thẻ "Tiếng đã đổi sau animatic" dùng chung truy vấn với chip cổng, không chạy lượt thứ hai. Nút "Kiểm lại" trong hộp Xuất và lệnh "Kiểm lại cổng xuất" (Cmd+K) chạy lại bất kể cache. Lệnh của provider chạy thành một nhóm tiến trình: quá giờ hoặc khi Studio dừng thì cả ffmpeg con cũng dừng, không còn tiến trình mồ côi.

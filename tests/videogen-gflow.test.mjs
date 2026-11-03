@@ -187,7 +187,7 @@ test("abort: a run that ignores SIGINT is killed with its whole tree", async () 
 });
 
 test("free calls: version, default profile without email, project, catalog", async () => {
-  assert.equal(gflowVersion(FAKE), "0.92.1");
+  assert.equal(await gflowVersion(FAKE), "0.92.1");
   const p = await defaultProfile(FAKE);
   assert.equal(p, "p1");
   const dir = mkdtempSync(join(tmp, "f-"));

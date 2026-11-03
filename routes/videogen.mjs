@@ -69,11 +69,11 @@ const directorText = (rel, seconds, shot) => `Đặt clip AI ${rel} (${seconds ?
 // gflow's version per (binary, mtime) and its default profile for a minute: both cost a process.
 let versionCache = { key: null, version: null };
 let profileCache = { bin: null, at: 0, name: null };
-function binInfo(bin) {
+async function binInfo(bin) {
   let st;
   try { accessSync(bin, FS.X_OK); st = statSync(bin); } catch { return { found: false, version: null }; }
   const key = `${bin}:${st.mtimeMs}`;
-  if (versionCache.key !== key) versionCache = { key, version: gflowVersion(bin) };
+  if (versionCache.key !== key) versionCache = { key, version: await gflowVersion(bin) };
   return { found: true, version: versionCache.version };
 }
 async function profileOf(v) {
@@ -88,7 +88,7 @@ async function profileOf(v) {
 
 // gflow present and a profile known, else the error to answer.
 async function ready(v) {
-  if (!binInfo(v.gflow_bin).found) throw fail(503, `Chưa có gflow ở ${v.gflow_bin} (studio.json videogen.gflow_bin)`);
+  if (!(await binInfo(v.gflow_bin)).found) throw fail(503, `Chưa có gflow ở ${v.gflow_bin} (studio.json videogen.gflow_bin)`);
   const profile = await profileOf(v);
   if (!profile) throw fail(412, "Chưa có profile gflow: đặt studio.json videogen.profile hoặc chạy gflow auth login");
   return { bin: v.gflow_bin, profile };
@@ -246,7 +246,7 @@ export const ROUTES = [
     async handler() {
       sweepStuck();
       const v = videogenSettings();
-      const { found, version } = binInfo(v.gflow_bin);
+      const { found, version } = await binInfo(v.gflow_bin);
       const profile = found ? await profileOf(v) : null;
       return {
         bin: tilde(v.gflow_bin), found, version, tested: Boolean(version) && gflowTested(version), profile,
