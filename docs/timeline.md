@@ -60,6 +60,8 @@ Thao tác chuột:
 | Nhạc | Mỗi nhạc nền một làn khi chúng chồng thời gian. Vạch phách của lưới phách đầu tiên |
 | SFX | Tối đa 4 tầng. Hai SFX vào hai tầng khi khối (và nhãn, từ 80 px/giây) của chúng chạm nhau |
 
+Lớp QA (nút "Lớp QA" trên thanh timeline, mặc định bật, nhớ trong trình duyệt) vẽ lên làn Shot mỗi cảnh báo và lỗi có mốc thời gian của `QA.md`: dải vàng cho WARN, đỏ cho FAIL, nhãn là mã kiểm (FREEZE, SILENCE, SYNC…), rê chuột thấy cả dòng. Studio chỉ đọc mục qc-mp4 của bản render đang tính (tên có `final` trước, rồi bản mới nhất) cùng mục BALANCE, WORD, SYNC mới nhất; cảnh báo của bản render cũ đã sửa ở bản sau thì không hiện. Bộ đọc nằm ở `ui/src/core/qa-parse.ts`, lớp và chip ở `ui/src/ext/quality/`. `QA.md` được đọc lại mỗi khi một việc kết thúc.
+
 ## Luồng dữ liệu
 
 - Mọi sửa đổi trên shot, câu và SFX đi qua `P.gateway.patch` với `base` là version Studio đang thấy. Version lệch thì server trả 409 và Studio tải lại.

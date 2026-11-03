@@ -1,6 +1,6 @@
 // Port of the timeline bar of public/index.html (:44-53) and zoomBy, fit, toggleSnap, showMode,
 // toggleMode of public/timeline.js (:51-73); behaviour unchanged.
-// The 36 px bar over the tracks: the key hint, Ripple/Roll, Hoàn tác mốc, Hít, −, +, Vừa khung.
+// The 36 px bar over the tracks: the key hint, Ripple/Roll, Hoàn tác mốc, Hít, Lớp QA, −, +, Vừa khung.
 import { memo } from "react";
 import { say } from "@/api/client.ts";
 import { Button } from "@/shell/controls.tsx";
@@ -29,6 +29,7 @@ export function toggleMode(): void {
 export const Toolbar = memo(function Toolbar({ editable, onFit }: { editable: boolean; onFit: () => void }) {
   const snap = useStudio((s) => s.snap);
   const mode = useStudio((s) => s.mode);
+  const qaLayer = useStudio((s) => s.qaLayer);
   return (
     <div className="timeline-bar flex h-9 shrink-0 items-center gap-1.5 border-b border-border bg-panel px-3">
       <span className="hint min-w-0 flex-1 truncate text-xs text-muted-foreground">{TIMELINE_HINT}</span>
@@ -51,6 +52,15 @@ export const Toolbar = memo(function Toolbar({ editable, onFit }: { editable: bo
         onClick={toggleSnap}
       >
         Hít
+      </Button>
+      <Button
+        data-testid="qa-layer-btn"
+        aria-pressed={qaLayer}
+        title="Dải cảnh báo và lỗi của QA.md trên làn shot"
+        className="aria-pressed:border-primary aria-pressed:text-primary-ink"
+        onClick={() => useStudio.getState().setQaLayer(!qaLayer)}
+      >
+        Lớp QA
       </Button>
       <Button variant="icon" aria-label="Thu nhỏ" onClick={() => zoomBy(1 / ZOOM_STEP)}>−</Button>
       <Button variant="icon" aria-label="Phóng to" onClick={() => zoomBy(ZOOM_STEP)}>+</Button>

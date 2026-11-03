@@ -41,7 +41,7 @@ export interface InspectorSection { id: string; kinds: PickKind[]; order: number
 export interface AgentRowProps { data: AgentStatus | undefined; error: Error | null; reload: () => void }
 export interface AgentRowsDef { component: ComponentType<AgentRowProps>; width?: string }
 
-export interface DecoBand { t: number; until?: number | null; lane: "shot" | "voice" | "music" | "sfx"; label: string; kind: "info" | "warn" | "bad" | "ok" | string }
+export interface DecoBand { t: number; until?: number | null; lane: "shot" | "voice" | "music" | "sfx"; label: string; kind: "info" | "warn" | "bad" | "ok" | string; title?: string }
 export type TimelineDecorator = (m: Manifest, state: { name: string | null; sel: string | null; pick: Pick }) => DecoBand[] | null | undefined;
 
 let seq = 0;
@@ -71,7 +71,8 @@ export function registerTab(def: TabDef): { id: string } {
   return { id };
 }
 
-// hostId: a tab id, "director" (the right column's director tab) or "export" (the export dialog).
+// hostId: a tab id, "director" (the right column's director tab), "export" (the export dialog) or
+// "topbar" (a chip in the top bar, after the export gate chip).
 export function registerSection(hostId: string, def: SectionDef): void {
   if (!def || !isComponent(def.component)) throw new Error(`registerSection ${hostId}/${def?.id}: cần component`);
   const list = [...(sections[hostId] ?? []), { id: def.id, order: Number(def.order ?? 100) || 0, component: def.component, seq: ++seq }].sort(byOrder);

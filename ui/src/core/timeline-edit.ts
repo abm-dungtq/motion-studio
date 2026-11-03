@@ -36,7 +36,7 @@ export interface LaneResult { lane: Record<string, number>; count: number; overf
 export interface Word { text?: string; start: number; end: number }
 export interface Bounds { lo: number; hi: number }
 export type MarkerDragResult = { value: number; clamped: boolean; from: number; error?: undefined } | { error: string; value?: undefined; clamped?: undefined; from?: undefined };
-export interface DecoItem { t: number; until: number | null; label: string; kind: string }
+export interface DecoItem { t: number; until: number | null; label: string; kind: string; title?: string }
 export type Decorator = (m: unknown, state: unknown) => unknown;
 
 const MIN = 0.5;
@@ -339,7 +339,7 @@ export function markerDrag(marker: any, kind: string, dt: number): MarkerDragRes
 }
 
 // The marks of every decorator for one render, by lane: { shot, voice, music, sfx } of
-// { t, until (null for a thin mark), label, kind }. A decorator that throws is reported to
+// { t, until (null for a thin mark), label, kind, title (the tooltip when it is not the label) }. A decorator that throws is reported to
 // onError and skipped; marks with an unknown lane, a bad time or until <= t are dropped.
 export const DECO_LANES = ["shot", "voice", "music", "sfx"] as const;
 export type DecoLane = (typeof DECO_LANES)[number];
@@ -351,7 +351,7 @@ export function decorationItems(decorators: readonly Decorator[] | null | undefi
     for (const d of Array.isArray(items) ? items : []) {
       const t = Number(d?.t), until = d?.until == null ? null : Number(d.until);
       if (!(DECO_LANES as readonly string[]).includes(d?.lane) || !Number.isFinite(t) || (until !== null && !(until > t))) continue;
-      by[d.lane as DecoLane].push({ t, until, label: String(d.label ?? ""), kind: String(d.kind ?? "info") });
+      by[d.lane as DecoLane].push({ t, until, label: String(d.label ?? ""), kind: String(d.kind ?? "info"), ...(d.title != null ? { title: String(d.title) } : {}) });
     }
   }
   return by;

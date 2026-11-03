@@ -297,4 +297,19 @@ describe("TimelineArea", () => {
     ]);
     expect(deco[0].textContent).toBe("dải thử");
   });
+
+  it("recomputes the decorators when Lớp QA is turned off or on", () => {
+    open();
+    useStudio.getState().setQaLayer(true);
+    registerTimelineDecorator(() => (useStudio.getState().qaLayer ? [{ t: 1, until: 3, lane: "shot", label: "FREEZE", kind: "warn" }] : []));
+    renderUi(<TimelineArea />);
+    const bands = () => document.querySelectorAll(".tl-deco.band").length;
+    expect(bands()).toBe(1);
+    expect(screen.getByRole("button", { name: "Lớp QA" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Lớp QA" }));
+    expect(bands()).toBe(0);
+    expect(window.localStorage.getItem("studio.qaLayer")).toBe("0");
+    fireEvent.click(screen.getByRole("button", { name: "Lớp QA" }));
+    expect(bands()).toBe(1);
+  });
 });

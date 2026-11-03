@@ -24,6 +24,8 @@ export function applyJobEvent(name: string, e: JobEvent): void {
   if (e.type === "log" && e.line != null) setJobLogs(name, { ...logs, [e.job.id]: [...lines, e.line] });
   else if (!logs[e.job.id]) setJobLogs(name, { ...logs, [e.job.id]: [] });
   const j = e.job;
+  // A QA tool may have appended to QA.md (qc-mp4, word-sync, sfx-sync, mix-balance --write-qa).
+  if (e.type === "exit") void queryClient.invalidateQueries({ queryKey: keys.projectText(name, "QA.md") });
   if (e.type === "exit" && j.kind === "export") {
     if (j.code === 5) say(j.meta?.message ?? "Thiếu cổng", true);
     else if (j.code === 0 && j.meta?.step === "compress") say(`Đã xuất ${j.meta.output}`);

@@ -84,6 +84,7 @@ Dragging shows a preview in place. When you release, Studio sends one patch, whi
 - **Snap** (N, or the "Hít" button) to the playhead, shot edges, lines, SFX, beats and word starts.
 - **M/S** on a track label mutes or solos that track in the player only.
 - **Gate chips** next to the Xuất bản menu say "Cần duyệt lại animatic" (the animatic needs re-approval) or "Chưa đủ cổng xuất" (export gates not met). Click one to open the card or the list of failures.
+- **QA chip and layer:** when the project has a `QA.md`, a chip says "QA: 2 lỗi, 31 cảnh báo" (errors, warnings) or "QA đạt" (passed); click it for the latest result of each check, with "Tới" (go to) on checks that have a time. The same timed warnings and errors show as bands on the shot track; the "Lớp QA" button on the timeline bar hides them. Only the current render counts: a file named `final` first, then the newest.
 
 ### Keyboard shortcuts
 

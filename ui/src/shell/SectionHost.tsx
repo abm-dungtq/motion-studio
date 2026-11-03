@@ -1,4 +1,4 @@
-// The sections registered for one host (a tab id, "director" or "export"), by order, each in its
+// The sections registered for one host (a tab id, "director", "export" or "topbar"), by order, each in its
 // own ErrorBoundary so one failing section leaves the others running.
 import { useSections } from "@/ext/registry.ts";
 import { useStudio } from "@/store/studio.ts";
@@ -11,7 +11,7 @@ export function SectionHost({ hostId }: { hostId: string }) {
   return (
     <>
       {sections.map((s) => (
-        <section key={s.seq} data-section={`${hostId}/${s.id}`}>
+        <section key={s.seq} data-section={`${hostId}/${s.id}`} className={hostId === "topbar" ? "flex shrink-0 items-center empty:hidden" : undefined}>
           <ErrorBoundary what={`section ${hostId}/${s.id}`} resetKey={name}>
             <s.component />
           </ErrorBoundary>
