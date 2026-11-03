@@ -26,6 +26,7 @@ export interface StudioState {
   trayOpen: boolean;                          // the job tray in the top bar
   noteAt: number | null;                      // the time a note is being typed for (key C), or null
   snap: boolean;                              // default true (timeline.js:41)
+  qaLayer: boolean;                           // the QA bands on the timeline; default on, kept in localStorage
   mode: EditMode;                             // default "ripple"
   pps: number;                                // default 60, clamped to 8..400
   audio: { mute: AudioGroup[]; solo: AudioGroup[] };
@@ -41,12 +42,16 @@ export interface StudioState {
   openDialog(d: Dialog): void;
   setTrayOpen(open: boolean): void;
   setNoteAt(t: number | null): void;
-  setSnap(on: boolean): void; setMode(m: EditMode): void; setPps(p: number): void;
+  setSnap(on: boolean): void; setQaLayer(on: boolean): void; setMode(m: EditMode): void; setPps(p: number): void;
   toggleAudio(kind: "mute" | "solo", g: AudioGroup): void;
   setRetimed(r: boolean): void; setDirectorDraft(s: string): void;
 }
 
 export const TAB_STORE = "studio.tab";
+export const QA_LAYER_STORE = "studio.qaLayer";
+const savedQaLayer = (): boolean => {
+  try { return window.localStorage.getItem(QA_LAYER_STORE) !== "0"; } catch { return true; }
+};
 export const PPS_MIN = 8;
 export const PPS_MAX = 400;
 export const clampPps = (p: number): number => Math.min(PPS_MAX, Math.max(PPS_MIN, Number(p) || 60));
@@ -92,6 +97,7 @@ export const useStudio: UseBoundStore<StoreApi<StudioState>> = create<StudioStat
   trayOpen: false,
   noteAt: null,
   snap: true,
+  qaLayer: savedQaLayer(),
   mode: "ripple",
   pps: 60,
   audio: { mute: [], solo: [] },
@@ -121,6 +127,10 @@ export const useStudio: UseBoundStore<StoreApi<StudioState>> = create<StudioStat
   setTrayOpen: (trayOpen) => set({ trayOpen }),
   setNoteAt: (noteAt) => set({ noteAt }),
   setSnap: (snap) => set({ snap }),
+  setQaLayer: (qaLayer) => {
+    set({ qaLayer });
+    try { window.localStorage.setItem(QA_LAYER_STORE, qaLayer ? "1" : "0"); } catch { /* storage blocked: kept for this tab */ }
+  },
   setMode: (mode) => set({ mode }),
   setPps: (p) => set({ pps: clampPps(p) }),
   toggleAudio: (kind, g) => set({ audio: { ...get().audio, [kind]: flip(get().audio[kind], g) } }),

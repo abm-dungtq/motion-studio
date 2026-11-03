@@ -8,7 +8,7 @@
 // Shortcuts (keys.ts) live here too: the shell has no other key handler.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { actions } from "@/api/actions.ts";
-import { useProject, useTimelineMedia } from "@/api/queries.ts";
+import { useProject, useProjectText, useTimelineMedia } from "@/api/queries.ts";
 import type { Manifest } from "@/api/types.ts";
 import { bus } from "@/core/bus.ts";
 import { wordStarts, type DecoItem, type DecoLane } from "@/core/timeline-edit.ts";
@@ -85,6 +85,9 @@ function Tracks({ m, name, scroller }: { m: Manifest; name: string; scroller: Re
   const { data: media } = useTimelineMedia(name);
   const timing = useCompositionTiming();
   const decorators = useDecorators();
+  // A decorator reads the QA layer and QA.md itself; both are here so its marks follow them.
+  const qaLayer = useStudio((s) => s.qaLayer);
+  const { data: qaText } = useProjectText(name, "QA.md");
   const inner = useRef<HTMLDivElement>(null);
   const snap = useSnapLine();
   const view = useMemo<TimelineView>(() => ({ inner, snapLine: snap.line }), [snap.line]);
@@ -95,7 +98,7 @@ function Tracks({ m, name, scroller }: { m: Manifest; name: string; scroller: Re
   const tracks = trackLayout(m, pps);
   const h = (k: LaneKind) => tracks.find((t) => t.lane === k)!.h;
   const words = useMemo(() => wordStarts(timing), [timing]);
-  const deco = useMemo(() => (decorators.length ? decoByLane(decorators, m, { name, sel, pick }) : EMPTY_DECO), [decorators, m, name, sel, pick]);
+  const deco = useMemo(() => (decorators.length ? decoByLane(decorators, m, { name, sel, pick }) : EMPTY_DECO), [decorators, m, name, sel, pick, qaLayer, qaText]);
   const pickOf = (k: string) => (pick?.kind === k ? pick.id : null);
   const render = media?.render ?? undefined;
   const files = media?.files;

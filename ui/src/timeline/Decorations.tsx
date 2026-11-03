@@ -27,7 +27,7 @@ export const Decorations = memo(function Decorations({ items, pps }: { items: De
             key={i}
             className={band ? "tl-deco band" : "tl-deco"}
             data-kind={d.kind}
-            title={d.label}
+            title={d.title ?? d.label}
             aria-hidden="true"
             style={{
               position: "absolute", top: 0, bottom: 0, left: d.t * pps, width: w, zIndex: 0, overflow: "hidden", whiteSpace: "nowrap", fontSize: 10,
