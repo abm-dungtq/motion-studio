@@ -1,5 +1,5 @@
-import { answerConfirm, mockFetch, renderUi } from "@/shell/test-utils.tsx";
-import { screen, waitFor, within } from "@testing-library/react";
+import { answerConfirm, chooseCombo, comboOption, comboOptions, mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { say } from "@/api/client.ts";
@@ -37,9 +37,9 @@ describe("Gallery", () => {
     await waitFor(() => expect(titles()).toEqual(LIBRARY.map((r) => r.ten)));
     expect(screen.getByTestId("lemo-count")).toHaveTextContent("3 / 3 phong cách");
     expect(screen.getByPlaceholderText("Tìm: truyện tranh, thuỷ màu, tin tức…")).toBeInTheDocument();
-    const group = screen.getByLabelText("Nhóm phong cách");
-    expect([...group.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Mọi nhóm (3)", "Hội hoạ (1)", "Truyền thống Đông Á (1)", "Tin tức (1)", "Chưa phân nhóm (0)"]);
-    expect(group.querySelector('option[value="_none"]')).toBeDisabled();
+    expect(comboOptions("Nhóm phong cách")).toEqual(["Mọi nhóm (3)", "Hội hoạ (1)", "Truyền thống Đông Á (1)", "Tin tức (1)", "Chưa phân nhóm (0)"]);
+    expect(comboOption("Nhóm phong cách", "Chưa phân nhóm (0)")).toHaveAttribute("aria-disabled", "true");
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
     expect(screen.getByTestId("lemo-filters")).toHaveClass("sticky");
     expect(screen.getByTestId("lemo-count")).toHaveAttribute("role", "status");
     expect(screen.getByTestId("lemo-credit")).toHaveTextContent("Ảnh và phim mẫu: LemoLab, CC BY 4.0, github.com/lemomo-ai/lemo-opuscar. Mã và tài liệu: MIT.");
@@ -59,16 +59,16 @@ describe("Gallery", () => {
   it("the source filter keeps ready-made, lemo or own styles, and the group counts follow it", async () => {
     setup(stylesRoute({ withProfiles: true }));
     await waitFor(() => expect(titles()).toHaveLength(4));
-    const groupNames = () => [...screen.getByLabelText("Nhóm phong cách").querySelectorAll("option")].map((o) => o.textContent);
-    expect([...screen.getByLabelText("Nguồn phong cách").querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Mọi nguồn (4)", "Dựng sẵn (1)", "lemo (3)", "Của bạn (0)"]);
+    const groupNames = () => comboOptions("Nhóm phong cách");
+    expect(comboOptions("Nguồn phong cách")).toEqual(["Mọi nguồn (4)", "Dựng sẵn (1)", "lemo (3)", "Của bạn (0)"]);
     expect(groupNames()).toContain("Chưa phân nhóm (1)");
-    await userEvent.selectOptions(screen.getByLabelText("Nguồn phong cách"), "profile");
+    chooseCombo("Nguồn phong cách", "Dựng sẵn (1)");
     await waitFor(() => expect(titles()).toEqual(["Truyện tranh đa vũ trụ"]));
     expect(groupNames()).toEqual(["Mọi nhóm (1)", "Hội hoạ (0)", "Truyền thống Đông Á (0)", "Tin tức (0)", "Chưa phân nhóm (1)"]);
     expect(window.location.search).toContain("source=profile");
-    await userEvent.selectOptions(screen.getByLabelText("Nguồn phong cách"), "library");
+    chooseCombo("Nguồn phong cách", "lemo (3)");
     await waitFor(() => expect(titles()).toEqual(LIBRARY.map((r) => r.ten)));
-    await userEvent.selectOptions(screen.getByLabelText("Nguồn phong cách"), "");
+    chooseCombo("Nguồn phong cách", "Mọi nguồn (4)");
     expect(window.location.search).not.toContain("source=");
   });
 
@@ -98,7 +98,7 @@ describe("Gallery", () => {
   it("the group filter narrows the cards", async () => {
     setup();
     await waitFor(() => expect(titles()).toHaveLength(3));
-    await userEvent.selectOptions(screen.getByLabelText("Nhóm phong cách"), "East Asian Traditions");
+    chooseCombo("Nhóm phong cách", "Truyền thống Đông Á (1)");
     await waitFor(() => expect(titles()).toEqual(["Tranh khắc gỗ"]));
   });
 

@@ -1,11 +1,12 @@
 // Port of public/lemo-gallery.js; behaviour unchanged.
 // The shot inspector's "Phong cách code" (shotSection, lemo-gallery.js:163-192): the project's
 // style, this shot's, and a compact picker to apply one to the shot.
-import { useRef } from "react";
+import { useState } from "react";
 import type { InspectorSectionProps } from "@/ext/registry.ts";
+import { Combobox } from "@/shell/Combobox.tsx";
 import { Button } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
-import { SELECT } from "./Gallery.tsx";
+import { SOURCE_NAMES } from "./Gallery.tsx";
 import { applyStyle, modeOf, modeText, tagOf, useAllStyles, useLemo } from "./store.ts";
 import { shotConfirm } from "./confirm.tsx";
 
@@ -13,7 +14,7 @@ export function ShotStyle({ pick, m }: InspectorSectionProps) {
   const name = useStudio((s) => s.name);
   const busy = useLemo((s) => s.busy);
   const { data: d } = useAllStyles(name);
-  const sel = useRef<HTMLSelectElement>(null);
+  const [chosen, setChosen] = useState<string | null>(null);
   const shot = pick.id;
   if (!shot) return null;
 
@@ -27,8 +28,11 @@ export function ShotStyle({ pick, m }: InspectorSectionProps) {
     p.project ? `Dự án: ${styleName(p.project.slug, p.project.mode)} (${modeText(p.project.mode)})` : "Dự án chưa áp phong cách nào.",
     p.shots?.[shot] ? `Shot ${shot}: ${styleName(p.shots[shot].slug, p.shots[shot].mode)} (${modeText(p.shots[shot].mode)})` : null,
   ].filter((t): t is string => Boolean(t));
+  const key = (r: (typeof rows)[number]) => `${r.source}:${r.slug}`;
+  const options = rows.map((r) => ({ value: key(r), label: r.ten, hint: tagOf(r).text.toLowerCase(), group: SOURCE_NAMES.find((x) => x.id === r.source)?.ten }));
+  const value = chosen && options.some((o) => o.value === chosen) ? chosen : options[0]?.value ?? null;
   const apply = () => {
-    const [source, slug] = (sel.current?.value ?? "").split(":");
+    const [source, slug] = (value ?? "").split(":");
     const style = rows.find((r) => r.slug === slug && r.source === source);
     if (style) void applyStyle({ name, hasManifest: Boolean(m), style, mode: modeOf(style), shot, ask: shotConfirm.ask });
   };
@@ -41,9 +45,7 @@ export function ShotStyle({ pick, m }: InspectorSectionProps) {
         <summary className="cursor-pointer text-sm">Áp phong cách cho shot này</summary>
         {rows.length ? (
           <div className="mt-2 flex flex-col gap-2">
-            <select ref={sel} className={`${SELECT} w-full`} aria-label="Phong cách cho shot này">
-              {rows.map((r) => <option key={`${r.source}:${r.slug}`} value={`${r.source}:${r.slug}`}>{`${r.source === "mine" ? "★ " : ""}${r.ten} · ${tagOf(r).text.toLowerCase()}`}</option>)}
-            </select>
+            <Combobox className="w-full" label="Phong cách cho shot này" value={value} options={options} onChange={setChosen} />
             <div><Button variant="primary" disabled={!m || busy} onClick={apply}>Áp</Button></div>
           </div>
         ) : <p className="m-0 mt-2 text-sm text-muted-foreground">Chưa có phong cách nào: mở tab Phong cách và tải thư viện.</p>}

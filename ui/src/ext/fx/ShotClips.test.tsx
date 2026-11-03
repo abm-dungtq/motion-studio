@@ -1,4 +1,4 @@
-import { renderUi } from "@/shell/test-utils.tsx";
+import { comboOptions, renderUi } from "@/shell/test-utils.tsx";
 import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Manifest } from "@/api/types.ts";
@@ -24,7 +24,6 @@ describe("shot inspector fx section", () => {
     useStudio.setState({ name: "thuy-mau-demo" });
     renderUi(<ShotClips pick={{ kind: "shot", id: "s3" }} m={M} />);
     expect(screen.getByText("Sửa clip của shot")).toBeInTheDocument();
-    const clip = screen.getByRole("combobox", { name: "Clip" });
-    expect([...(clip as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(["3.mp4"]);
+    expect(comboOptions("Clip")).toEqual(["3.mp4"]);
   });
 });

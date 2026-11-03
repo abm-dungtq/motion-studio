@@ -1,7 +1,7 @@
 // Port of public/ext-anime.css; behaviour unchanged.
-// Small pieces the three Anime views share: a labelled field, a tag, a log box, a native select and
-// an input that commits on change (blur or Enter) like the old `onchange` inputs.
-import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+// Small pieces the three Anime views share: a labelled field, a tag, a log box and an input that
+// commits on change (blur or Enter) like the old `onchange` inputs.
+import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export const muted = "m-0 text-xs text-muted-foreground";
@@ -28,10 +28,6 @@ export function Log({ lines, fallback }: { lines: string[]; fallback?: string })
 }
 
 const FIELD = "rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50";
-
-export function NativeSelect({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(FIELD, "h-8 min-w-0", className)} {...props} />;
-}
 
 type LazyProps = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "defaultValue"> & { value: string; onCommit: (v: string) => void };
 

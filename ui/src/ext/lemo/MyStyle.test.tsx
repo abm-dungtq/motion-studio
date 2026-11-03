@@ -1,4 +1,4 @@
-import { answerConfirm, mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { answerConfirm, comboOptions, mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -48,8 +48,7 @@ describe("MyStyle", () => {
   it("the form asks the director for a draft", async () => {
     setup();
     expect(await screen.findByText("Tạo phong cách riêng")).toBeInTheDocument();
-    const base = screen.getByLabelText("Phong cách gốc");
-    expect([...base.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Từ trang trắng", "Thuỷ màu", "Tranh khắc gỗ", "Bàn tin tức"]);
+    expect(comboOptions("Phong cách gốc")).toEqual(["Từ trang trắng", "Thuỷ màu", "Tranh khắc gỗ", "Bàn tin tức"]);
     vi.mocked(lemoDraft).mockResolvedValue({ status: 200, data: { ok: true } });
     await userEvent.type(screen.getByPlaceholderText("Tên phong cách (tuỳ chọn)"), "Phong cách thử");
     await userEvent.click(screen.getByRole("button", { name: "Nhờ đạo diễn tạo" }));

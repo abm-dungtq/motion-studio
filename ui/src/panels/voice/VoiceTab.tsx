@@ -15,6 +15,7 @@ import { actions } from "@/api/actions.ts";
 import { api, ApiError, queryClient, say, send } from "@/api/client.ts";
 import { useProject } from "@/api/queries.ts";
 import type { Line } from "@/api/types.ts";
+import { Combobox } from "@/shell/Combobox.tsx";
 import { Button, Textarea } from "@/shell/controls.tsx";
 import { Empty, NeedManifest } from "@/shell/states.tsx";
 import { useDraft } from "@/shell/useDraft.ts";
@@ -81,11 +82,14 @@ function SpeakerPick({ line, n, voices, editable }: { line: Line; n: number; voi
     <label className="flex items-center gap-1.5 text-xs">
       {dot}
       <span className="text-muted-foreground">Người nói</span>
-      <select aria-label={`Người nói câu ${n}`} value={speaker ?? ""} onChange={(e) => void change(e.target.value)}
-        className="h-7 rounded-md border border-border bg-background px-1.5 text-xs">
-        {speaker ? null : <option value="">Chọn người nói</option>}
-        {roles.map((r) => <option key={r} value={r}>{r}</option>)}
-      </select>
+      <Combobox
+        className="h-7 px-1.5 text-xs"
+        label={`Người nói câu ${n}`}
+        placeholder="Chọn người nói"
+        value={speaker}
+        options={roles.map((r) => ({ value: r, label: r }))}
+        onChange={(v) => void change(v)}
+      />
     </label>
   );
 }

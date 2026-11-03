@@ -16,12 +16,12 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { queryClient } from "@/api/client.ts";
 import * as Q from "@/api/queries.ts";
 import type { SuggestCases, SuggestChooseResult, SuggestItem, SuggestPick, SuggestRecord, SuggestResponse, SuggestSide } from "@/api/types.ts";
+import { Combobox } from "@/shell/Combobox.tsx";
 import { Button } from "@/shell/controls.tsx";
 import { cn } from "@/lib/utils";
 import { useStudio } from "@/store/studio.ts";
 
 const TITLE = "Gợi ý cho dự án";
-const SELECT = "h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50";
 const MAX_ITEMS = 3;
 // The workflow steps in the user's words; "choose" is part of picking the direction. A step not
 // listed here shows its own name.
@@ -214,10 +214,14 @@ function Choices({ name, resp, record }: { name: string; resp: SuggestResponse; 
 
       <div className="flex flex-col gap-1.5" data-role="suggest-workflow">
         <b className="text-xs font-medium text-muted-foreground">Quy trình</b>
-        <select className={SELECT} aria-label="Chế độ vận hành" value={modeSel} disabled={busy} onChange={(e) => setModeOverride(e.target.value)}>
-          {resp.modes.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-          {resp.modes.some((m) => m.id === modeSel) ? null : <option value={modeSel}>{modeSel}</option>}
-        </select>
+        <Combobox
+          className="w-full"
+          label="Chế độ vận hành"
+          value={modeSel}
+          disabled={busy}
+          options={[...resp.modes.map((m) => ({ value: m.id, label: m.label })), ...(resp.modes.some((m) => m.id === modeSel) ? [] : [{ value: modeSel, label: modeSel }])]}
+          onChange={setModeOverride}
+        />
         {resp.can_save_mode ? null : <p className="m-0 text-xs text-muted-foreground">Chế độ này đi kèm lời yêu cầu gửi đạo diễn, chưa lưu vào project.json.</p>}
         {workflow ? (
           <>

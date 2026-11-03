@@ -1,7 +1,7 @@
 import "@/shell/test-utils.tsx";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { chooseCombo, comboOptions, mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { actions } from "@/api/actions.ts";
 import { say } from "@/api/client.ts";
 import { SectionHost } from "@/shell/SectionHost.tsx";
@@ -192,13 +192,27 @@ describe("voice tab in a series episode", () => {
     seriesRoutes();
     store.m = withSpeakers(manifest());
     renderUi(<VoiceTab />);
-    const box = await screen.findByLabelText("Người nói câu 1");
-    expect(box).toHaveValue("ptv");
-    expect([...(box as HTMLSelectElement).options].map((o) => o.value)).toEqual(["ptv", "ba-noi"]);
-    expect(screen.getByLabelText("Người nói câu 2")).toHaveValue("");
-    await act(async () => { fireEvent.change(box, { target: { value: "ba-noi" } }); });
+    const box = await screen.findByRole("combobox", { name: "Người nói câu 1" });
+    expect(box).toHaveTextContent("ptv");
+    expect(comboOptions("Người nói câu 1")).toEqual(["ptv", "ba-noi"]);
+    expect(screen.getByRole("combobox", { name: "Người nói câu 2" })).toHaveTextContent("Chọn người nói");
+    chooseCombo("Người nói câu 1", "ba-noi");
     expect(actions.patch).toHaveBeenCalledWith([{ op: "set_line_speaker", id: "vo-01", speaker: "ba-noi" }]);
-    expect(say).toHaveBeenCalledWith(NEEDS_VOICE);
+    await waitFor(() => expect(say).toHaveBeenCalledWith(NEEDS_VOICE));
+  });
+
+  test("moving through the speakers with the arrows writes nothing; Enter writes one version", async () => {
+    seriesRoutes();
+    store.m = withSpeakers(manifest());
+    renderUi(<VoiceTab />);
+    fireEvent.click(await screen.findByRole("combobox", { name: "Người nói câu 1" }));
+    const list = screen.getByRole("listbox");
+    for (const key of ["ArrowDown", "ArrowUp", "ArrowDown", "End", "Home"]) fireEvent.keyDown(list, { key });
+    expect(actions.patch).not.toHaveBeenCalled();
+    fireEvent.keyDown(list, { key: "ArrowDown" });
+    await act(async () => { fireEvent.keyDown(list, { key: "Enter" }); });
+    expect(actions.patch).toHaveBeenCalledTimes(1);
+    expect(actions.patch).toHaveBeenCalledWith([{ op: "set_line_speaker", id: "vo-01", speaker: "ba-noi" }]);
   });
 
   test("the colour of a role is fixed by its id", () => {

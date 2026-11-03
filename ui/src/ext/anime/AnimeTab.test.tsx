@@ -1,4 +1,4 @@
-import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { comboOptions, mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -206,7 +206,7 @@ describe("Hoạt hình (manifest editor)", () => {
     fireEvent.change(screen.getByPlaceholderText("id phần tử, ví dụ s3-hero"), { target: { value: "s2-chu" } });
     fireEvent.change(screen.getByPlaceholderText("shot, ví dụ s3"), { target: { value: "s2" } });
     fireEvent.click(screen.getByRole("button", { name: "Thêm" }));
-    expect(screen.getByRole("option", { name: "s2-chu (s2)" })).toBeInTheDocument();
+    expect(comboOptions("Stack")).toContain("s2-chu (s2)");
   });
 
   test("switching sub-tabs keeps the draft", async () => {
