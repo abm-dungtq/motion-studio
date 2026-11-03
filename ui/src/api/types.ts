@@ -76,7 +76,8 @@ export interface Job {
 export interface JobEvent { type: "start" | "log" | "exit"; job: Job; line?: string }
 
 // GET /api/gates, normalised as app.js refreshGates did.
-export interface Gates { pass: boolean; fails: string[]; animatic: boolean }
+// cached: answered from the server's kept result (the project did not change since that check).
+export interface Gates { pass: boolean; fails: string[]; animatic: boolean; audio_changed: boolean; cached: boolean }
 
 // GET /api/timeline/media: the newest render (renders/ or demo/) and the stamps of the audio files.
 export interface FileStamp { size: number; mtime: number }

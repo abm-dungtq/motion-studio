@@ -38,6 +38,17 @@ describe("Welcome", () => {
     open.mockRestore();
   });
 
+  it("asks the server only for a kept gate (cached=1); pending shows no gate line", async () => {
+    window.localStorage.setItem(RECENT_STORE, JSON.stringify(["a-02"]));
+    const fetch = mockFetch({ "/api/projects": projects, "/api/gates": { pending: true } });
+    renderUi(<Welcome />);
+    const [card] = await screen.findAllByTestId("recent-card");
+    await waitFor(() => expect(fetch.mock.calls.some(([u]) => String(u).includes("/api/gates"))).toBe(true));
+    const gateUrls = fetch.mock.calls.map(([u]) => String(u)).filter((u) => u.includes("/api/gates"));
+    expect(gateUrls.every((u) => u.includes("cached=1"))).toBe(true);
+    expect(card).not.toHaveTextContent("cổng xuất");
+  });
+
   it("without recent projects says how to start; Dự án mới opens its dialog", async () => {
     renderUi(<Welcome />);
     expect(await screen.findByText("Bắt đầu bằng một dự án mới, hoặc chọn dự án có sẵn ở thanh trên cùng.")).toBeInTheDocument();

@@ -6,6 +6,9 @@ import { createStudio, getSections } from "@/ext/registry.ts";
 import { register } from "./index.ts";
 import { ScenesCard, spanText, stateText, type SceneItem } from "./ScenesCard.tsx";
 import { AudioReview } from "./AudioReview.tsx";
+import { queryClient } from "@/api/client.ts";
+import { keys } from "@/api/queries.ts";
+import { GateChip } from "@/shell/GateChip.tsx";
 
 // Shapes of GET /api/scenes (routes/scenes.mjs) and GET /api/gates (server.mjs gateStatus).
 const scene = (id: string, extra: Partial<SceneItem> = {}): SceneItem => ({
@@ -101,5 +104,15 @@ describe("hear it again card", () => {
     expect(await within(card).findByText("PASS BALANCE nhạc dưới giọng 5.3 dB")).toBeInTheDocument();
     fireEvent.click(within(card).getByRole("button", { name: "Nghe rồi, được" }));
     await waitFor(() => expect(posts).toEqual([{ path: "/api/gates/audio-check", body: { name: "ep" } }, { path: "/api/gates/audio-review", body: { name: "ep" } }]));
+  });
+
+  test("shares the gate chip's query: one GET /api/gates for both", async () => {
+    queryClient.clear();
+    queryClient.setQueryData(keys.project("ep"), { version: 1, shots: [], lines: [], capabilities: { editable: true } });
+    const { fetch } = routes([], { "/api/gates": { pass: false, fails: ["thiếu QA"], animatic: false, audio_changed: true } });
+    open(<div><GateChip /><AudioReview /></div>);
+    await screen.findByRole("region", { name: "Tiếng đã đổi sau animatic" });
+    expect(await screen.findByRole("button", { name: "Chưa đủ cổng xuất" })).toBeInTheDocument();
+    expect(fetch.mock.calls.filter(([u]) => String(u).startsWith("/api/gates?")).length).toBe(1);
   });
 });

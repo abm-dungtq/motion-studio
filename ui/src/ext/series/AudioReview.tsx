@@ -5,25 +5,20 @@
 // confirmation (POST /api/gates/audio-review), recorded by the provider against the current sound.
 // Nothing when the sound did not change.
 import { useState } from "react";
-import { queryOptions, useQuery } from "@tanstack/react-query";
-import { api, queryClient, say, send } from "@/api/client.ts";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient, say, send } from "@/api/client.ts";
+import { gatesQuery, keys } from "@/api/queries.ts";
 import { Button } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 
-export interface AudioGate { audio_changed?: boolean }
 export interface BalanceResult { level: "PASS" | "WARN" | "FAIL" | null; line: string | null; code: number | null; tail?: string[] }
 
-const enc = encodeURIComponent;
-// Under the gates key, so whatever reloads the gates reloads this card too.
-const audioGateQuery = (name: string | null) => queryOptions({
-  queryKey: ["/api/gates", name, "audio"] as const,
-  queryFn: () => api<AudioGate>(`/api/gates?name=${enc(name ?? "")}`),
-});
 
 const CHECK_TIMEOUT_MS = 5 * 60000;
 
 export function AudioReviewCard({ name }: { name: string }) {
-  const q = useQuery(audioGateQuery(name));
+  // The same query as the gate chip: one check serves both.
+  const q = useQuery(gatesQuery(name));
   const [busy, setBusy] = useState(false);
   const [balance, setBalance] = useState<BalanceResult | null>(null);
   if (!q.data?.audio_changed) return null;
@@ -44,7 +39,7 @@ export function AudioReviewCard({ name }: { name: string }) {
     setBusy(false);
     if (r.status !== 200) { say(r.error ?? "Không ghi được lần nghe lại", true); return; }
     say("Đã ghi: tiếng mới đã được nghe lại");
-    await queryClient.invalidateQueries({ queryKey: ["/api/gates", name] });
+    await queryClient.invalidateQueries({ queryKey: keys.gates(name) });
   }
 
   const tone = balance?.level === "PASS" ? "text-ok" : balance?.level ? "text-warn" : "text-muted-foreground";

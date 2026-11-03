@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Cổng xuất nhanh hơn: kết quả `check-preflight --stage final` được giữ theo từng dự án (trong bộ nhớ và ở `.opus/gates-cache.json`) khi các file mà kiểm tra đọc chưa đổi, nên lần mở sau trả ngay thay vì chạy lại (a-02: 20 giây xuống 16 mili giây). Màn hình chào chỉ đọc kết quả đã có, không khởi chạy kiểm tra hay ffmpeg nào. Thẻ "Tiếng đã đổi sau animatic" dùng chung truy vấn với chip cổng, không chạy lượt thứ hai. Nút "Kiểm lại" trong hộp Xuất và lệnh "Kiểm lại cổng xuất" (Cmd+K) chạy lại bất kể cache. Lệnh của provider chạy thành một nhóm tiến trình: quá giờ hoặc khi Studio dừng thì cả ffmpeg con cũng dừng, không còn tiến trình mồ côi.
+
 - Bảng lệnh: Cmd+K (Ctrl+K), cả khi đang gõ trong ô, mở một ô tìm lệnh: "Mở dự án: …" (dự án mở gần đây lên trước), "Dự án mới", "Đi tới tab …" (các tab trái, Đạo diễn, Shot), "Tới shot N · id" (chọn shot và tua tới đầu shot), "Hoàn tác" / "Làm lại" (khoá khi dự án chỉ đọc), "Bật/tắt lớp QA", "Mở khay việc", "Xuất video" và "Giao đạo diễn sửa N ghi chú" khi có ghi chú chưa giao (vẫn hỏi trước). Tìm không cần dấu, chia nhóm, đi bằng ↑ ↓ Home End, Enter chạy, Escape đóng và trả tiêu điểm về chỗ cũ. Màn hình chào, README và bảng phím tắt có thêm dòng Cmd+K.
 
 - Màn hình chào: chưa mở dự án nào thì giữa cửa sổ không còn dòng "Chọn một dự án" mà là "Mở lại dự án" với tối đa 6 dự án mở gần đây trong trình duyệt này (tên, tiêu đề, phiên bản hoặc "chưa có project.json", trạng thái cổng xuất), nút "Dự án mới", nút "Mở dự án khác" mở ô chọn dự án, và một dòng phím tắt chính. Danh sách lưu ở `localStorage` (`ms-recent`); dự án tạm vắng (ổ ngoài chưa cắm) chỉ bị ẩn, không bị quên.

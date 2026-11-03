@@ -199,17 +199,27 @@ export function useJobs(name: string | null) {
 }
 
 // `/api/gates` — public/app.js:373. A failed check reads as null (no chip), as refreshGates did.
+// mode "cached" only reads the server's kept result (null while none: { pending: true }) and never
+// starts a check; "fresh" runs the check whatever the server kept ("Kiểm lại").
+export async function fetchGates(name: string, mode: "" | "cached" | "fresh" = ""): Promise<Gates | null> {
+  try {
+    const g = await api<{ pass?: unknown; fails?: unknown; animatic?: unknown; audio_changed?: unknown; cached?: unknown; pending?: unknown }>(`/api/gates?name=${enc(name)}${mode ? `&${mode}=1` : ""}`);
+    if (g?.pending === true) return null;
+    return { pass: g?.pass === true, fails: Array.isArray(g?.fails) ? g.fails.map(String) : [], animatic: g?.animatic === true, audio_changed: g?.audio_changed === true, cached: g?.cached === true };
+  } catch (e) {
+    console.warn("gates:", (e as Error).message);
+    return null;
+  }
+}
 export const gatesQuery = (name: string | null) => queryOptions({
   queryKey: keys.gates(name),
-  queryFn: async (): Promise<Gates | null> => {
-    try {
-      const g = await api<{ pass?: unknown; fails?: unknown; animatic?: unknown }>(`/api/gates?name=${enc(name ?? "")}`);
-      return { pass: g?.pass === true, fails: Array.isArray(g?.fails) ? g.fails.map(String) : [], animatic: g?.animatic === true };
-    } catch (e) {
-      console.warn("gates:", (e as Error).message);
-      return null;
-    }
-  },
+  queryFn: () => fetchGates(name ?? ""),
+  staleTime: Infinity,
+});
+// The welcome cards: the kept gate of a project, without running its check.
+export const gatesCachedQuery = (name: string) => queryOptions({
+  queryKey: [...keys.gates(name), "cached"] as const,
+  queryFn: () => fetchGates(name, "cached"),
   staleTime: Infinity,
 });
 // Enabled once the project's manifest is in (refreshGates needed ctx.state.m).

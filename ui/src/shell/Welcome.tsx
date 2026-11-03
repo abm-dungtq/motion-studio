@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { FolderOpen, Plus } from "lucide-react";
 import { actions } from "@/api/actions.ts";
-import { gatesQuery, useProjects } from "@/api/queries.ts";
+import { gatesCachedQuery, useProjects } from "@/api/queries.ts";
 import type { ProjectEntry } from "@/api/types.ts";
 import { readRecent } from "@/core/recent.ts";
 import { useStudio } from "@/store/studio.ts";
@@ -20,8 +20,9 @@ export function openProjectSelect(): void {
   el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 }
 
+// Only a gate the server already knows: opening the welcome screen starts no check.
 function GateLine({ name }: { name: string }) {
-  const { data: g } = useQuery(gatesQuery(name));
+  const { data: g } = useQuery(gatesCachedQuery(name));
   if (!g) return null;
   if (g.pass) return <span className="text-ok">Đủ cổng xuất</span>;
   return <span className="text-warn" title={g.fails.join("\n")}>{g.animatic ? "Cần duyệt lại animatic" : `Chưa đủ cổng xuất (${g.fails.length})`}</span>;

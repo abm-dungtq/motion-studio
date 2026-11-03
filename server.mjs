@@ -37,7 +37,7 @@
 // createServer's routes option (await loadRoutes(dir)) replaces them in tests.
 import { createServer as httpServer } from "node:http";
 import { constants as FS, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, watch, createReadStream } from "node:fs";
-import { execFile, execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { basename, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadProvider, providerStatus, SETUP_COMMAND } from "./lib/provider.mjs";
@@ -52,6 +52,8 @@ import { query as libraryQuery, thumbFile } from "./lib/library.mjs";
 import { checkRoutes, findRoute, loadRoutes } from "./lib/routes.mjs";
 import { sweepInterrupted } from "./lib/assets/batch.mjs";
 import { requestScope } from "./lib/scope.mjs";
+import { killAllRuns, runNode } from "./lib/run-node.mjs";
+import { createGateCache, gateSignature } from "./lib/gates-cache.mjs";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const UI_DIST = join(HERE, "ui", "dist");
@@ -114,10 +116,8 @@ export function findRuntime(projectDir) {
   return cands.find((c) => c && existsSync(c)) ?? null;
 }
 
-// Runs a provider command (an absolute .mjs path) with node.
-const run = (file, args) => new Promise((res) => {
-  execFile(process.execPath, [file, ...args], { encoding: "utf8", timeout: 60000, maxBuffer: 32 << 20 }, (err, stdout, stderr) => res({ code: err ? (err.code ?? 1) : 0, stdout, stderr, killed: Boolean(err?.killed) }));
-});
+// Runs a provider command (an absolute .mjs path) with node, as its own process group (60 s).
+const run = (file, args) => runNode(file, args);
 
 // A folder entry of root, or a symlink to a folder (an episode kept elsewhere); a broken link is not.
 const isFolder = (root, e) => {
@@ -281,10 +281,18 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
   }
 
   // check-preflight --stage final for one project; concurrent callers share the running check.
+  // A result is kept (lib/gates-cache.mjs) while the project's files keep the signature they had
+  // when the check started; fresh runs the check whatever the cache holds.
   const gateRuns = new Map(); // name → Promise
-  function gateStatus(P, name, dir) {
+  const gateCache = createGateCache();
+  function gateStatus(P, name, dir, { fresh = false } = {}) {
+    if (!fresh && !gateRuns.has(name)) {
+      const hit = gateCache.get(name, dir, gateSignature(dir));
+      if (hit) return Promise.resolve({ ...hit, cached: true });
+    }
     let pr = gateRuns.get(name);
     if (!pr) {
+      const sig = gateSignature(dir);
       pr = run(P.commands.preflight, ["--project", dir, "--stage", "final", "--json"]).then((r) => {
         if (r.killed) return { pass: false, fails: ["check-preflight quá 60 giây"], animatic: false, audio_changed: false };
         let j;
@@ -293,12 +301,19 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
         // The sound changed after the approved animatic but the picture did not: a warning, and the
         // "hear it again" card (routes/gates-audio.mjs) shows.
         const audioChanged = Array.isArray(j?.warnings) && j.warnings.some((w) => /tiếng đã đổi/.test(String(w)));
-        return { pass: j?.pass === true, fails, animatic: fails.some((e) => /demo\.md|animatic|approval/i.test(String(e))), audio_changed: audioChanged };
+        const value = { pass: j?.pass === true, fails, animatic: fails.some((e) => /demo\.md|animatic|approval/i.test(String(e))), audio_changed: audioChanged };
+        if (gateSignature(dir) === sig) gateCache.set(name, dir, sig, value); // edited while checking: not kept
+        return { ...value, cached: false };
       }).finally(() => gateRuns.delete(name));
       gateRuns.set(name, pr);
     }
     return pr;
   }
+  // The kept result when the project has not changed since, else null; never starts a check.
+  const gatePeek = (name, dir) => {
+    const hit = gateCache.get(name, dir, gateSignature(dir));
+    return hit ? { ...hit, cached: true } : null;
+  };
 
   async function route(req, res) {
     const url = new URL(req.url, `http://127.0.0.1:${port}`);
@@ -393,7 +408,9 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
       if (p === "/api/gates") {
         const pd = projectDir(q("name"));
         if (pd.error) return send(res, pd.status, { error: pd.error });
-        return send(res, 200, await gateStatus(P, q("name"), pd.dir));
+        // cached=1 (welcome cards): only a kept result, { pending: true } otherwise; fresh=1: "Kiểm lại".
+        if (q("cached") === "1") return send(res, 200, gatePeek(q("name"), pd.dir) ?? { pending: true });
+        return send(res, 200, await gateStatus(P, q("name"), pd.dir, { fresh: q("fresh") === "1" }));
       }
       if (p === "/api/directions") {
         if (!P) return send(res, 200, { seams: [], directions: [] });
@@ -570,7 +587,7 @@ export function createServer({ root, token, runtime = undefined, run: runCmd = r
       try { if (P.requests.list(dir).some((r) => r.status === "queued")) pump(P, p.name, dir); } catch { /* unreadable requests: left for the next request */ }
     }
   });
-  server.on("close", () => { for (const w of watchers.values()) w.close(); watchers.clear(); stopAll(); });
+  server.on("close", () => { for (const w of watchers.values()) w.close(); watchers.clear(); stopAll(); killAllRuns(); });
   // Look up the HyperFrames runtime once now, not inside the first player request.
   if (runtime === undefined) setImmediate(() => findRuntime(null));
   return server;

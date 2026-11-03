@@ -1,5 +1,5 @@
 import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { queryClient } from "@/api/client.ts";
 import { keys } from "@/api/queries.ts";
@@ -39,6 +39,16 @@ describe("GateFails", () => {
     renderUi(<GateFails />);
     expect(screen.getByRole("heading", { name: "Chưa đủ cổng xuất" })).toBeInTheDocument();
     expect(screen.getByText("thiếu giọng")).toBeInTheDocument();
+  });
+
+  it("Kiểm lại runs the check again (fresh=1) and shows its answer", async () => {
+    const urls: string[] = [];
+    open({ "/api/gates": (u: URL) => { urls.push(u.search); return { pass: true, fails: [], animatic: false, cached: false }; } });
+    queryClient.setQueryData(keys.gates(NAME), { pass: false, fails: ["thiếu giọng"], animatic: false });
+    renderUi(<GateFails />);
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm lại" }));
+    await waitFor(() => expect(screen.queryByText("thiếu giọng")).toBeNull());
+    expect(urls).toEqual([`?name=${NAME}&fresh=1`]);
   });
 
   it("without a project says what to do first", () => {
