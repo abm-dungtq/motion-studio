@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { Button, Checkbox, Input, Textarea } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { ask } from "./confirm.tsx";
-import { Field, Log, NativeSelect, Tag, muted } from "./parts.tsx";
+import { Combobox } from "@/shell/Combobox.tsx";
+import { Field, Log, Tag, muted } from "./parts.tsx";
 import { reload, useAnimeStore, type VariantForm } from "./store.ts";
 import { useJobView } from "./useJob.ts";
 import { isLive, type Board as BoardData, type BoardShot } from "./types.ts";
@@ -138,9 +139,7 @@ function Detail({ name, b, s }: { name: string; b: BoardData; s: BoardShot }) {
       <Strip name={name} list={s.plates} />
       <h4 className={H4}>Sinh biến thể tư thế</h4>
       <Field label="Ảnh gốc">
-        <NativeSelect value={f.base} onChange={(e) => set({ base: e.target.value })}>
-          {images.map((rel) => <option key={rel} value={rel}>{rel}</option>)}
-        </NativeSelect>
+        <Combobox label="Ảnh gốc" value={f.base} options={images.map((rel) => ({ value: rel, label: rel }))} onChange={(v) => set({ base: v })} />
       </Field>
       {chars.length ? (
         <Field label="Sheet nhân vật đính kèm">
@@ -155,10 +154,7 @@ function Detail({ name, b, s }: { name: string; b: BoardData; s: BoardShot }) {
         </Field>
       ) : <p className={muted}>Chưa có sheet nhân vật (mục Nhân vật).</p>}
       <Field label="Kiểu">
-        <NativeSelect value={f.kind} onChange={(e) => set({ kind: e.target.value as VariantForm["kind"] })}>
-          <option value="edit">Sửa một chi tiết, giữ tư thế</option>
-          <option value="pose">Vẽ lại ở tư thế mới</option>
-        </NativeSelect>
+        <Combobox label="Kiểu" value={f.kind} options={[{ value: "edit", label: "Sửa một chi tiết, giữ tư thế" }, { value: "pose", label: "Vẽ lại ở tư thế mới" }]} onChange={(v) => set({ kind: v as VariantForm["kind"] })} />
       </Field>
       <Field label="Thay đổi (tiếng Anh cho agent)">
         <Textarea rows={3} value={f.change} placeholder="mouth half open, eyes unchanged" onChange={(e) => set({ change: e.target.value })} />

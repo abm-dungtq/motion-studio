@@ -12,7 +12,8 @@ import { Button } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { cn } from "@/lib/utils";
 import { ask } from "./confirm.tsx";
-import { Field, LazyInput, LazyTextarea, Log, NativeSelect, Tag, muted } from "./parts.tsx";
+import { Combobox } from "@/shell/Combobox.tsx";
+import { Field, LazyInput, LazyTextarea, Log, Tag, muted } from "./parts.tsx";
 import { makeDraft, reload, useAnimeStore, type Draft } from "./store.ts";
 import { useJobView } from "./useJob.ts";
 import { isLive, type JobView, type Loose, type ManifestInfo, type Stack, type Track } from "./types.ts";
@@ -110,9 +111,7 @@ export function Manifest() {
       <section className="flex flex-col gap-2">
         <h3 className="m-0 text-sm font-semibold">Stack</h3>
         <div className="flex flex-wrap items-start gap-2">
-          <NativeSelect aria-label="Stack" value={d.stack ?? ""} onChange={(e) => { const v = e.target.value; edit((x) => { x.stack = v; }); }}>
-            {stackIds.map((id) => <option key={id} value={id}>{`${id} (${m.stacks[id].shot})`}</option>)}
-          </NativeSelect>
+          <Combobox label="Stack" value={d.stack ?? ""} options={stackIds.map((id) => ({ value: id, label: `${id} (${m.stacks[id].shot})` }))} onChange={(v) => edit((x) => { x.stack = v; })} />
           <AddStack d={d} edit={edit} />
         </div>
         {st && d.stack ? <StackForm key={d.stack} id={d.stack} st={st} edit={edit} /> : <p className={muted}>Chưa có stack. Mỗi stack là một phần tử id=… trong index.html.</p>}
@@ -124,16 +123,11 @@ export function Manifest() {
             <Field className="flex-[1_1_80px]" label="at"><LazyInput value={show(im.at)} onCommit={(v) => edit((x) => put(x.m.impacts[i], "at", time(v)))} /></Field>
             <Field className="flex-[1_1_80px]" label="frames"><LazyInput inputMode="numeric" value={show(im.frames)} onCommit={(v) => edit((x) => put(x.m.impacts[i], "frames", int(v)))} /></Field>
             <Field className="flex-[1_1_80px]" label="mode">
-              <NativeSelect value={im.mode ?? "invert"} onChange={(e) => { const v = e.target.value; edit((x) => { const o = x.m.impacts[i]; put(o, "mode", v); if (v !== "silhouette") delete o.stack; }); }}>
-                {["invert", "silhouette"].map((x) => <option key={x} value={x}>{x}</option>)}
-              </NativeSelect>
+              <Combobox className="w-full" label={`mode của impact ${i + 1}`} value={im.mode ?? "invert"} options={["invert", "silhouette"].map((x) => ({ value: x, label: x }))} onChange={(v) => edit((x) => { const o = x.m.impacts[i]; put(o, "mode", v); if (v !== "silhouette") delete o.stack; })} />
             </Field>
             {(im.mode ?? "invert") === "silhouette" ? (
               <Field className="flex-[1_1_80px]" label="stack">
-                <NativeSelect value={im.stack ?? ""} onChange={(e) => { const v = e.target.value; edit((x) => put(x.m.impacts[i], "stack", v)); }}>
-                  <option value="">—</option>
-                  {stackIds.map((id) => <option key={id} value={id}>{id}</option>)}
-                </NativeSelect>
+                <Combobox className="w-full" label={`stack của impact ${i + 1}`} value={im.stack ?? ""} options={[{ value: "", label: "—" }, ...stackIds.map((id) => ({ value: id, label: id }))]} onChange={(v) => edit((x) => put(x.m.impacts[i], "stack", v))} />
               </Field>
             ) : null}
             <Button onClick={() => edit((x) => { x.m.impacts.splice(i, 1); })}>Bỏ</Button>
@@ -266,9 +260,7 @@ function TrackForm({ i, tr, es }: { i: number; tr: Track; es: (fn: (s: Stack, d:
     for (const k of ["open", "half", "closed"]) rows.push(text(k, k, (v) => v.trim() || undefined));
     rows.push(
       <Field key="idle" label="idle">
-        <NativeSelect value={tr.idle === null ? "null" : show(tr.idle ?? "closed")} onChange={(e) => { const v = e.target.value; et((t) => { t.idle = v === "null" ? null : v; }); }}>
-          {["closed", "half", "open", "null"].map((x) => <option key={x} value={x}>{x}</option>)}
-        </NativeSelect>
+        <Combobox label="idle" value={tr.idle === null ? "null" : show(tr.idle ?? "closed")} options={["closed", "half", "open", "null"].map((x) => ({ value: x, label: x }))} onChange={(v) => et((t) => { t.idle = v === "null" ? null : v; })} />
       </Field>,
     );
     rows.push(text("from", "from", time), text("to", "to", time));
@@ -293,10 +285,7 @@ function TrackForm({ i, tr, es }: { i: number; tr: Track; es: (fn: (s: Stack, d:
       <div key={`k${j}`} className="flex items-center gap-1.5">
         <LazyInput className="flex-[2_1_0] min-w-0" aria-label={`Tư thế ${j + 1}`} value={show(k.pose)} onCommit={(v) => et((t) => put(t.keys[j], "pose", v.trim()))} />
         <LazyInput className="flex-[1_1_0] min-w-0" aria-label={`Số khung ${j + 1}`} inputMode="numeric" value={show(k.frames)} onCommit={(v) => et((t) => put(t.keys[j], "frames", int(v)))} />
-        <NativeSelect aria-label={`Smear ${j + 1}`} value={k.smear ?? ""} onChange={(e) => { const v = e.target.value; et((t) => put(t.keys[j], "smear", v || undefined)); }}>
-          <option value="">không nhoè</option>
-          {["left", "right"].map((x) => <option key={x} value={x}>{`nhoè ${x}`}</option>)}
-        </NativeSelect>
+        <Combobox label={`Smear ${j + 1}`} value={k.smear ?? ""} options={[{ value: "", label: "không nhoè" }, ...["left", "right"].map((x) => ({ value: x, label: `nhoè ${x}` }))]} onChange={(v) => et((t) => put(t.keys[j], "smear", v || undefined))} />
         <Button onClick={() => et((t) => { t.keys.splice(j, 1); })}>Bỏ</Button>
       </div>
     )));
