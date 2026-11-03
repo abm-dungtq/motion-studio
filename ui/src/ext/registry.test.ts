@@ -1,3 +1,4 @@
+import { lazy } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Box } from "lucide-react";
 import { say } from "@/api/client.ts";
@@ -15,6 +16,13 @@ const tab = (id: string, group?: "assets" | "audio" | "library" | "extra", order
 afterEach(() => { resetRegistry(); vi.mocked(say).mockClear(); });
 
 describe("registry", () => {
+  it("takes a lazy component for a tab and a section", () => {
+    const Lazy = lazy(() => Promise.resolve({ default: () => null }));
+    expect(() => registerTab({ ...tab("lazy-tab"), component: Lazy })).not.toThrow();
+    expect(() => registerSection("lazy-tab", { id: "s", component: Lazy })).not.toThrow();
+    expect(getTabs()[0].component).toBe(Lazy);
+  });
+
   it("sorts tabs by group, then order, then registration", () => {
     registerTab(tab("library", "library", 10));
     registerTab(tab("music", "audio", 20));

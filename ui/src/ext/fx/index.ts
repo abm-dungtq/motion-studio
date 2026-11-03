@@ -6,8 +6,10 @@
 // The inspector's own "Chuyển cảnh vào" select stays as it is; this is an extra section.
 import { ArrowLeftRight } from "lucide-react";
 import type { Studio } from "@/ext/registry.ts";
-import { FxTab } from "./FxTab.tsx";
-import { ShotClips } from "./ShotClips.tsx";
+import { lazyNamed } from "@/ext/lazy.ts";
+
+const FxTab = lazyNamed(() => import("./FxTab.tsx"), "FxTab");
+const ShotClips = lazyNamed(() => import("./ShotClips.tsx"), "ShotClips");
 
 export function register(studio: Studio): void {
   studio.registerTab({

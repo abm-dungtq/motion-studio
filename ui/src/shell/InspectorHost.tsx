@@ -1,7 +1,9 @@
 // The Shot tab: the inspector sections registered for the picked block's kind, by order, each in
 // its own ErrorBoundary; a section that throws shows "Mục mở rộng lỗi: …" (inspector.js:35).
 // Without a pick it lists the shots, each a button that picks it as a click on the timeline does.
+import { Suspense } from "react";
 import { actions } from "@/api/actions.ts";
+import { TabFallback } from "@/components/TabFallback.tsx";
 import { useProject } from "@/api/queries.ts";
 import { useInspectorSections } from "@/ext/registry.ts";
 import { useStudio } from "@/store/studio.ts";
@@ -40,7 +42,9 @@ export function InspectorHost() {
             resetKey={`${name}\n${pick.kind}\n${pick.id}`}
             fallback={(e) => <p className="text-sm text-danger">{`Mục mở rộng lỗi: ${e.message}`}</p>}
           >
-            <s.component pick={pick} m={m ?? null} />
+            <Suspense fallback={<TabFallback compact />}>
+              <s.component pick={pick} m={m ?? null} />
+            </Suspense>
           </ErrorBoundary>
         </section>
       ))}

@@ -18,7 +18,7 @@ import { VoicePicks } from "./VoicePick.tsx";
 import { Board } from "./Board.tsx";
 import type { AssetsList, BatchView, BoardData, BoardItem } from "./types.ts";
 
-export const LEAD = "Ảnh của series: đồng ý đợt vẽ, duyệt tờ nhân vật, nền và đạo cụ";
+export { LEAD } from "./lead.ts";
 export const KIND = "asset-batch";
 
 // Every board of the project, in the order of the tab: character sheets, backgrounds, props.

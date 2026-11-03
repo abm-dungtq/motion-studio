@@ -5,10 +5,12 @@
 // See docs/lemo-styles.md. The downloaded library is data: nothing of it is ever run.
 import { Palette } from "lucide-react";
 import type { Studio } from "@/ext/registry.ts";
-import { Gallery } from "./Gallery.tsx";
-import { ShotStyle } from "./ShotStyle.tsx";
+import { lazyNamed } from "@/ext/lazy.ts";
 
 export const LEAD = "Phong cách dựng sẵn, 59 phong cách tham khảo của lemo-opuscar và phong cách riêng của bạn. Áp cho dự án hoặc một shot.";
+
+const Gallery = lazyNamed(() => import("./Gallery.tsx"), "Gallery");
+const ShotStyle = lazyNamed(() => import("./ShotStyle.tsx"), "ShotStyle");
 
 export function register(studio: Studio): void {
   studio.registerTab({ id: "styles-code", label: "Phong cách", icon: Palette, group: "assets", order: 20, lead: LEAD, component: Gallery });

@@ -1,6 +1,8 @@
 // The left panel: the open tab's name, its lead line and a collapse button, then the tab's
 // component and the sections registered for it. Each part has its own ErrorBoundary.
+import { Suspense } from "react";
 import { PanelLeftClose } from "lucide-react";
+import { TabFallback } from "@/components/TabFallback.tsx";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTabs } from "@/ext/registry.ts";
@@ -43,7 +45,9 @@ export function LeftPanel() {
           <ScrollArea className="min-h-0 flex-1">
             <div id={LEFT_PANEL_ID} role="tabpanel" aria-labelledby={`tab-${tab.id}`} tabIndex={-1} className="flex flex-col gap-3 p-3">
               <ErrorBoundary key={tab.id} what={`tab ${tab.id}`} resetKey={name}>
-                <tab.component />
+                <Suspense fallback={<TabFallback />}>
+                  <tab.component />
+                </Suspense>
               </ErrorBoundary>
               <SectionHost hostId={tab.id} />
             </div>
