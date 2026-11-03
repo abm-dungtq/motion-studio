@@ -150,6 +150,7 @@ export function Combobox({ value, options, onChange, label, placeholder = "Chọ
       </PopoverTrigger>
       <PopoverContent
         aria-label={label}
+        collisionPadding={8}
         className="flex max-h-[min(360px,var(--radix-popover-content-available-height))] w-max max-w-[min(420px,92vw)] min-w-(--radix-popover-trigger-width) flex-col gap-1"
         onKeyDown={onKey}
         onOpenAutoFocus={(e) => {
