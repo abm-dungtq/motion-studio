@@ -1,4 +1,4 @@
-import { mockFetch, renderUi } from "@/shell/test-utils.tsx";
+import { chooseCombo, comboOptions, mockFetch, renderUi } from "@/shell/test-utils.tsx";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { queryClient } from "@/api/client.ts";
@@ -43,12 +43,15 @@ describe("Sửa clip", () => {
   it("lists only registered videos and the five operations with their fields", async () => {
     setup();
     expect(await screen.findByText("Cắt, đổi tốc độ, đứng hình, chỉnh màu, cắt khung dọc. Render trước bằng ffmpeg, bản gốc giữ nguyên.")).toBeInTheDocument();
-    const clip = screen.getByRole("combobox", { name: "Clip" }) as HTMLSelectElement;
-    expect([...clip.options].map((o) => o.textContent)).toEqual(["1.mp4"]);
-    const op = screen.getByRole("combobox", { name: "Thao tác" }) as HTMLSelectElement;
-    expect([...op.options].map((o) => o.textContent)).toEqual(["Cắt đoạn", "Đổi tốc độ", "Đứng hình", "Chỉnh màu", "Cắt khung"]);
+    expect(comboOptions("Clip")).toEqual(["1.mp4"]);
+    expect(comboOptions("Thao tác")).toEqual(["Cắt đoạn", "Đổi tốc độ", "Đứng hình", "Chỉnh màu", "Cắt khung"]);
     expect(screen.getByText("Từ giây")).toBeInTheDocument();
-    fireEvent.change(op, { target: { value: "grade" } });
+    chooseCombo("Thao tác", "Chỉnh màu");
+    // Open once and wait for the LUT list: a waitFor that opens and closes the popover itself would
+    // mutate the DOM on every try and never reach its timeout.
+    // The closed Thao tác popover hands focus back to its button a tick later; open Màu after that.
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Thao tác" })).toHaveFocus());
+    fireEvent.click(screen.getByRole("combobox", { name: "Màu" }));
     expect(await screen.findByRole("option", { name: "Không đổi (studio)" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Ấm" })).toBeInTheDocument();
   });
@@ -60,7 +63,8 @@ describe("Sửa clip", () => {
 
   it("refuses a malformed speed point before calling the server", async () => {
     setup();
-    fireEvent.change(await screen.findByRole("combobox", { name: "Thao tác" }), { target: { value: "speed" } });
+    await screen.findByRole("combobox", { name: "Thao tác" });
+    chooseCombo("Thao tác", "Đổi tốc độ");
     fireEvent.change(screen.getByPlaceholderText("0:1, 2:2"), { target: { value: "abc" } });
     fireEvent.click(screen.getByRole("button", { name: "Render" }));
     expect(h.say).toHaveBeenCalledWith('"abc" phải có dạng t:rate', true);

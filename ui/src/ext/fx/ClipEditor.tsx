@@ -6,11 +6,12 @@
 // assets/footage/, put in the shot's assets and the director is asked to switch the src in the HTML.
 // Used by the fx tab (any registered clip) and by the shot inspector (the shot's own videos, with
 // "replace" preset to that asset). The form and a running job live in fx-store.ts by key.
-import { useEffect, useState, type ReactNode, type SelectHTMLAttributes } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { say } from "@/api/client.ts";
 import { fxClipUrl, fxFootage, fxUseClip, useFxLuts, useProject } from "@/api/queries.ts";
 import type { Shot } from "@/api/types.ts";
 import { cn } from "@/lib/utils";
+import { Combobox } from "@/shell/Combobox.tsx";
 import { Button, Checkbox, Input } from "@/shell/controls.tsx";
 import { useStudio } from "@/store/studio.ts";
 import { ASPECTS, isVideo, OPS, paramsOf, PRESETS, WAIT_MS, type ClipResult, type EditorForm, type Op } from "./clip-params.ts";
@@ -19,10 +20,6 @@ import { useJob } from "./useJob.ts";
 
 export interface ClipSource { value: string; label: string }
 
-const FIELD = "h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50";
-function NativeSelect({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(FIELD, className)} {...props} />;
-}
 const Field = ({ label, children }: { label: string; children: ReactNode }) => (
   <label className="flex flex-col gap-1 text-sm">{label}{children}</label>
 );
@@ -51,12 +48,8 @@ export function ClipEditor({ editorKey, sources, shot = null }: { editorKey: str
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
-        <NativeSelect aria-label="Clip" value={src} onChange={(e) => patchEditor(editorKey, { form: { ...f, src: e.target.value }, result: null })}>
-          {sources.length ? sources.map((x) => <option key={x.value} value={x.value}>{x.label}</option>) : <option value="">(chưa có video)</option>}
-        </NativeSelect>
-        <NativeSelect aria-label="Thao tác" value={f.op} onChange={(e) => set({ op: e.target.value as Op })}>
-          {OPS.map(([id, vi]) => <option key={id} value={id}>{vi}</option>)}
-        </NativeSelect>
+        <Combobox label="Clip" placeholder="(chưa có video)" disabled={!sources.length} value={src} options={sources} onChange={(v) => patchEditor(editorKey, { form: { ...f, src: v }, result: null })} />
+        <Combobox label="Thao tác" value={f.op} options={OPS.map(([id, vi]) => ({ value: id, label: vi }))} onChange={(v) => set({ op: v as Op })} />
       </div>
       <OpFields f={f} set={set} />
       <div className="flex flex-wrap items-center gap-2">
@@ -86,7 +79,7 @@ function OpFields({ f, set }: { f: EditorForm; set: (p: Partial<EditorForm>) => 
   return (
     <>
       <Field label="Khung đích">
-        <NativeSelect value={f.aspect} onChange={(e) => set({ aspect: e.target.value })}>{ASPECTS.map((a) => <option key={a} value={a}>{a}</option>)}</NativeSelect>
+        <Combobox label="Khung đích" value={f.aspect} options={ASPECTS.map((a) => ({ value: a, label: a }))} onChange={(v) => set({ aspect: v })} />
       </Field>
       <Field label="Tâm khung t:x:y (x, y 0–1), di chuyển thẳng giữa các điểm">{text("points", "0:0.5:0.5, 4:0.7:0.5")}</Field>
     </>
@@ -103,14 +96,14 @@ function GradeFields({ f, set }: { f: EditorForm; set: (p: Partial<EditorForm>) 
   return (
     <>
       <Field label="Màu">
-        <NativeSelect value={f.look} onChange={(e) => set({ look: e.target.value })}>
-          {luts ? (
-            <>
-              <optgroup label="LUT">{luts.map((l) => <option key={l.id} value={l.id}>{`${l.name} (${l.source})`}</option>)}</optgroup>
-              <optgroup label="Preset">{PRESETS.map(([id, vi]) => <option key={id} value={`preset:${id}`}>{vi}</option>)}</optgroup>
-            </>
-          ) : <option value={f.look}>{f.look}</option>}
-        </NativeSelect>
+        <Combobox
+          label="Màu"
+          value={f.look}
+          options={luts
+            ? [...luts.map((l) => ({ value: l.id, label: `${l.name} (${l.source})`, group: "LUT" })), ...PRESETS.map(([id, vi]) => ({ value: `preset:${id}`, label: vi, group: "Preset" }))]
+            : [{ value: f.look, label: f.look }]}
+          onChange={(v) => set({ look: v })}
+        />
       </Field>
       <Field label="Cường độ">
         <input type="range" min="0.05" max="1" step="0.05" value={f.intensity} className="accent-primary" onChange={(e) => set({ intensity: e.target.value })} />
@@ -156,13 +149,8 @@ function ResultView({ name, src, result: r, shot }: { name: string; src: string;
       <span className={cn("text-xs font-semibold", pass ? "text-ok" : "text-danger")} title={r.receipt?.file}>{`Biên nhận ${r.receipt?.id ?? "?"}: ${pass ? "kiểm đạt" : "kiểm không đạt"}`}</span>
       {(r.warnings ?? []).map((w, i) => <small key={i} className="text-danger">{w}</small>)}
       <div className="flex flex-wrap items-center gap-2">
-        <NativeSelect aria-label="Shot" value={target} onChange={(e) => { setTarget(e.target.value); setRepl(""); }}>
-          {shots.map((x) => <option key={x.id} value={x.id}>{`${x.id} · ${x.name || ""}`}</option>)}
-        </NativeSelect>
-        <NativeSelect aria-label="Thay" value={repl} onChange={(e) => setRepl(e.target.value)}>
-          <option value="">(thêm vào, không thay)</option>
-          {vids.map((a) => <option key={a} value={a}>{`thay ${a}`}</option>)}
-        </NativeSelect>
+        <Combobox label="Shot" value={target} options={shots.map((x) => ({ value: x.id, label: `${x.id} · ${x.name || ""}` }))} onChange={(v) => { setTarget(v); setRepl(""); }} />
+        <Combobox label="Thay" value={repl} options={[{ value: "", label: "(thêm vào, không thay)" }, ...vids.map((a) => ({ value: a, label: `thay ${a}` }))]} onChange={setRepl} />
         <Button variant="primary" disabled={!m?.capabilities?.editable || busy} onClick={() => { void use(); }}>Dùng trong shot</Button>
       </div>
     </div>
