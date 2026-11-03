@@ -1,5 +1,7 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { actions } from "@/api/actions.ts";
 import { queryClient } from "@/api/client.ts";
 import { keys } from "@/api/queries.ts";
 import type { Snapshot } from "@/api/types.ts";
@@ -99,8 +101,35 @@ describe("AiBanner", () => {
     setup([turn()]);
     fireEvent.click(screen.getByRole("button", { name: "Xem thay đổi" }));
     const d = await screen.findByRole("dialog");
+    await userEvent.click(await within(d).findByRole("tab", { name: "Theo file" }));
     await waitFor(() => expect(d).toHaveTextContent("index.html"));
     expect(d).toHaveTextContent("- <h1>A</h1>");
     expect(d).toHaveTextContent("+ <h1>B</h1>");
+  });
+
+  it("Theo shot is the first tab and tells the project.json changes shot by shot", async () => {
+    const before = { version: 3, shots: [{ id: "s1", start: 0, end: 2 }, { id: "s2", start: 2, end: 4 }, { id: "s3", start: 4, end: 6 }], lines: [] };
+    const after = { ...before, version: 5, shots: [...before.shots.slice(0, 2), { id: "s3", start: 4, end: 7.5 }] };
+    mockFetch({ "/api/snapshots/diff": { id: ID, state: "done", from: 3, files: [{ path: "project.json", kind: "changed", before: JSON.stringify(before), after: JSON.stringify(after) }], overwritten: ["assets/voice/01.mp3"], created: [] } });
+    queryClient.setQueryData(keys.project("p1"), after);
+    setup([turn()]);
+    fireEvent.click(screen.getByRole("button", { name: "Xem thay đổi" }));
+    const d = await screen.findByRole("dialog");
+    expect(await within(d).findByRole("tab", { name: "Theo shot" })).toHaveAttribute("aria-selected", "true");
+    const row = await within(d).findByRole("button", { name: /Shot 3 dài 2,0 s → 3,5 s/ });
+    expect(within(d).getByText("1 file media bị ghi đè, hoàn tác không lấy lại được")).toHaveClass("text-warn");
+    const select = vi.spyOn(actions, "select");
+    const seek = vi.spyOn(actions, "seek");
+    fireEvent.click(row);
+    expect(select).toHaveBeenCalledWith("s3");
+    expect(seek).toHaveBeenCalledWith(4);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("Theo shot says so when the turn changed no shot or line", async () => {
+    mockFetch({ "/api/snapshots/diff": { id: ID, state: "done", from: 3, files: [{ path: "index.html", kind: "changed", before: "a", after: "b" }], overwritten: [], created: [] } });
+    setup([turn()]);
+    fireEvent.click(screen.getByRole("button", { name: "Xem thay đổi" }));
+    expect(await screen.findByText("Không có thay đổi về shot và lời.")).toBeInTheDocument();
   });
 });

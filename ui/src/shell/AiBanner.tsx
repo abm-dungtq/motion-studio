@@ -5,13 +5,12 @@
 // Media the director wrote over cannot come back: the strip that follows the undo names them and
 // the lines to voice again, instead of claiming a full undo.
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { actions } from "@/api/actions.ts";
 import { say } from "@/api/client.ts";
 import * as Q from "@/api/queries.ts";
 import type { RestoreResult, Snapshot } from "@/api/types.ts";
-import { lineDiff } from "@/core/line-diff.ts";
 import { useStudio } from "@/store/studio.ts";
+import { TurnChanges } from "./ChangesDialog.tsx";
 import { makeConfirm } from "./confirm.tsx";
 import { Button } from "./controls.tsx";
 
@@ -84,40 +83,8 @@ export function AiBanner() {
           {data?.can_restore && <Button className="h-7" variant="ghost" disabled={busy} onClick={() => { void confirmUndo(); }}>{busy ? "Đang hoàn tác…" : "Hoàn tác lượt đạo diễn"}</Button>}
         </div>
       )}
-      <ChangesDialog name={name} id={view} onClose={() => setView(null)} />
+      <TurnChanges name={name} id={view} onClose={() => setView(null)} />
       <ConfirmHost />
     </>
-  );
-}
-
-const ROW: Record<string, string> = { "+": "bg-ok/15", "-": "bg-destructive/15", " ": "", "…": "text-muted-foreground italic" };
-const KIND: Record<string, string> = { changed: "sửa", added: "thêm", removed: "xoá" };
-
-function ChangesDialog({ name, id, onClose }: { name: string | null; id: string | null; onClose: () => void }) {
-  const { data, isLoading, error } = Q.useSnapshotDiff(name, id);
-  return (
-    <Dialog open={id !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Thay đổi của lượt đạo diễn</DialogTitle>
-          <DialogDescription>Chỉ xem. So với lúc trước khi đạo diễn bắt đầu{data?.from != null ? ` (v${data.from})` : ""}.</DialogDescription>
-        </DialogHeader>
-        {isLoading && <p className="text-sm text-muted-foreground">Đang tải…</p>}
-        {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
-        {data && data.files.length === 0 && <p className="text-sm text-muted-foreground">Không còn khác biệt nào về chữ.</p>}
-        {data?.files.map((f) => (
-          <details key={f.path} className="rounded border border-border" open={data.files.length <= 3}>
-            <summary className="cursor-pointer px-2 py-1 text-sm"><code>{f.path}</code> <span className="text-muted-foreground">({KIND[f.kind]})</span></summary>
-            <pre className="overflow-x-auto border-t border-border text-xs leading-5">
-              {lineDiff(f.before, f.after).map((r, k) => (
-                <div key={k} className={`px-2 ${ROW[r.kind]}`}>{r.kind === "…" ? `… ${r.text}` : `${r.kind} ${r.text}`}</div>
-              ))}
-            </pre>
-          </details>
-        ))}
-        {data && data.overwritten.length > 0 && <p className="text-sm">Media bị ghi đè (không hoàn tác được): {data.overwritten.join(", ")}</p>}
-        {data && data.created.length > 0 && <p className="text-sm text-muted-foreground">Media mới (Hoàn tác lượt đạo diễn để nguyên): {data.created.join(", ")}</p>}
-      </DialogContent>
-    </Dialog>
   );
 }
