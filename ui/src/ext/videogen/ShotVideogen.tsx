@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, say, type SendResult } from "@/api/client.ts";
 import type { Manifest } from "@/api/types.ts";
+import { mss, trayItems } from "@/core/job-tray.ts";
 import type { InspectorSectionProps } from "@/ext/registry.ts";
 import { Combobox } from "@/shell/Combobox.tsx";
 import { Button, Textarea } from "@/shell/controls.tsx";
@@ -15,7 +16,7 @@ import { useDraft } from "@/shell/useDraft.ts";
 import { useStudio } from "@/store/studio.ts";
 import {
   DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL, hhmm, IMAGE_ASPECTS, IMAGE_MODELS, kindOf, pickSeconds, SECONDS, stateLabel, VIDEO_MODELS,
-  vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, vgReconcile, vgRecover, vgStatus, vgUsePart, type VgItem, type VgKind, type VgStatus,
+  vgAttach, vgCancel, vgCreate, vgImage, vgImport, vgItems, stopText, vgReconcile, vgRecover, useVgStatus, vgUsePart, type VgItem, type VgKind, type VgStatus,
 } from "./api.ts";
 
 const IMAGE = /\.(png|jpe?g|webp)$/i;
@@ -80,7 +81,7 @@ export function ShotVideogen({ pick, m }: InspectorSectionProps) {
 }
 
 function VgPanel({ name, shot, m }: { name: string; shot: Shot; m: Manifest }) {
-  const status = useQuery({ queryKey: ["videogen", "status"], queryFn: vgStatus, refetchInterval: 5000 });
+  const status = useVgStatus();
   const st = status.data;
   const busyHere = Boolean(st?.job && st.job.name === name);
   const items = useQuery({ queryKey: ["videogen", "items", name], queryFn: () => vgItems(name), refetchInterval: busyHere ? 2000 : false });
@@ -217,17 +218,12 @@ function VideoForm({ name, shot, m, st, images }: FormProps) {
   );
 }
 
-// The run in progress: after the submit, stopping only stops waiting; Flow still makes it.
-function stopText(image: boolean, phase: VgItem["phase"] | undefined): string {
-  if (phase === "sent") return image
-    ? "Ngừng chờ? Flow vẫn tạo và vẫn tính quota. Ảnh không tải lại được; mở Flow và Nhập file."
-    : "Ngừng chờ? Flow vẫn tạo và vẫn tính credit. Tải về miễn phí sau bằng Tải về từ Flow.";
-  return phase === "typed"
-    ? "Huỷ? Prompt đã điền; nếu Flow kịp nhận lệnh thì vẫn tính credit."
-    : "Huỷ lượt đang tạo? Chưa gửi tới Flow nên không tốn credit.";
-}
 function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   const image = item ? kindOf(item) === "image" : false;
+  // What the run reached and how long it has run, as the job tray says it, ticking each second.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+  const row = item ? trayItems([], [item], now)[0] : undefined;
   // The list is polled every 2 s and the prompt may have been typed since: the question is
   // worded from the item as it is now, so "không tốn credit" is never said after the typing.
   const stop = async () => {
@@ -238,6 +234,7 @@ function Running({ name, item }: { name: string; item: VgItem | undefined }) {
   return (
     <div className="flex items-center gap-2 text-sm">
       <span>Đang tạo {image ? "ảnh" : "clip"} bằng Flow…</span>
+      {row ? <span className="text-xs text-muted-foreground" data-testid="vg-progress">{[row.detail, mss(row.elapsed)].filter(Boolean).join(" · ")}</span> : null}
       {item?.phase === "sent"
         ? <Button aria-label="Ngừng chờ lượt Flow đang tạo" onClick={() => void stop()}>Ngừng chờ</Button>
         : <Button aria-label="Huỷ lượt Flow đang tạo" onClick={() => void stop()}>Huỷ</Button>}

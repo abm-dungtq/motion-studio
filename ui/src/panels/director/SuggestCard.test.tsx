@@ -151,6 +151,30 @@ describe("SuggestCard", () => {
     expect(card()).toHaveTextContent("Đã tạo pitch với hướng A6 đứng đầu và chọn hướng này. BRIEF.md đã được cập nhật.");
   });
 
+  it("busy buttons say what they are doing", async () => {
+    type R = Awaited<ReturnType<typeof run>>;
+    let endRun: (v: R) => void = () => {};
+    run.mockReturnValue(new Promise<R>((r) => { endRun = r; }));
+    show(resp({ record: null }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Gợi ý" })); });
+    expect(screen.getByRole("button", { name: "Đang gợi ý…" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Đang xếp hạng hướng và tìm case mẫu…");
+    await act(async () => { endRun({ status: 200, data: resp({ record: null }) }); });
+    expect(screen.getByRole("button", { name: "Gợi ý" })).toBeEnabled();
+    expect(card().querySelector('[data-role="suggest-running"]')).toBeNull();
+  });
+
+  it("the pitch button says Đang tạo pitch… while it waits", async () => {
+    type R = Awaited<ReturnType<typeof choose>>;
+    let endChoose: (v: R) => void = () => {};
+    choose.mockReturnValue(new Promise<R>((r) => { endChoose = r; }));
+    show(detOnly({ can_save_mode: true, can_init_pitch: true, picks: null }));
+    await act(async () => { fireEvent.click(chooseButton()); });
+    expect(screen.getByRole("button", { name: "Đang tạo pitch…" })).toBeDisabled();
+    await act(async () => { endChoose({ status: 200, data: { outcome: "chosen", direction: "A6", pick: 1, style: "data-editorial", initialized: true, mode: { saved: true, reason: null } } }); });
+    expect(chooseButton()).toBeEnabled();
+  });
+
   it("no record shows the empty sentence and a Gợi ý button", async () => {
     run.mockResolvedValue({ status: 200, data: resp({ record: null }) });
     show(resp({ record: null }));

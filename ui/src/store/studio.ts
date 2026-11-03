@@ -23,6 +23,7 @@ export interface StudioState {
   leftTab: string; leftCollapsed: boolean;    // leftTab: id of a registered tab
   rightTab: RightTab; rightCollapsed: boolean;
   dialog: Dialog;
+  trayOpen: boolean;                          // the job tray in the top bar
   snap: boolean;                              // default true (timeline.js:41)
   mode: EditMode;                             // default "ripple"
   pps: number;                                // default 60, clamped to 8..400
@@ -37,6 +38,7 @@ export interface StudioState {
   setLeftTab(id: string): void; toggleLeft(open?: boolean): void;
   setRightTab(t: RightTab): void; toggleRight(open?: boolean): void;
   openDialog(d: Dialog): void;
+  setTrayOpen(open: boolean): void;
   setSnap(on: boolean): void; setMode(m: EditMode): void; setPps(p: number): void;
   toggleAudio(kind: "mute" | "solo", g: AudioGroup): void;
   setRetimed(r: boolean): void; setDirectorDraft(s: string): void;
@@ -85,6 +87,7 @@ export const useStudio: UseBoundStore<StoreApi<StudioState>> = create<StudioStat
   rightTab: "director",
   rightCollapsed: false,
   dialog: null,
+  trayOpen: false,
   snap: true,
   mode: "ripple",
   pps: 60,
@@ -112,6 +115,7 @@ export const useStudio: UseBoundStore<StoreApi<StudioState>> = create<StudioStat
   setRightTab: (rightTab) => set({ rightTab }),
   toggleRight: (open) => set({ rightCollapsed: open === undefined ? !get().rightCollapsed : !open }),
   openDialog: (dialog) => set({ dialog }),
+  setTrayOpen: (trayOpen) => set({ trayOpen }),
   setSnap: (snap) => set({ snap }),
   setMode: (mode) => set({ mode }),
   setPps: (p) => set({ pps: clampPps(p) }),

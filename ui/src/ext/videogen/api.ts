@@ -1,4 +1,5 @@
 // The videogen routes (routes/videogen.mjs) as the shot inspector and the agent row read them.
+import { useQuery } from "@tanstack/react-query";
 import { api, send, type SendResult } from "@/api/client.ts";
 
 export interface VgStatus {
@@ -29,6 +30,10 @@ export const SECONDS = [4, 6, 8, 10];
 export const pickSeconds = (d: number): number => SECONDS.find((s) => s >= Number(d) - 0.01) ?? 10;
 
 export const vgStatus = () => api<VgStatus>("/api/videogen/status");
+// One status query for every reader (the agent row, the shot inspector, the job tray): every 5 s
+// while a Flow run is going, every 30 s otherwise.
+export const statusInterval = (d: VgStatus | undefined) => (d?.job ? 5000 : 30000);
+export const useVgStatus = () => useQuery({ queryKey: ["videogen", "status"], queryFn: vgStatus, refetchInterval: (q) => statusInterval(q.state.data) });
 export const vgItems = (name: string) => api<{ items: VgItem[] }>(`/api/videogen/items?name=${encodeURIComponent(name)}`);
 export const vgCreate = (body: VgCreate): Promise<SendResult> => send("/api/videogen/shot", { ...body });
 export const vgImage = (body: VgImageCreate): Promise<SendResult> => send("/api/videogen/image", { ...body });
@@ -53,3 +58,13 @@ const LABEL: Record<VgState, string> = {
 export const stateLabel = (s: VgState): string => LABEL[s] ?? s;
 export const kindOf = (it: VgItem): VgKind => it.kind ?? "video";
 export const hhmm = (iso: string) => new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+
+// The run in progress: after the submit, stopping only stops waiting; Flow still makes it.
+export function stopText(image: boolean, phase: VgItem["phase"] | undefined): string {
+  if (phase === "sent") return image
+    ? "Ngừng chờ? Flow vẫn tạo và vẫn tính quota. Ảnh không tải lại được; mở Flow và Nhập file."
+    : "Ngừng chờ? Flow vẫn tạo và vẫn tính credit. Tải về miễn phí sau bằng Tải về từ Flow.";
+  return phase === "typed"
+    ? "Huỷ? Prompt đã điền; nếu Flow kịp nhận lệnh thì vẫn tính credit."
+    : "Huỷ lượt đang tạo? Chưa gửi tới Flow nên không tốn credit.";
+}

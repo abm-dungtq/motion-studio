@@ -4,10 +4,20 @@
 // { status, data?, error? } and, on 200, reloads the assets, the waiting cards and the previews.
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api, ApiError, queryClient, send } from "@/api/client.ts";
+import { useJobs } from "@/api/queries.ts";
+import type { Job } from "@/api/types.ts";
+import { jobStatus } from "@/core/job-tray.ts";
 import type { AssetsList, BoardKey, ConsentCardData, SeriesInfo, VoicePreviews } from "./types.ts";
 
 const enc = encodeURIComponent;
 export const POLL_MS = 2000;
+export const IDLE_MS = 30000;
+
+// Cards the director writes outside this page: asked every 2 s while a job of the project runs or a
+// card waits on the user, every 30 s otherwise.
+export const cardsInterval = (waiting: boolean, running: boolean): number => (waiting || running ? POLL_MS : IDLE_MS);
+export const anyRunning = (jobs: readonly Job[] | undefined): boolean => Boolean(jobs?.some((j) => jobStatus(j) === "running"));
+export const useProjectBusy = (name: string | null): boolean => anyRunning(useJobs(name).data);
 
 export const seriesKeys = {
   series: (name: string | null) => ["/api/series", name] as const,
@@ -45,7 +55,14 @@ export const consentQuery = (name: string | null) => queryOptions({
   queryKey: seriesKeys.consent(name),
   queryFn: async () => (await api<{ cards: ConsentCardData[] }>(`/api/consent?name=${enc(name ?? "")}`)).cards,
 });
-export const useConsent = (name: string | null, enabled = true) => useQuery({ ...consentQuery(name), enabled: Boolean(name && enabled), refetchInterval: POLL_MS });
+export function useConsent(name: string | null, enabled = true) {
+  const running = useProjectBusy(name);
+  return useQuery({
+    ...consentQuery(name),
+    enabled: Boolean(name && enabled),
+    refetchInterval: (q) => cardsInterval(Boolean(q.state.data?.some((c) => c.status === "waiting")), running),
+  });
+}
 
 // Roles whose three Voice Design previews wait for the user's pick; null when the project is in no series.
 export const previewsQuery = (name: string | null) => queryOptions({

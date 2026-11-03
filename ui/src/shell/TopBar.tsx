@@ -1,5 +1,5 @@
 // The top bar (public/index.html:13-25), 44 px: brand, project picker, "Dự án mới", project title,
-// then on the right the agent chip, versions, undo/redo, the gate chip and "Xuất".
+// then on the right the agent chip, versions, undo/redo, the gate chip, the job tray and "Xuất".
 import { Plus, Redo2, Undo2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { actions } from "@/api/actions.ts";
@@ -9,6 +9,7 @@ import { AgentChip } from "./AgentChip.tsx";
 import { Button } from "./controls.tsx";
 import { ExportMenu } from "./ExportMenu.tsx";
 import { GateChip } from "./GateChip.tsx";
+import { JobTray } from "./JobTray.tsx";
 import { ProjectSelect } from "./ProjectSelect.tsx";
 import { VersionSelect } from "./VersionSelect.tsx";
 
@@ -42,6 +43,7 @@ export function TopBar() {
       <IconAction label="Hoàn tác (Ctrl/Cmd+Z)" disabled={!editable} onClick={() => { void actions.undo(); }}><Undo2 /></IconAction>
       <IconAction label="Làm lại (Ctrl/Cmd+Shift+Z)" disabled={!editable} onClick={() => { void actions.redo(); }}><Redo2 /></IconAction>
       <GateChip />
+      <JobTray />
       <ExportMenu />
     </header>
   );

@@ -233,7 +233,7 @@ function Choices({ name, resp, record }: { name: string; resp: SuggestResponse; 
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Button variant="primary" data-role="suggest-choose" disabled={busy || dirSel === null} onClick={() => { void choose(); }}>Chọn và tạo pitch</Button>
+        <Button variant="primary" data-role="suggest-choose" disabled={busy || dirSel === null} onClick={() => { void choose(); }}>{busy ? "Đang tạo pitch…" : "Chọn và tạo pitch"}</Button>
         {observe && dirSel === null ? <p className="m-0 text-xs text-muted-foreground">Chọn một hướng ở một trong hai cột để tiếp tục.</p> : null}
         {!resp.can_init_pitch && resp.picks === null ? <p className="m-0 text-xs text-muted-foreground">Dự án chưa có pitch, nên bấm chọn sẽ nhờ đạo diễn tạo pitch trước.</p> : null}
       </div>
@@ -296,9 +296,10 @@ function Card({ name }: { name: string }) {
             {sourceChip(record).text}
           </span>
         ) : null}
-        <Button className="ml-auto shrink-0 whitespace-nowrap" data-role="suggest-run" aria-describedby={record ? "suggest-run-note" : undefined} disabled={running || !resp} onClick={() => { void run(); }}>{record ? "Gợi ý lại" : "Gợi ý"}</Button>
+        <Button className="ml-auto shrink-0 whitespace-nowrap" data-role="suggest-run" aria-describedby={record ? "suggest-run-note" : undefined} disabled={running || !resp} onClick={() => { void run(); }}>{running ? "Đang gợi ý…" : record ? "Gợi ý lại" : "Gợi ý"}</Button>
         {record ? <p id="suggest-run-note" className="m-0 w-full text-right text-xs text-muted-foreground">Gọi Jev, ghi lại CASES.md</p> : null}
       </div>
+      {running ? <p role="status" data-role="suggest-running" className="m-0 text-sm text-muted-foreground">Đang xếp hạng hướng và tìm case mẫu…</p> : null}
       {suggest.error ? <p role="alert" className="m-0 text-sm text-muted-foreground">{`Chưa đọc được gợi ý: ${suggest.error.message}`}</p> : null}
       {runErr ? <p role="alert" data-role="suggest-run-err" className="m-0 rounded-sm bg-danger-fill px-2 py-1.5 text-sm font-semibold text-primary-foreground">{runErr}</p> : null}
       {record?.error ? <p role="status" className="m-0 text-xs text-muted-foreground">{record.error.message}</p> : null}
