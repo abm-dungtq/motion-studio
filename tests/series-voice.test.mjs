@@ -64,6 +64,11 @@ const line = (n, speaker, text) => ({ id: `vo-0${n}`, shot: "s1", text, file: `a
 const manifest = (lines) => ({ schema: A.NEED.schema, title: "t", fps: 30, width: 1920, height: 1080, duration: 10, html: "index.html", capabilities: { timing_markers: true, editable: true }, shots: [{ id: "s1", name: "", start: 0, end: 10 }], lines, music: [], assets: [], version: 1 });
 const readLines = (f) => (existsSync(f) ? readFileSync(f, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// What a job writes after it exits (previews, receipts, the director request) lands a moment
+// later; under load that can take seconds, so wait as long as jobDone does.
+async function until(ok) {
+  for (let i = 0; i < 300 && !(await ok()); i++) await sleep(100);
+}
 
 function http(method, path, body) {
   return new Promise((res, rej) => {
@@ -271,11 +276,11 @@ test("voice_design asks first, the yes makes three previews, the user's pick loc
   assert.equal(j.code, 0, j.tail.join("\n"));
   assert.deepEqual(readLines(ttsLog)[0].design, ["--role=granny", "design"]);
   let pv;
-  for (let i = 0; i < 50 && !(pv = (await http("GET", "/api/voice/previews?name=ep")).json).roles.length; i++) await sleep(50);
+  await until(async () => (pv = (await http("GET", "/api/voice/previews?name=ep")).json).roles.length);
   assert.deepEqual(pv.roles, [{ role: "granny", name: "Bà", previews: [1, 2, 3].map((n) => ({ n, file: `.opus/voice-design/granny/granny-${n}.mp3` })) }]);
   assert.equal(pv.can_set_speaker, true);
   assert.equal((await http("GET", `/p/ep/${pv.roles[0].previews[0].file}`)).status, 200, "the page can play a preview");
-  for (let i = 0; i < 50 && !listReceipts(ep, { op: "voice-design" }).length; i++) await sleep(50);
+  await until(() => listReceipts(ep, { op: "voice-design" }).length);
   assert.equal(listReceipts(ep, { op: "voice-design" }).length, 1);
   assert.equal(JSON.parse(readFileSync(join(series, "voices", "cast.json"), "utf8")).granny, undefined, "no voice before the pick");
 
@@ -283,10 +288,10 @@ test("voice_design asks first, the yes makes three previews, the user's pick loc
   const pick = await http("POST", "/api/voice/pick", { name: "ep", role: "granny", pick: 2 });
   assert.equal(pick.status, 200, pick.text);
   assert.equal((await jobDone(pick.json.job.id)).code, 0);
-  for (let i = 0; i < 50 && !listReceipts(ep, { op: "voice-pick" }).length; i++) await sleep(50);
+  await until(() => listReceipts(ep, { op: "voice-pick" }).length);
   assert.deepEqual(JSON.parse(readFileSync(join(series, "voices", "cast.json"), "utf8")).granny, { voice_id: "v-granny", picked_preview: 2 });
   assert.equal(listReceipts(ep, { op: "voice-pick" })[0].params.pick, 2);
-  for (let i = 0; i < 50 && !readLines(queued).length; i++) await sleep(50);
+  await until(() => readLines(queued).length);
   assert.equal(readLines(queued).at(-1).text, "Giọng Bà đã chọn. Lồng tiếng các câu của Bà bằng series_tts.");
   assert.deepEqual((await http("GET", "/api/voice/previews?name=ep")).json.roles, [], "a role with a voice waits for no pick");
 });
