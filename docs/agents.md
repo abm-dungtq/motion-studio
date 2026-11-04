@@ -64,6 +64,35 @@ Giới hạn này tính trong một tiến trình: đợt ảnh (`docs/assets.md
 
 Khoá nào không ghi thì giữ mặc định. Studio đọc lại thứ tự ở mỗi lượt gọi, không cần khởi động lại.
 
+## Agent chạy đạo diễn
+
+Mặc định đạo diễn AI chạy bằng Claude Code. Bấm chip agent ở góc phải, mục "Đạo diễn chạy bằng" liệt kê các agent trên máy kèm phiên bản, trạng thái đăng nhập và mức rào an toàn. Chọn một agent thì Studio ghi `director.agent` vào `studio.json`. Lựa chọn được giữ khi Studio khởi động lại và áp dụng từ yêu cầu kế tiếp. Chip agent ghi agent đang chạy đạo diễn. Agent nào chưa chọn được thì mờ đi và có ghi lý do.
+
+| id | Chọn được | Rào của chính agent |
+|---|---|---|
+| `claude` | có | Đầy đủ: danh sách tool được dùng và bị cấm của provider, `--permission-mode acceptEdits`, tool ngoài danh sách bị từ chối vì không có ai trả lời |
+| `codex-pool` | có, khi còn tài khoản có quota | Sandbox + Studio, giống `codex`; mỗi lượt chạy trên tài khoản còn quota |
+| `codex` | có | Sandbox + Studio: `sandbox_mode="workspace-write"` (chỉ ghi trong dự án và thư mục tạm, không có mạng), `approval_policy="never"`, tắt tìm web, không đọc `~/.codex/config.toml` (`--ignore-user-config`: không nạp MCP và hook riêng của người dùng, vẫn giữ đăng nhập), luật execpolicy cấm các lệnh bị cấm có tiền tố là chữ thường (`cp`, `mv`…) |
+| `opencode` | có | Luật lệnh + Studio: shell bị cấm trừ lệnh của provider, cấm sửa file của plugin, BRIEF.md, DEMO.md, cấm web và thư mục ngoài dự án; tắt các MCP server riêng của người dùng; chạy `--standalone` |
+| `agy` | không | chỉ nạp MCP từ cấu hình chung của người dùng (`~/.gemini/config/mcp_config.json`), Studio không gắn MCP riêng cho một lượt được |
+| `gemini`, `cursor-agent` | không | chưa có adapter đạo diễn kiểm trên máy thật |
+
+Agent không phải Claude Code cần provider khai báo `director.mcpServer` (lệnh chạy MCP server của provider) để đạo diễn đọc và sửa `project.json` qua tool. Provider không khai báo thì chỉ chọn được Claude Code.
+
+Model cho từng agent đặt ở `studio.json`, ví dụ `"director": { "agent": "opencode", "models": { "opencode": "opencode-go/beam-free" } }`. Không đặt thì agent dùng model mặc định của nó. Codex không đọc `config.toml` của người dùng nên model trong đó không có hiệu lực ở đây.
+
+### Hai lớp rào
+
+Lớp thứ nhất là rào của chính agent (bảng trên). Lớp thứ hai do Studio giữ, với mọi agent kể cả Claude Code (`lib/gate-guard.mjs`): trong lúc đạo diễn chạy, Studio theo dõi thư mục dự án. BRIEF.md bị sửa thì Studio trả lại bản cũ. Ở DEMO.md, dòng `approval:` chỉ được về `pending`, còn dòng `audio_review:` chỉ được xoá chứ không được ghi. Đạo diễn vi phạm thì Studio khôi phục file, dừng lượt đó và báo yêu cầu thất bại kèm tên file. Studio tự ghi các file này khi người dùng duyệt (`gates.mjs`) thì báo cho lớp rào biết, nên không bị tính là vi phạm.
+
+Mỗi lượt chạy, Studio ghi lại cấu hình vào thư mục dự án: `.codex/rules/motion-studio.rules` cho Codex và `.opencode/opencode.json` cho OpenCode. Đạo diễn không được sửa hai thư mục này. Phiên được nhớ theo từng agent (`.opus/director.json` có `agent`), nên đổi agent thì yêu cầu kế tiếp mở phiên mới.
+
+### Route
+
+- `GET /api/director/agents` trả agent đang chọn và từng agent: `id`, `label`, `guard`, `guard_label`, `found`, `version`, `logged_in`, `selectable`, `reason`. Thêm `?refresh=1` để quét lại.
+- `POST /api/director/agent {"id": "codex"}` lưu lựa chọn. Trả 400 khi Studio không biết id đó, 409 kèm lý do khi agent chưa chọn được lúc này.
+- `GET /api/agent` có thêm `director`: agent đang chạy đạo diễn, mức rào, đã cài và đăng nhập chưa.
+
 ## Gọi từ code
 
 ```js

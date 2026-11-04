@@ -228,8 +228,8 @@ test("library: every section answers without a query, a bad kind is 400, thumbna
   assert.equal((await http("GET", "/library/thumb/0")).status, 404);
 });
 
-test("GET /api/agent reports claude, runner, last job, ffmpeg and the provider; no claude on PATH is found: false", async () => {
-  const keys = ["claude", "runner", "last_job", "ffprobe", "ffmpeg", "provider", "provider_error"];
+test("GET /api/agent reports claude, the director agent, runner, last job, ffmpeg and the provider; no claude on PATH is found: false", async () => {
+  const keys = ["claude", "runner", "last_job", "ffprobe", "ffmpeg", "provider", "provider_error", "director"];
   const prevPath = process.env.PATH;
   const empty = mkdtempSync(join(tmpdir(), "studio-empty-path-"));
   process.env.PATH = empty;

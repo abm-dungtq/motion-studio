@@ -20,7 +20,7 @@
 
 AI can now build a whole video, but most tools make you pick one of two shapes. A chat box hands you a finished file you cannot fix, or a classic editor treats the AI as a plug-in on the side. Motion Studio puts both in one window.
 
-- **The director is your own Claude Code.** Studio runs the `claude` CLI that is already signed in on your machine, and the director remembers the project. You do not need another AI subscription. Data leaves your computer only through calls made by your agent and by services you approve.
+- **The director is the coding agent already on your machine.** Studio runs Claude Code (`claude`) by default; in the agent chip you can switch it to Codex CLI or OpenCode, and the choice survives restarts. The director remembers the project. You do not need another AI subscription. Data leaves your computer only through calls made by your agent and by services you approve.
 - **You stay in charge.** When the director needs a decision, such as which of three looks to use or whether the animatic is good, it asks on a card and waits. Only you can approve a direction or a cut; the director cannot approve its own work.
 - **Every edit is a version.** Dragging a shot, retiming a line or moving a sound effect creates one numbered version with undo and redo, whether you made the edit or the director did.
 - **Private by design.** Studio listens on `127.0.0.1` only, rejects requests from other web pages, and never reads, prints or copies your API key files.
@@ -42,7 +42,7 @@ AI can now build a whole video, but most tools make you pick one of two shapes. 
 
 ## Quick start
 
-You need Node.js 22.18 or later and ffmpeg with ffprobe. For the AI director you also need Claude Code (`claude`) installed and signed in. The interface is designed for screens at least 1280 px wide.
+You need Node.js 22.18 or later and ffmpeg with ffprobe. For the AI director you also need one supported agent CLI installed and signed in: Claude Code (`claude`, the default), Codex CLI (`codex`, or `codex-pool` to spread runs over several accounts) or OpenCode (`opencode`). The interface is designed for screens at least 1280 px wide.
 
 ```bash
 git clone https://github.com/abm-dungtq/motion-studio ~/Projects/motion-studio
@@ -179,7 +179,7 @@ Add a feature by adding a file, without touching `server.mjs` or the shell in `u
 - `lib/quality/*.mjs`: checks that run on every file Studio produces; results land in `<project>/.opus/receipts/`.
 - `lib/agents/cli/*.mjs`: local agent CLIs (claude, codex, codex-pool, agy, gemini, cursor-agent, opencode) for writing, reading images and generating images.
 
-Working examples: [docs/extensions.md](docs/extensions.md). Suggestion card and example cases: [docs/suggest.md](docs/suggest.md). Agents and fallback order: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Receipts and quality thresholds: [docs/receipts.md](docs/receipts.md). AI images and clips per shot through gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
+Working examples: [docs/extensions.md](docs/extensions.md). Suggestion card and example cases: [docs/suggest.md](docs/suggest.md). Agents, fallback order and the director's agent with its safety layers: [docs/agents.md](docs/agents.md#agent-chạy-đạo-diễn). MCP: [docs/mcp.md](docs/mcp.md). Receipts and quality thresholds: [docs/receipts.md](docs/receipts.md). AI images and clips per shot through gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
 
 </details>
 

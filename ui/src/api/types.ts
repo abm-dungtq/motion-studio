@@ -86,6 +86,7 @@ export interface TimelineMedia { render: { path: string; mtime: number; size: nu
 // GET /api/agent
 export interface AgentStatus {
   claude: { found: boolean; version?: string | null; logged_in?: boolean | null };
+  director?: DirectorStatus;
   runner?: "mcp" | "cli" | string;
   last_job?: { status: string; code?: number | null; started?: string } | null;
   ffprobe?: boolean;
@@ -95,6 +96,14 @@ export interface AgentStatus {
   agents?: AgentCli[] | null;
   [k: string]: unknown;
 }
+
+// The agent CLI the director runs on (lib/director-agents.mjs). guard: how the agent's own rules
+// back Studio's (full, rules, sandbox); null for an agent that cannot run the director.
+export type DirectorGuard = "full" | "rules" | "sandbox" | null;
+export interface DirectorStatus { id: string; label: string; guard: DirectorGuard; guard_label: string | null; found: boolean; version?: string | null; logged_in?: boolean | null }
+// GET /api/director/agents (routes/director-agent.mjs)
+export interface DirectorAgent extends Omit<DirectorStatus, "found"> { found: boolean | null; chosen: boolean; selectable: boolean; reason: string | null }
+export interface DirectorAgents { agent: string; agents: DirectorAgent[] }
 
 // GET /api/agents (lib/agents): the CLI registry scan.
 export interface AgentCli { id: string; label: string; found?: boolean; error?: string | null; detect_only?: boolean; version?: string | null; logged_in?: boolean | null; caps?: Record<string, string>; [k: string]: unknown }

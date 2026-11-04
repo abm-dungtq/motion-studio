@@ -2,6 +2,8 @@
 
 ## Chưa phát hành
 
+- Chọn agent chạy đạo diễn: ở chip agent, mục "Đạo diễn chạy bằng" cho chọn Claude Code (mặc định), Codex (trực tiếp hoặc qua codex-pool, chia lượt theo quota) hay OpenCode. Mỗi agent kèm phiên bản, trạng thái đăng nhập và mức rào an toàn. Lựa chọn lưu ở `studio.json` (`director.agent`), giữ qua các lần khởi động lại; model từng agent đặt ở `director.models`. Chip agent ghi agent đang chạy đạo diễn. Agent không đặt được rào tương đương (agy, gemini, cursor-agent) hoặc chưa cài, chưa đăng nhập, hết quota thì không chọn được và có ghi lý do. Codex chạy trong sandbox chỉ ghi được thư mục dự án, không mạng, không đọc `config.toml` của người dùng, có luật execpolicy cấm `cp`, `mv`… OpenCode cấm shell trừ lệnh của provider, cấm sửa BRIEF.md và DEMO.md, tắt MCP riêng của người dùng. Với mọi agent, kể cả Claude Code, Studio còn tự giữ BRIEF.md và các dòng `approval:`, `audio_review:` của DEMO.md: đạo diễn sửa thì Studio khôi phục, dừng lượt đó và báo lỗi. Route mới: `GET /api/director/agents`, `POST /api/director/agent`. Xem [docs/agents.md](docs/agents.md#agent-chạy-đạo-diễn).
+
 - README (cả bản tiếng Việt) nói rõ kết quả cổng xuất được giữ theo dự án và nút "Kiểm lại" chạy lại bất kể cache.
 
 - Cài Studio như app: trang có manifest và biểu tượng nên Chrome hiện nút cài (cửa sổ riêng, biểu tượng trên Dock). Lệnh `install-app` ghi một LaunchAgent bật server khi đăng nhập và chạy lại khi nó dừng vì lỗi; `uninstall-app` gỡ ra. Lệnh cài từ chối khi đang có Studio chạy ở cổng đó.

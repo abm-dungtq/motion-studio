@@ -8,7 +8,7 @@
 import { queryOptions, useQuery, type QueryKey } from "@tanstack/react-query";
 import { api, projectText, queryClient, say, send, type SendResult } from "./client.ts";
 import type {
-  AgentStatus, AgentsScan, DirectorRequest, FileEntry, Gates, Job, LogEntry, Manifest, MediaEntry,
+  AgentStatus, AgentsScan, DirectorAgents, DirectorRequest, FileEntry, Gates, Job, LogEntry, Manifest, MediaEntry,
   Note, ProjectEntry, SnapshotDiff, SnapshotsResponse, SoundsList, StatusResponse, SuggestChooseResult, SuggestResponse, TimelineMedia,
 } from "./types.ts";
 
@@ -32,6 +32,7 @@ export const keys = {
   timelineMedia: (name: string | null) => ["/api/timeline/media", name] as const,
   agent: (name: string | null) => ["/api/agent", name] as const,
   agents: () => ["/api/agents"] as const,
+  directorAgents: () => ["/api/director/agents"] as const,
   sounds: (name: string | null) => ["/api/sounds", name] as const,
   media: (name: string | null) => ["/api/media", name] as const,
   mediaBrowse: (path: string | null) => ["/api/media/browse", path] as const,
@@ -246,6 +247,9 @@ export const agentQuery = (name: string | null) => queryOptions({
   refetchInterval: 60000,
 });
 export const useAgent = (name: string | null) => useQuery(agentQuery(name));
+// `/api/director/agents` — routes/director-agent.mjs: the agents the director can run on.
+export const directorAgentsQuery = () => queryOptions({ queryKey: keys.directorAgents(), queryFn: () => api<DirectorAgents>(`/api/director/agents`) });
+export const useDirectorAgents = () => useQuery(directorAgentsQuery());
 
 // `/api/agents` — public/ext-agents.js:42. data stays undefined and error is set when it fails:
 // an agent row shows the error, never controls over a missing scan.
@@ -423,6 +427,8 @@ export const timelineAsset = (b: NameBody & { shot: string; base: number; path: 
 // `/api/timing/word` — public/timeline-markers.js:60
 // `/api/timing/undo` — public/timeline-markers.js:63
 // `/api/timing/word-sync` — public/timeline-markers.js:70
+// `/api/director/agent` — routes/director-agent.mjs ({ id }): saved in studio.json, used from the next request
+export const setDirectorAgent = (id: string) => write(`/api/director/agent`, { id }, [keys.directorAgents(), ["/api/agent"]]);
 // `/api/agents/refresh` — public/ext-agents.js:39 (answers the new scan)
 export const agentsRefresh = () => write(`/api/agents/refresh`, {}, [keys.agents()]);
 // `/api/agents/probe` — public/ext-agents.js:61 ({ id, cap })

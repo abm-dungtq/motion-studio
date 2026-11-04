@@ -6,6 +6,7 @@
 //   `approval: user@studio <ISO> <what>`; a reject writes nothing.
 // Then the request is answered (done + a queued follow-up with follows: id). answerCard returns
 // { status, body }; status 200 body { next: <new request id>, request: <the follow-up> }.
+import { rebase, studioWrite } from "./lib/gate-guard.mjs";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { loadProvider } from "./lib/provider.mjs";
@@ -29,7 +30,8 @@ export function chooseArgv(commands, dir, pick, extra = []) {
 // Runs the provider's choose command for pick. Returns { code, stdout, stderr }.
 export async function writeDirection(dir, pick, { run = runFile, extra = [] } = {}) {
   const p = await loadProvider();
-  return run(process.execPath, chooseArgv(p.commands, dir, pick, extra), { cwd: dir, timeout: PITCH_TIMEOUT_MS });
+  const r = await studioWrite(dir, () => run(process.execPath, chooseArgv(p.commands, dir, pick, extra), { cwd: dir, timeout: PITCH_TIMEOUT_MS }));
+  return r;
 }
 
 // Replaces the first approval: line of DEMO.md (or appends one). Returns the line, or null when
@@ -43,6 +45,7 @@ export function writeApproval(dir, what, now = new Date()) {
   const tmp = `${f}.${process.pid}.tmp`;
   writeFileSync(tmp, text);
   renameSync(tmp, f);
+  rebase(dir);
   return line;
 }
 
@@ -61,6 +64,7 @@ export function writeDemoNote(dir, line) {
   const tmp = `${f}.${process.pid}.tmp`;
   writeFileSync(tmp, text);
   renameSync(tmp, f);
+  rebase(dir);
   return note;
 }
 

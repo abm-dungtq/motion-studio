@@ -7,6 +7,7 @@ import * as agentsExt from "@/ext/agents/index.ts";
 import { probeInterval } from "@/ext/agents/AgentTable.tsx";
 import { AgentDialog } from "@/shell/AgentDialog.tsx";
 import { useStudio } from "@/store/studio.ts";
+import { chip } from "@/core/agent-status.ts";
 import * as agentPanel from "./index.ts";
 
 // GET /api/agent and GET /api/agents (server.mjs, routes/agents.mjs), trimmed, with fields the
@@ -94,5 +95,39 @@ describe("agent rows", () => {
     expect(probeInterval({ agents: [], probe: { status: "running", started: "2026-10-23T04:59:00Z" } }, now)).toBe(1500);
     expect(probeInterval({ agents: [], probe: { status: "running", started: "2026-10-23T04:50:00Z" } }, now)).toBe(false);
     expect(probeInterval({ agents: [], probe: { status: "done" } }, now)).toBe(false);
+  });
+
+  it("the director's agent: its rows, the picker with each agent's state, and a pick posted once", async () => {
+    const DIRECTOR = {
+      agent: "claude",
+      agents: [
+        { id: "claude", label: "Claude Code", guard: "full", guard_label: "Đầy đủ", found: true, version: "2.1.304", logged_in: true, chosen: true, selectable: true, reason: null },
+        { id: "codex", label: "Codex CLI", guard: "sandbox", guard_label: "Sandbox + Studio", found: true, version: "0.163.0", logged_in: true, chosen: false, selectable: true, reason: null },
+        { id: "agy", label: "Antigravity (agy)", guard: null, guard_label: null, found: true, version: "1.4.5", logged_in: true, chosen: false, selectable: false, reason: "agy chỉ nạp MCP từ cấu hình chung của máy" },
+      ],
+    };
+    const posted: unknown[] = [];
+    await openDialog({
+      "/api/agent": { ...AGENT, runner: "cli", director: { id: "claude", label: "Claude Code", guard: "full", guard_label: "Đầy đủ", found: true, version: "2.1.304", logged_in: true } },
+      "/api/agents": SCAN,
+      "/api/director/agents": DIRECTOR,
+      "/api/director/agent": (_u: URL, i?: RequestInit) => { posted.push(JSON.parse(String(i?.body))); return { ...DIRECTOR, agent: "codex" }; },
+    });
+    expect(await screen.findByText("cli: chạy Claude Code trên máy")).toBeInTheDocument();
+    expect(screen.getByText("Rào an toàn").nextSibling).toHaveTextContent("Đầy đủ");
+    const claude = await screen.findByRole("radio", { name: /Claude Code/ });
+    expect(claude).toBeChecked();
+    expect(screen.getByRole("radio", { name: /Antigravity/ })).toBeDisabled();
+    expect(screen.getByText("agy chỉ nạp MCP từ cấu hình chung của máy")).toBeInTheDocument();
+    expect(screen.getByText("0.163.0 · đã đăng nhập · rào: Sandbox + Studio")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /Codex CLI/ }));
+    await waitFor(() => expect(posted).toEqual([{ id: "codex" }]));
+  });
+
+  it("the chip names the director's agent, and Claude Code for a server without director", () => {
+    const base = { ...AGENT, claude: { found: true, version: "2.1.304", logged_in: true } };
+    expect(chip({ ...base, director: { label: "Codex CLI", found: true, version: "codex-cli 0.163.0", logged_in: null } }, null)).toEqual({ level: "unknown", label: "Codex CLI 0.163.0", title: "Chưa rõ đã đăng nhập Codex CLI chưa" });
+    expect(chip({ ...base, director: { label: "OpenCode", found: false } }, null).label).toBe("OpenCode: không thấy");
+    expect(chip(base, null)).toEqual({ level: "ok", label: "Claude Code 2.1.304", title: "Đạo diễn chạy bằng Claude Code, sẵn sàng" });
   });
 });

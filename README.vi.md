@@ -20,7 +20,7 @@
 
 AI giờ đã dựng được cả một video, nhưng phần lớn công cụ bắt bạn chọn một trong hai. Hoặc là khung chat trả về file hoàn chỉnh mà bạn không sửa được. Hoặc là phần mềm dựng quen thuộc, còn AI chỉ là plugin đứng bên lề. Motion Studio gom cả hai vào một cửa sổ.
 
-- **Đạo diễn chính là Claude Code của bạn.** Studio chạy `claude` đã đăng nhập sẵn trên máy, và đạo diễn nhớ ngữ cảnh dự án. Bạn không phải mua thêm gói AI nào. Dữ liệu chỉ rời máy qua lệnh gọi của agent và của những dịch vụ bạn đã đồng ý.
+- **Đạo diễn chính là agent lập trình có sẵn trên máy bạn.** Mặc định Studio chạy Claude Code (`claude`); ở chip agent bạn đổi được sang Codex CLI hoặc OpenCode, và lựa chọn được giữ qua các lần khởi động lại. Đạo diễn nhớ ngữ cảnh dự án. Bạn không phải mua thêm gói AI nào. Dữ liệu chỉ rời máy qua lệnh gọi của agent và của những dịch vụ bạn đã đồng ý.
 - **Bạn giữ quyền quyết định.** Khi cần bạn chọn, chẳng hạn dùng hướng hình nào trong ba hướng hay animatic đã ổn chưa, đạo diễn hỏi bằng thẻ rồi chờ. Chỉ bạn mới duyệt được hướng hay bản cắt; đạo diễn không tự duyệt việc của mình.
 - **Lần sửa nào cũng thành một phiên bản.** Kéo một shot, dời một câu thoại hay đổi chỗ một tiếng động đều thành một phiên bản có số, hoàn tác và làm lại được, dù người sửa là bạn hay đạo diễn.
 - **Riêng tư ngay từ thiết kế.** Studio chỉ nghe ở `127.0.0.1` và từ chối yêu cầu đến từ trang web khác. Nó không bao giờ đọc, in hay chép file khoá API của bạn.
@@ -42,7 +42,7 @@ AI giờ đã dựng được cả một video, nhưng phần lớn công cụ b
 
 ## Bắt đầu nhanh
 
-Máy cần Node.js 22.18 trở lên và ffmpeg kèm ffprobe. Muốn dùng đạo diễn AI thì cần thêm Claude Code (`claude`) đã cài và đăng nhập. Giao diện thiết kế cho màn hình rộng từ 1280 px.
+Máy cần Node.js 22.18 trở lên và ffmpeg kèm ffprobe. Muốn dùng đạo diễn AI thì cần thêm một agent CLI đã cài và đăng nhập: Claude Code (`claude`, mặc định), Codex CLI (`codex`, hoặc `codex-pool` để chia lượt cho nhiều tài khoản) hoặc OpenCode (`opencode`). Giao diện thiết kế cho màn hình rộng từ 1280 px.
 
 ```bash
 git clone https://github.com/abm-dungtq/motion-studio ~/Projects/motion-studio
@@ -174,7 +174,7 @@ Thêm tính năng bằng cách thêm file, không sửa `server.mjs` hay khung g
 - `lib/quality/*.mjs`: bài kiểm chạy trên mọi file Studio tạo ra; kết quả nằm trong `<dự án>/.opus/receipts/`.
 - `lib/agents/cli/*.mjs`: agent CLI trên máy (claude, codex, codex-pool, agy, gemini, cursor-agent, opencode) để viết chữ, đọc ảnh và sinh ảnh.
 
-Ví dụ chạy được: [docs/extensions.md](docs/extensions.md). Thẻ Gợi ý và case mẫu: [docs/suggest.md](docs/suggest.md). Agent và thứ tự thử: [docs/agents.md](docs/agents.md). MCP: [docs/mcp.md](docs/mcp.md). Biên nhận và ngưỡng kiểm chất lượng: [docs/receipts.md](docs/receipts.md). Ảnh và clip AI cho shot qua gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
+Ví dụ chạy được: [docs/extensions.md](docs/extensions.md). Thẻ Gợi ý và case mẫu: [docs/suggest.md](docs/suggest.md). Agent, thứ tự thử, agent chạy đạo diễn và các lớp rào an toàn: [docs/agents.md](docs/agents.md#agent-chạy-đạo-diễn). MCP: [docs/mcp.md](docs/mcp.md). Biên nhận và ngưỡng kiểm chất lượng: [docs/receipts.md](docs/receipts.md). Ảnh và clip AI cho shot qua gflow-studio (Google Flow): [docs/videogen.md](docs/videogen.md).
 
 </details>
 

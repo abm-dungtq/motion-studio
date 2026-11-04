@@ -1,5 +1,6 @@
-// studio/agent.mjs — "Agent trên máy": is `claude` installed and logged in, which runner Studio
-// uses, the project's last director job, and whether ffprobe/ffmpeg run. Tool checks are cached
+// studio/agent.mjs — "Agent trên máy": is `claude` installed and logged in, which agent CLI and
+// runner the director uses (director: the chosen agent, found, logged in, its guard level), the
+// project's last director job, and whether ffprobe/ffmpeg run. Tool checks are cached
 // 30 s per PATH. `claude auth status` prints JSON that also holds the account email and
 // organisation: only Boolean(loggedIn) leaves this module, nothing of it is logged.
 // agents is the short form of the last agent CLI scan (lib/agents/index.mjs), or null before the
@@ -8,10 +9,13 @@ import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { listJobs } from "./jobs.mjs";
 import { KIND as DIRECTOR, runnerSetting } from "./director.mjs";
-import { peekAgents, summarize } from "./lib/agents/index.mjs";
+import { peekAgents, scanAgent, summarize } from "./lib/agents/index.mjs";
+import { directorAgentSetting } from "./lib/config.mjs";
+import { DIRECTORS, GUARD_LABEL } from "./lib/director-agents.mjs";
 
 const CACHE_MS = 30000;
 let cache = null; // { at, path, tools }
+const others = new Map(); // agent id → { at, path, row }
 
 const exec = (cmd, args, timeout) => new Promise((res) => {
   execFile(cmd, args, { encoding: "utf8", timeout, maxBuffer: 1 << 20, shell: false }, (err, stdout) => res({ err, stdout: stdout ?? "" }));
@@ -38,10 +42,28 @@ async function tools() {
   return t;
 }
 
-// { claude: { found, version, logged_in }, runner, last_job: { status, code, started } | null, ffprobe, ffmpeg, agents }
+// The chosen director agent: { id, label, guard, guard_label, found, version, logged_in }. Claude Code
+// comes from the checks above; another agent from one registry scan of that CLI, cached 30 s.
+async function directorStatus(claude) {
+  const id = directorAgentSetting();
+  const d = DIRECTORS[id] ?? { label: id, guard: null };
+  const head = { id, label: d.label, guard: d.guard ?? null, guard_label: d.guard ? GUARD_LABEL[d.guard] : null };
+  if (id === "claude") return { ...head, found: claude.found, version: claude.version, logged_in: claude.logged_in };
+  const path = process.env.PATH ?? "";
+  let c = others.get(id);
+  if (!c || c.path !== path || Date.now() - c.at >= CACHE_MS) {
+    const row = await scanAgent(id).catch(() => null);
+    c = { at: Date.now(), path, row };
+    others.set(id, c);
+  }
+  const r = c.row;
+  return { ...head, found: Boolean(r?.found && !r.error), version: r?.version ?? null, logged_in: r?.logged_in ?? null };
+}
+
+// { claude: { found, version, logged_in }, director, runner, last_job: { status, code, started } | null, ffprobe, ffmpeg, agents }
 export async function agentStatus({ name = null } = {}) {
   const t = await tools();
   const jobs = name ? listJobs(name).filter((j) => j.kind === DIRECTOR).sort((a, b) => String(a.started).localeCompare(String(b.started))) : [];
   const j = jobs.at(-1);
-  return { claude: t.claude, runner: runnerSetting(), last_job: j ? { status: j.status, code: j.code, started: j.started } : null, ffprobe: t.ffprobe, ffmpeg: t.ffmpeg, agents: summarize(peekAgents()) ?? undefined };
+  return { claude: t.claude, director: await directorStatus(t.claude), runner: runnerSetting(), last_job: j ? { status: j.status, code: j.code, started: j.started } : null, ffprobe: t.ffprobe, ffmpeg: t.ffmpeg, agents: summarize(peekAgents()) ?? undefined };
 }

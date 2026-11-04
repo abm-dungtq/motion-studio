@@ -11,6 +11,7 @@
 //        → { line }: the user's "Nghe rồi, được": the provider's demo command with
 //          --record-audio-review user@studio writes the audio_review: line of DEMO.md; a receipt
 //          (op audio-review).
+import { studioWrite } from "../lib/gate-guard.mjs";
 import { join } from "node:path";
 import { runFile } from "../create.mjs";
 import { BY } from "../gates.mjs";
@@ -72,7 +73,7 @@ export const ROUTES = [
       const b = c.body ?? {};
       const dir = projectOf(c, b.name);
       const t0 = new Date();
-      const r = await runFile(process.execPath, [c.P.commands.demo, "--project", dir, "--record-audio-review", BY], { cwd: dir, env: reviewEnv(), timeout: REVIEW_TIMEOUT_MS });
+      const r = await studioWrite(dir, () => runFile(process.execPath, [c.P.commands.demo, "--project", dir, "--record-audio-review", BY], { cwd: dir, env: reviewEnv(), timeout: REVIEW_TIMEOUT_MS }));
       const out = String(r.stderr || r.stdout).trim().split("\n").filter(Boolean);
       if (r.code !== 0) throw bad(r.code === 2 ? 400 : 500, `make-demo --record-audio-review lỗi (exit ${r.code}): ${out.slice(-2).join(" | ")}`);
       await writeReceipt(dir, { op: "audio-review", actor: "human", params: { by: BY }, inputs: { exit: r.code }, outputs: [join(dir, "DEMO.md")], started: t0, ended: new Date() });

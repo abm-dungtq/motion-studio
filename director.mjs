@@ -1,5 +1,6 @@
 // director.mjs — runs a Studio request on the user's own Claude Code.
-// Runner "cli" (default): `claude -p <prompt> --output-format stream-json --verbose
+// Runner "cli" (default) runs the agent CLI of studio.json director.agent (lib/director-agents.mjs;
+// Claude Code when unset). Claude Code: `claude -p <prompt> --output-format stream-json --verbose
 // --permission-mode acceptEdits --allowedTools … --disallowedTools … [--resume <sid>]` in the
 // project directory, one job at a time per project (jobs.mjs). No --add-dir: Read and
 // Skill reach the provider's files without it. No Edit/Write allow rule either: acceptEdits writes only
@@ -24,13 +25,20 @@
 // --mcp-config <project>/.opus/studio-mcp.json and one allow rule per tool. The provider's MCP
 // server still loads as before (no --strict-mcp-config). studio.json director.studio_mcp: false
 // turns this off.
+// Other agents (Codex CLI, OpenCode) get the provider's MCP server and Studio's in their own config
+// format, the provider's rules turned into their own, and the skills folder in the prompt. For every
+// agent, lib/gate-guard.mjs keeps BRIEF.md and the user lines of DEMO.md while the job runs: a
+// change is undone, the job stopped and the request failed.
 import { mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { readState, runnerSetting, stateFile } from "./lib/config.mjs";
+import { directorAgentSetting, directorModelSetting, readState, runnerSetting, stateFile } from "./lib/config.mjs";
+import { DIRECTORS, planRun, readerFor } from "./lib/director-agents.mjs";
+import { guardGates } from "./lib/gate-guard.mjs";
+import { which } from "./lib/agents/run.mjs";
 import { loadTools } from "./lib/tools.mjs";
 import { seriesFor } from "./lib/series.mjs";
 import { SERVER_NAME, serverArgs, toolsForProfile } from "./mcp/studio-mcp.mjs";
-import { startJob, running } from "./jobs.mjs";
+import { cancel, startJob, running } from "./jobs.mjs";
 import * as snapshots from "./lib/snapshots.mjs";
 
 export { runnerSetting };
@@ -50,6 +58,7 @@ export const studioToolNames = (p) => toolsForProfile("director", STUDIO_TOOLS, 
 // Passed to Studio's MCP server when set, so its tools reach the Studio that started the director.
 export const MCP_ENV = ["MOTION_STUDIO_STATE", "MOTION_STUDIO_PORT"];
 // Writes the director's MCP config for this request; null when Studio's MCP server is off.
+// { file, tools, server }: server is the entry itself, for agents that take it in their own format.
 export function studioMcp(p, dir, req) {
   if (!studioMcpOn()) return null;
   const tools = studioToolNames(p);
@@ -63,15 +72,19 @@ export function studioMcp(p, dir, req) {
   const tmp = `${file}.${process.pid}.tmp`;
   writeFileSync(tmp, JSON.stringify(config, null, 2) + "\n");
   renameSync(tmp, file);
-  return { file, tools };
+  return { file, tools, server };
 }
 
+// The session of one agent: a session of another agent (or of Claude Code, from a file written
+// before director.agent existed) is not resumed.
 const sessionFile = (dir) => join(dir, ".opus", "director.json");
-export function savedSession(dir) { try { return JSON.parse(readFileSync(sessionFile(dir), "utf8")).session_id ?? null; } catch { return null; } }
-function saveSession(dir, sid) {
+export function savedSession(dir, agent = "claude") {
+  try { const j = JSON.parse(readFileSync(sessionFile(dir), "utf8")); return (j.agent ?? "claude") === agent ? j.session_id ?? null : null; } catch { return null; }
+}
+function saveSession(dir, sid, agent = "claude") {
   mkdirSync(join(dir, ".opus"), { recursive: true });
   const tmp = `${sessionFile(dir)}.${process.pid}.tmp`;
-  writeFileSync(tmp, JSON.stringify(sid ? { session_id: sid, updated: new Date().toISOString() } : {}, null, 2) + "\n");
+  writeFileSync(tmp, JSON.stringify(sid ? { session_id: sid, agent, updated: new Date().toISOString() } : {}, null, 2) + "\n");
   renameSync(tmp, sessionFile(dir));
 }
 
@@ -93,7 +106,8 @@ export const voiceDenied = (p, dir) => (seriesRule(p, dir) ? [...(p.director.voi
 // The prompt is the user's request plus fixed rules; the provider adds what is knowledge of its
 // own tools (skills, scripts, where its keys live). Text from project files or the web is never
 // copied into it; the director reads files itself and treats them as material.
-export function buildPrompt(p, dir, req) {
+// agent: the director agent; one that is not Claude Code reads the provider's skills as files.
+export function buildPrompt(p, dir, req, agent = "claude") {
   let m = null;
   try { m = p.manifest.load(dir); } catch { /* the director reads it with project_get */ }
   const f = p.director.promptFragments?.() ?? {};
@@ -102,6 +116,7 @@ export function buildPrompt(p, dir, req) {
   const facts = { id: req.id, scope: req.scope, target: req.target, t: req.t, base: req.base, text: req.text };
   const rules = [
     f.skills,
+    agent !== "claude" && p.director.skillsDir ? `Mỗi skill là một file: đọc ${p.director.skillsDir}/<tên skill>/SKILL.md trước khi làm phần việc của skill đó. Tên tool MCP có thể có tiền tố tên server (ví dụ opus_video_project_get); gọi đúng tool đó.` : null,
     `Gọi project_get với project "${dir}" trước tiên. Patch với đúng base vừa đọc; CONFLICT thì đọc lại rồi làm lại.`,
     "Mọi thay đổi về thời gian (độ dài shot, vị trí câu thoại, nhạc) chỉ đi qua project_patch, không sửa tay số giây. Chuyển động bên trong một shot thì sửa HTML của cảnh đó.",
     f.voiceGate,
@@ -134,8 +149,9 @@ export function buildPrompt(p, dir, req) {
 export const STUDIO_DENIED = ["Bash(*gflow*)"];
 
 // mcp: studioMcp() of this request, or null. extraDenied: more denied tools (voiceDenied).
-export function claudeArgs(p, prompt, sid, mcp = null, extraDenied = []) {
-  return ["-p", prompt, "--output-format", "stream-json", "--verbose", "--permission-mode", "acceptEdits",
+// model: studio.json director.models.claude, or null for Claude Code's default.
+export function claudeArgs(p, prompt, sid, mcp = null, extraDenied = [], model = null) {
+  return ["-p", prompt, "--output-format", "stream-json", "--verbose", "--permission-mode", "acceptEdits", ...(model ? ["--model", model] : []),
     "--allowedTools", ...p.director.allowedTools, ...(mcp?.tools ?? []), "--disallowedTools", ...p.director.deniedTools, ...STUDIO_DENIED, ...extraDenied,
     ...(mcp ? ["--mcp-config", mcp.file] : []),
     ...(sid ? ["--resume", sid] : [])];
@@ -201,35 +217,78 @@ export function snapshotQueued(p, dir, req) {
   return others.length ? null : snapshotFor(p, dir, req);
 }
 
+// The env the provider's MCP server needs from the director's (the request markers and the like):
+// agents other than Claude Code start MCP servers with a short env of their own.
+const envDelta = (env) => Object.fromEntries(Object.entries(env).filter(([k, v]) => process.env[k] !== v && !/KEY|TOKEN|SECRET/i.test(k)));
+
+// cmd, args and log reader of one run of agent on req; null sid starts a new session.
+function runPlan(p, agent, here, req, sid, env) {
+  const mcp = studioMcp(p, here, req);
+  if (agent === "claude") {
+    return { cmd: "claude", args: claudeArgs(p, buildPrompt(p, here, req), sid, mcp, voiceDenied(p, here), directorModelSetting("claude")), studio: mcp?.tools ?? [], resumeFailed: RESUME_FAILED };
+  }
+  const d = DIRECTORS[agent];
+  const servers = {};
+  if (p.director.mcpServer) servers[p.director.mcpServer.name] = { command: p.director.mcpServer.command, args: p.director.mcpServer.args, env: envDelta(env) };
+  if (mcp) servers[SERVER_NAME] = mcp.server;
+  const plan = planRun({
+    id: agent, bin: which(agent)?.path ?? null, dir: here, prompt: buildPrompt(p, here, req, agent), sid, model: directorModelSetting(agent), servers,
+    allowed: p.director.allowedTools, denied: [...p.director.deniedTools, ...STUDIO_DENIED, ...voiceDenied(p, here)],
+  });
+  return { ...plan, studio: [], resumeFailed: d.resumeFailed };
+}
+
 // Runs a request already claimed for runner "cli". Returns the job.
 function launch(p, name, dir, req, { resume = true, onEnd } = {}) {
   const { list, finish } = p.requests;
   snapshotFor(p, dir, req);
-  const sid = resume ? savedSession(dir) : null;
+  const agent = directorAgentSetting();
+  if (!DIRECTORS[agent]) throw new Error(`studio.json director.agent "${agent}": Studio không biết agent này`);
+  if (agent !== "claude" && !DIRECTORS[agent].plan) throw new Error(`${DIRECTORS[agent].label} không chạy được đạo diễn: ${DIRECTORS[agent].blocked}`);
+  const sid = resume ? savedSession(dir, agent) : null;
   const state = { session: null, result: null, isError: false };
-  const mcp = studioMcp(p, dir, req);
   const here = realpathSync(dir);
-  return startJob({
-    name, kind: KIND, cmd: "claude", args: claudeArgs(p, buildPrompt(p, here, req), sid, mcp, voiceDenied(p, here)), cwd: here, env: childEnv(p, req), meta: { request: req.id, resume: sid },
-    onLine: reader(p, dir, state, mcp?.tools ?? []),
-    onExit: (job) => {
-      const now = list(dir).find((r) => r.id === req.id);
-      if (now?.status === "running") {
-        const tail = (job.tail ?? []).join("\n");
-        if (job.code !== 0 && sid && !state.session && RESUME_FAILED.test(tail)) {
-          saveSession(dir, null);
-          launch(p, name, dir, req, { resume: false, onEnd });
-          return;
+  const env = childEnv(p, req);
+  const run = runPlan(p, agent, here, req, sid, env);
+  const base = agent === "claude" ? reader(p, dir, state, run.studio) : readerFor(agent, state);
+  let saved = null;
+  const onLine = (line, stream) => {
+    const text = base(line, stream);
+    if (agent !== "claude" && state.session && state.session !== saved) { saved = state.session; saveSession(dir, saved, agent); }
+    return text;
+  };
+  const held = { job: null, broke: [] };
+  const guard = guardGates(here, { onViolation: (v) => { held.broke.push(...v); if (held.job) cancel(held.job.id); } });
+  let job;
+  try {
+    job = startJob({
+      // PWD too: OpenCode takes its project folder from PWD, which is otherwise Studio's own.
+      name, kind: KIND, cmd: run.cmd, args: run.args, cwd: here, env: { ...env, PWD: here }, meta: { request: req.id, resume: sid, agent },
+      onLine,
+      onExit: (j) => {
+        const broke = [...new Set([...held.broke, ...guard.close()])];
+        const now = list(dir).find((r) => r.id === req.id);
+        if (now?.status === "running") {
+          const tail = (j.tail ?? []).join("\n");
+          if (!broke.length && j.code !== 0 && sid && !state.session && run.resumeFailed.test(tail)) {
+            saveSession(dir, null, agent);
+            launch(p, name, dir, req, { resume: false, onEnd });
+            return;
+          }
+          try {
+            if (broke.length) finish(dir, req.id, { ok: false, error: `Đạo diễn đã sửa ${broke.join(", ")}; Studio đã khôi phục và dừng lượt này. Hai file này chỉ đổi theo câu trả lời của người dùng.` });
+            else if (j.status !== "cancelled" && j.code === 0 && !state.isError && String(state.result ?? "").trim()) finish(dir, req.id, { ok: true, receipt: state.result });
+            else finish(dir, req.id, { ok: false, error: j.status === "cancelled" ? "Đã huỷ trong Studio" : `Đạo diễn dừng (exit ${j.code ?? j.signal}) trước khi đóng yêu cầu:\n${tail}` });
+          } catch { /* closed meanwhile */ }
         }
-        try {
-          if (job.status !== "cancelled" && job.code === 0 && !state.isError && String(state.result ?? "").trim()) finish(dir, req.id, { ok: true, receipt: state.result });
-          else finish(dir, req.id, { ok: false, error: job.status === "cancelled" ? "Đã huỷ trong Studio" : `Đạo diễn dừng (exit ${job.code ?? job.signal}) trước khi đóng yêu cầu:\n${tail}` });
-        } catch { /* closed meanwhile */ }
-      }
-      settleSnapshots(p, dir);
-      onEnd?.();
-    },
-  });
+        settleSnapshots(p, dir);
+        onEnd?.();
+      },
+    });
+  } catch (e) { guard.close(); throw e; }
+  held.job = job;
+  if (held.broke.length) cancel(job.id);
+  return job;
 }
 
 // Starts the oldest queued request when the director is idle (runner cli). Returns the job or null.
