@@ -136,10 +136,13 @@ test("an AI turn is copied once, even when a failed resume relaunches it, and ca
   const r = await post("/api/director", { name: "demo", scope: "project", text: "[edit] đổi tiêu đề" });
   const id = r.json.request.id;
   assert.equal((await ended(id)).status, "done");
+  // The request reads done when the director closes it; its process can still be exiting, and
+  // restore refuses while the director job runs. Wait for the snapshot and for the job to end.
   let snaps;
   for (let i = 0; i < 100; i++) {
     snaps = (await get("/api/snapshots?name=demo")).json.snapshots;
-    if (snaps.find((s) => s.id === id)?.state === "done") break;
+    const live = (await get("/api/jobs?name=demo")).json.some((j) => j.status === "running" || j.status === "cancelling");
+    if (snaps.find((s) => s.id === id)?.state === "done" && !live) break;
     await new Promise((x) => setTimeout(x, 50));
   }
   const mine = snaps.filter((s) => s.id === id);
